@@ -1,0 +1,27 @@
+{
+	"name": "PDF",
+	"scopeName": "source.pdf",
+	"patterns": [
+		{
+			"name": "keyword.control.pdf",
+			"match": "\\b^\\d+ \\d+ obj|^endobj\\b"
+		},
+		{
+			"name": "storage.type.pdf",
+			"match": "<<|>>"
+		},
+		{
+			"name":"constant.numeric.pdf",
+			"match": "\\b\\d+\\b"
+		}
+	],
+	"repository": {
+		"main": {
+			"patterns": [
+				{
+					"include": "#main"
+				}
+			]
+		}
+	}
+}
