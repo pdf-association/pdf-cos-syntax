@@ -50,8 +50,42 @@
 			"match": "<[^>]*>"
 		},
 		{
-			"name": "constant.numeric.pdf",
-			"match": "\\b\\d+(\\.\\d+)?\\b"
+			"name": "constant.numeric.integer.pdf",
+			"match": "\\b\\d+\\b"
+		},
+		{
+			"name": "constant.numeric.real.pdf",
+			"match": "\\b\\d+\\.\\d*"
+		},
+		{
+			"name": "markup.underline.link.pdf",
+			"match": "\\b(http|https)://[a-zA-Z0-9\\-.]+(/[a-zA-Z0-9\\-._?,'+&%$#=~]*)*\\b"
+		},
+		{
+			"name": "string.quoted.double.pdf",
+			"begin": "\\(",
+			"end": "\\)",
+			"patterns": [
+				{
+					"name": "constant.character.escape.pdf",
+					"match": "\\\\."
+				}
+			]
+		},
+		{
+			"name": "string.quoted.hex.pdf",
+			"begin": "<",
+			"end": ">",
+			"patterns": [
+				{
+					"name": "constant.character.escape.pdf",
+					"match": "\\\\."
+				},
+				{
+					"name": "string.hex.pdf",
+					"match": "[0-9A-Fa-f\\s]+"
+				}
+			]
 		}
 	],
 	"repository": {
