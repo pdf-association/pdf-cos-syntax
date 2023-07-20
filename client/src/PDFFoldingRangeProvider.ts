@@ -16,7 +16,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
 		const ranges: FoldingRange[] = [];
 
 		let startObjLine: number = -1;
-		const bracketStartLines: number[] = [];
+		let startBracketLine: number = -1;
 
 		for (let i = 0; i < document.lineCount; i++) {
 			let line = document.lineAt(i);
@@ -30,11 +30,11 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
 			}
 
 			if (line.text.includes('<<')) {
-				bracketStartLines.push(i);
-			} else if (line.text.includes('>>') && bracketStartLines.length > 0) {
-				let startBracketLine = bracketStartLines.pop();
+				startBracketLine = i;
+			} else if (line.text.includes('>>') && startBracketLine >= 0) {
 				let r = new FoldingRange(startBracketLine, i);
 				ranges.push(r);
+				startBracketLine = -1;
 			}
 		}
 		return ranges;
