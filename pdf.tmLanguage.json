@@ -8,7 +8,7 @@
 		},
 		{
 			"name": "keyword.control.pdf",
-			"match": "\\b(startxref|xref|trailer|null|true|false|R|^\\d+ \\d+ obj|^endobj|stream|endstream)\\b"
+			"match": "\\b(?:\\d+ \\d+ R|startxref|xref|trailer|null|true|false|^\\d+ \\d+ obj|^endobj|stream|endstream)\\b"
 		},
 		{
 			"name": "keyword.section.xref-trailer.pdf",
