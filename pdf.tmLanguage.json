@@ -3,6 +3,37 @@
 	"scopeName": "source.pdf",
 	"patterns": [
 		{
+			"name": "string.quoted.pdf",
+			"begin": "\\(",
+			"end": "\\)",
+			"patterns": [
+				{
+					"name": "constant.character.escape.octal.pdf",
+					"match": "\\\\\\d{3}(?=[^\\d]|$)"
+				},
+				{
+					"name": "constant.character.escape.newline.pdf",
+					"match": "\\\\n"
+				},
+				{
+					"name": "constant.character.escape.return.pdf",
+					"match": "\\\\r"
+				},
+				{
+					"name": "constant.character.escape.tab.pdf",
+					"match": "\\\\t"
+				},
+				{
+					"name": "constant.character.escape.backslash.pdf",
+					"match": "\\\\\\\\"
+				},
+				{
+					"name": "constant.character.escape.other.pdf",
+					"match": "\\\\."
+				}
+			]
+		},
+		{
 			"name": "comment.line.percentage.pdf",
 			"match": "%.*"
 		},
