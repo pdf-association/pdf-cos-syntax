@@ -54,10 +54,10 @@ endobj
 /Contents 4 0 R
 /Rotate 32 % fails [fn:Eval((@Rotate mod 90)==0)]
 /StructParents -1 %% bad value
-/Annots [ 9 0 R ]
+/Annots [9 0 R]
+/NestedArray [ null [ /A/B [ true(String)false ] 1.23 +0 -.45 <</Key/value>> ]
 >>
 endobj
-
 4 0 obj
 <<
 /Length 0
@@ -145,11 +145,11 @@ trailer
 <<
 /Size 11
 /Root 1 0 R
-/Info <<  
+/Info <<%Info is not an indirect reference 
 	/CreationDate (D:20220714283724+10'00') %% bad date string (hours is > 24)
 	/Subject(\377\376UTF-16LE BOM!) %% UTF-16LE BOM string 
 	/SomeHexString <   65	45
-	6c6C6F >>>%% hex string with whitespace and Info is not an indirect reference
+	6c6C6F >>>%% hex string with whitespace
 >>
 startxref
 3195
