@@ -82,11 +82,11 @@
 		},
 		{
 			"name": "constant.numeric.real.pdf",
-			"match": "\\b\\d+\\.\\d*\\b"
+			"match": "[+-]?\\d+\\.\\d*\\b"
 		},
 		{
 			"name": "constant.numeric.integer.pdf",
-			"match": "\\b\\d+\\b"
+			"match": "[+-]?\\d+\\b"
 		},
 		{
 			"name": "markup.underline.link.pdf",
