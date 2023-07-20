@@ -81,12 +81,12 @@
 			"match": "<[^>]*>"
 		},
 		{
-			"name": "constant.numeric.integer.pdf",
-			"match": "\\b\\d+\\b"
+			"name": "constant.numeric.real.pdf",
+			"match": "\\b\\d+\\.\\d*\\b"
 		},
 		{
-			"name": "constant.numeric.real.pdf",
-			"match": "\\b\\d+\\.\\d*"
+			"name": "constant.numeric.integer.pdf",
+			"match": "\\b\\d+\\b"
 		},
 		{
 			"name": "markup.underline.link.pdf",

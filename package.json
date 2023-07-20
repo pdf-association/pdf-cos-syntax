@@ -48,7 +48,18 @@
 			{
 				"id": "myPdf",
 				"extensions": [
-					".pdf"
+					".pdf",
+					".fdf"
+				],
+				"aliases": [
+					"PDF",
+					"pdf",
+					"FDF",
+					"fdf"
+				],
+				"mimetypes": [
+					"application/pdf",
+					"application/vnd.fdf"
 				]
 			}
 		],
