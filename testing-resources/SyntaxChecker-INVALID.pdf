@@ -1,5 +1,5 @@
 %PDF-1.9
-%
+%μῦ
 
 % DO NOT ATTEMPT TO OPEN THIS PDF WITH A PDF VIEWER!!!
 %
@@ -36,7 +36,6 @@ endobj
 /Count 1  
 >>
 endobj
-
 3 0 obj
 << 
 /Type /Page
@@ -45,8 +44,7 @@ endobj
 		/LastModified (is not a Date!\t\000) % with some escape sequences 
 		/LastModified (is a duplicate key for direct dictionary)
 		/Data 123 
-		>> 
-	>>
+		>>	>>
 /Parent 2 0 R
 /Resources << 
 		/Font << /F1 5 0 R/F2 10 0 R >> 
@@ -66,8 +64,7 @@ endobj
 >>
 stream
 5 w
-1 0 0 rg
-0 1 0 RG
+1 0 0 rg 0 1 0 RG
 10 10 500 500 re B
 endstream
 endobj
