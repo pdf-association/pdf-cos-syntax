@@ -128,7 +128,19 @@ endobj
 >>
 >>
 endobj
-
+xref
+0 11
+0000000000 65535 f
+0000000625 00000 n
+0000001072 00000 n
+0000001139 00000 n
+0000001711 00000 n
+0000001801 00000 n
+0000002207 00000 n
+0000002339 00000 n
+0000002409 00000 n
+0000002540 00000 n
+0000002673 00000 n
 trailer
 <<
 /Size 11
@@ -139,4 +151,6 @@ trailer
 	/SomeHexString <   65	45
 	6c6C6F >>>%% hex string with whitespace and Info is not an indirect reference
 >>
+startxref
+3195
 %%EOF
