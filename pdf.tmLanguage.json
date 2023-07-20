@@ -4,26 +4,26 @@
 	"patterns": [
 		{
 			"name": "comment.line.percentage.pdf",
-			"match": "%. *$"
+			"match": "%.*"
+		},
+		{
+			"name": "keyword.control.pdf",
+			"match": "\\b(startxref|xref|trailer|null|true|false|R|^\\d+ \\d+ obj|^endobj|stream|endstream)\\b"
 		},
 		{
 			"name": "keyword.section.xref-trailer.pdf",
 			"begin": "\\bxref\\b",
 			"end": "\\btrailer\\b",
 			"patterns": [
-			  {
-				"name": "keyword.control.f.pdf",
-				"match": "\\bf\\b"
-			  },
-			  {
-				"name": "keyword.control.n.pdf",
-				"match": "\\bn\\b"
-			  }
+				{
+					"name": "keyword.control.f.pdf",
+					"match": "\\bf\\b"
+				},
+				{
+					"name": "keyword.control.n.pdf",
+					"match": "\\bn\\b"
+				}
 			]
-		  },
-		{
-			"name": "keyword.control.pdf",
-			"match": "\\b(startxref|xref|trailer|null|true|false|R|obj|endobj|stream|endstream)\\b"
 		},
 		{
 			"name": "punctuation.definition.dictionary.begin.pdf",
