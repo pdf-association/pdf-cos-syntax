@@ -73,7 +73,7 @@
 			"match": "\\]"
 		},
 		{
-			"name": "string.unquoted.pdf",
+			"name": "variable.other.pdf",
 			"match": "/\\w*"
 		},
 		{
