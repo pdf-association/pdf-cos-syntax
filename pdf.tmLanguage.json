@@ -23,7 +23,7 @@
 		  },
 		{
 			"name": "keyword.control.pdf",
-			"match": "\\b(startxref|xref|trailer|null|true|false|R|obj|endobj|stream|endstream)\\b"
+			"match": "\\b(startxref|xref|trailer|null|true|false|R|^\\d+ \\d+ obj|^endobj|stream|endstream)\\b"
 		},
 		{
 			"name": "punctuation.definition.dictionary.begin.pdf",
