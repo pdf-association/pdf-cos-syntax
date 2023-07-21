@@ -74,7 +74,7 @@
 		},
 		{
 			"name": "variable.other.pdf",
-			"match": "/\\w*"
+			"match": "/[^\\s]*"
 		},
 		{
 			"name": "string.quoted.pdf",

@@ -7,6 +7,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
 		let startObjLine: number = -1;
 		let startBracketLine: number = -1;
 		let startStreamLine: number = -1;
+		let startPdfNameLine: number = -1;
 
 		for (let i = 0; i < document.lineCount; i++) {
 			let line = document.lineAt(i).text.trim();
@@ -29,10 +30,21 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
 
 			if (line.startsWith('stream')) {
 				startStreamLine = i;
-			} else if ((line.startsWith('endstream') || i === document.lineCount - 1) && startStreamLine >= 0) {
+			} else if (
+				(line.startsWith('endstream') || i === document.lineCount - 1) &&
+				startStreamLine >= 0
+			) {
 				let r = new FoldingRange(startStreamLine, i);
 				ranges.push(r);
 				startStreamLine = -1;
+			}
+
+			if (line.startsWith('/') && line.includes('<<')) {
+				startPdfNameLine = i;
+			} else if (line.startsWith('>>') && startPdfNameLine >= 0) {
+				let r = new FoldingRange(startPdfNameLine, i);
+				ranges.push(r);
+				startPdfNameLine = -1;
 			}
 		}
 		return ranges;
