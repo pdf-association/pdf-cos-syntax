@@ -82,7 +82,7 @@
 		},
 		{
 			"name": "constant.numeric.real.pdf",
-			"match": "[+-]?\\d+\\.\\d*\\b"
+			"match": "\\b[-+]?\\d*\\.\\d+\\b"
 		},
 		{
 			"name": "constant.numeric.integer.pdf",
