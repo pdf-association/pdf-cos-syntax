@@ -25,6 +25,17 @@
 				"${workspaceRoot}/client/testFixture"
 			],
 			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
-		}
+		},
+		{
+			"name": "Attach to Server",
+			"type": "node",
+			"request": "attach",
+			"port": 6009,
+			"outFiles": ["${workspaceFolder}/server/out/**/*.js"],
+			"restart": true,
+			"sourceMaps": true,
+			"preLaunchTask": "npm: watch"
+		  }
+		  
 	]
 }

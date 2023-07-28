@@ -17,7 +17,7 @@
 		"vscode": "^1.75.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:myPdf"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
@@ -87,5 +87,9 @@
 		"eslint": "^8.35.0",
 		"mocha": "^9.2.1",
 		"typescript": "^5.1.3"
+	},
+	"dependencies": {
+		"vscode-languageserver": "^8.1.0",
+		"vscode-languageserver-textdocument": "^1.0.8"
 	}
 }
