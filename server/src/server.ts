@@ -16,7 +16,6 @@ import {
 	TextDocumentSyncKind,
 	InitializeResult,
 	Position,
-	Location,
 	Definition,
 } from 'vscode-languageserver/node';
 
@@ -24,7 +23,6 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable } from './pdfUtils';
 
 // for server debug.
-import * as path from 'path';
 import { debug } from 'console';
 
 if (process.env.NODE_ENV === 'development') {
@@ -32,7 +30,7 @@ if (process.env.NODE_ENV === 'development') {
   require('source-map-support').install();
 }
 
-console.log("server debuggggging")
+console.log("server debugging")
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -99,8 +97,6 @@ documents.onDidOpen((e) => {
             let firstLine = lines[0].trim();
             if (firstLine.endsWith('obj')) {
                 let objectId = firstLine.replace('obj', '').trim();
-                // Here we're using the indexOf function to get the start position of the object in the content.
-                // We're calculating line and character positions by counting the number of newline characters and characters on the final line.
                 let start = content.indexOf(object);
                 let line = content.substring(0, start).split('\n').length;
                 let character = lines[0].length;
@@ -266,34 +262,28 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onDefinition((params): Definition | null => {
-	console.log("ondefitionoinonioon,,,,,,,,")
 	const document = documents.get(params.textDocument.uri);
 	if (!document) {
 		return null;
 	}
 	const position = params.position;
-	console.log("position: ", position)
 	const word = document.getText({
 		start: Position.create(position.line, 0),
 		end: Position.create(position.line, 255),
 	});
-	console.log("word: ", word)
-	const match = word.match(/(\d+) 0 R/);
+	const match = word.match(/(\d+) 0 obj/);
 	if (!match) {
 		return null;
 	}
+
 	const objNum = parseInt(match[1]);
-	console.log("objNum: ", objNum)
 	const xrefTable = extractXrefTable(document);
-	console.log("xrefTable: ", xrefTable)
+
 	const byteOffset = getByteOffsetForObj(objNum, xrefTable);
-	console.log("byteOffset: ", byteOffset)
 	if (byteOffset === -1) {
 		return null;
 	}
-console.log("--------------------------")
 	const line = getLineFromByteOffset(document, byteOffset);
-	console.log("line: ", line)
 	if (line === -1) {
 		return null;
 	}
@@ -321,7 +311,7 @@ console.log("--------------------------")
     // // Return the location of the definition
     // return location;
 });
-console.log(objectDefinitions)
+
 // connection.onDefinition((params: TextDocumentPositionParams): Location | undefined => {
 // 	console.log("we are onDefinition")
 //     let document = documents.get(params.textDocument.uri);
