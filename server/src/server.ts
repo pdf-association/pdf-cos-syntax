@@ -17,10 +17,12 @@ import {
 	InitializeResult,
 	Position,
 	Location,
+	Definition,
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable } from './pdfUtils';
+
 // for server debug.
 import * as path from 'path';
 import { debug } from 'console';
@@ -263,42 +265,46 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	return item;
 });
 
-// connection.onDefinition((params): Definition | null => {
-	// console.log("ondefitionoinonioon,,,,,,,,")
-	// const document = documents.get(params.textDocument.uri);
-	// if (!document) {
-	// 	return null;
-	// }
-	// const position = params.position;
-	// const word = document.getText({
-	// 	start: Position.create(position.line, 0),
-	// 	end: Position.create(position.line, 255),
-	// });
+connection.onDefinition((params): Definition | null => {
+	console.log("ondefitionoinonioon,,,,,,,,")
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {
+		return null;
+	}
+	const position = params.position;
+	console.log("position: ", position)
+	const word = document.getText({
+		start: Position.create(position.line, 0),
+		end: Position.create(position.line, 255),
+	});
+	console.log("word: ", word)
+	const match = word.match(/(\d+) 0 R/);
+	if (!match) {
+		return null;
+	}
+	const objNum = parseInt(match[1]);
+	console.log("objNum: ", objNum)
+	const xrefTable = extractXrefTable(document);
+	console.log("xrefTable: ", xrefTable)
+	const byteOffset = getByteOffsetForObj(objNum, xrefTable);
+	console.log("byteOffset: ", byteOffset)
+	if (byteOffset === -1) {
+		return null;
+	}
+console.log("--------------------------")
+	const line = getLineFromByteOffset(document, byteOffset);
+	console.log("line: ", line)
+	if (line === -1) {
+		return null;
+	}
 
-	// const match = word.match(/(\d+) 0 obj/);
-	// if (!match) {
-	// 	return null;
-	// }
-	// const objNum = parseInt(match[1]);
-
-	// const xrefTable = extractXrefTable(document);
-	// const byteOffset = getByteOffsetForObj(objNum, xrefTable);
-	// if (byteOffset === -1) {
-	// 	return null;
-	// }
-
-	// const line = getLineFromByteOffset(document, byteOffset);
-	// if (line === -1) {
-	// 	return null;
-	// }
-
-	// return {
-	// 	uri: params.textDocument.uri,
-	// 	range: {
-	// 		start: { line, character: 0 },
-	// 		end: { line, character: 0 },
-	// 	},
-	// };
+	return {
+		uri: params.textDocument.uri,
+		range: {
+			start: { line, character: 0 },
+			end: { line, character: 0 },
+		},
+	};
 
 	// let position = params.position; // the position where the user invoked "Go to Definition"
     // let textDocument = documents.get(params.textDocument.uri); // the document where the user invoked "Go to Definition"
@@ -314,50 +320,50 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 
     // // Return the location of the definition
     // return location;
-// });
-console.log(objectDefinitions)
-connection.onDefinition((params: TextDocumentPositionParams): Location | undefined => {
-	console.log("we are onDefinition")
-    let document = documents.get(params.textDocument.uri);
-    if (!document) {
-        return;
-    }
-    let position = params.position;
-	let line = document.getText({
-        start: { line: position.line, character: 0 },
-        end: { line: position.line, character: Number.MAX_VALUE }
-    });
-	let wordMatch = line.slice(0, position.character + 1).match(/\w+$/);
-
-    // let wordRange = document?.getWordRangeAtPosition(position);
-    // if (!wordRange) {
-    //     return;
-    // }
-
-	if (!wordMatch) {
-        return;
-    }
-
-    let word = wordMatch[0];
-
-    if (objectDefinitions.hasOwnProperty(word)) {
-        let definition = objectDefinitions[word];
-        return Location.create(document.uri, {
-            start: definition.position,
-            end: Position.create(definition.position.line, definition.position.character + definition.content.length),
-        });
-    }
-
-    // let word = document.getText(wordRange);
-
-    // if (objectDefinitions.hasOwnProperty(word)) {
-    //     let definition = objectDefinitions[word];
-    //     return Location.create(document.uri, {
-    //         start: definition.position,
-    //         end: Position.create(definition.position.line, definition.position.character + definition.content.length),
-    //     });
-    // }
 });
+console.log(objectDefinitions)
+// connection.onDefinition((params: TextDocumentPositionParams): Location | undefined => {
+// 	console.log("we are onDefinition")
+//     let document = documents.get(params.textDocument.uri);
+//     if (!document) {
+//         return;
+//     }
+//     let position = params.position;
+// 	let line = document.getText({
+//         start: { line: position.line, character: 0 },
+//         end: { line: position.line, character: Number.MAX_VALUE }
+//     });
+// 	let wordMatch = line.slice(0, position.character + 1).match(/\w+$/);
+
+//     // let wordRange = document?.getWordRangeAtPosition(position);
+//     // if (!wordRange) {
+//     //     return;
+//     // }
+
+// 	if (!wordMatch) {
+//         return;
+//     }
+
+//     let word = wordMatch[0];
+
+//     if (objectDefinitions.hasOwnProperty(word)) {
+//         let definition = objectDefinitions[word];
+//         return Location.create(document.uri, {
+//             start: definition.position,
+//             end: Position.create(definition.position.line, definition.position.character + definition.content.length),
+//         });
+//     }
+
+//     // let word = document.getText(wordRange);
+
+//     // if (objectDefinitions.hasOwnProperty(word)) {
+//     //     let definition = objectDefinitions[word];
+//     //     return Location.create(document.uri, {
+//     //         start: definition.position,
+//     //         end: Position.create(definition.position.line, definition.position.character + definition.content.length),
+//     //     });
+//     // }
+// });
 
 
 // Make the text document manager listen on the connection
