@@ -60,12 +60,12 @@ Folding is enabled for PDF objects (`obj` and `endobj`) and multi-line PDF dicti
     - `CTRL` + `K`, `CTRL` + `0` = fold all regions
     - `CTRL` + `K`, `CTRL` + `J` = unfold all regions
 - Mac folding shortcuts:
-    - &#8984; + `[` = fold region
-    - &#8984; + `]` = unfold region
-    - &#8984; + `K`, &#8984; + `[` = fold all subregions
-    - &#8984; + `K`, &#8984; + `]` = unfold all subregions
-    - &#8984; + `K`, &#8984; + `0` = fold all regions
-    - &#8984; + `K`, &#8984; + `J` = unfold all regions
+    - &#8984; `[` = fold region
+    - &#8984; `]` = unfold region
+    - &#8984; `K`, &#8984; `[` = fold all subregions
+    - &#8984; `K`, &#8984; `]` = unfold all subregions
+    - &#8984; `K`, &#8984; `0` = fold all regions
+    - &#8984; `K`, &#8984; `J` = unfold all regions
 
 ## Creation of largely text-based PDFs
 
