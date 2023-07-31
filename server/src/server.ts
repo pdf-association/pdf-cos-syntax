@@ -26,11 +26,11 @@ import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable } from './
 import { debug } from 'console';
 
 if (process.env.NODE_ENV === 'development') {
-  debug(`Using development version of the language server`);
-  require('source-map-support').install();
+	debug(`Using development version of the language server`);
+	require('source-map-support').install();
 }
 
-console.log("server debugging")
+console.log('server debugging');
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -67,7 +67,7 @@ connection.onInitialize((params: InitializeParams) => {
 			completionProvider: {
 				resolveProvider: true,
 			},
-			definitionProvider: true
+			definitionProvider: true,
 		},
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -81,34 +81,6 @@ connection.onInitialize((params: InitializeParams) => {
 	return result;
 });
 
-type PdfObjectDefinition = {
-	content: string;
-	position: Position;
-}
-let objectDefinitions: {[key: string]: PdfObjectDefinition}  = {}
-documents.onDidOpen((e) => {
-    let content = e.document.getText();
-    let objects = content.split('endobj');
-    
-	objects.forEach((object) => {
-        object = object.trim();
-        let lines = object.split('\n');
-        if (lines.length > 0) {
-            let firstLine = lines[0].trim();
-            if (firstLine.endsWith('obj')) {
-                let objectId = firstLine.replace('obj', '').trim();
-                let start = content.indexOf(object);
-                let line = content.substring(0, start).split('\n').length;
-                let character = lines[0].length;
-                objectDefinitions[objectId] = {
-                    content: object,
-                    position: Position.create(line, character),
-                };
-            }
-        }
-    });
-});
-
 connection.onInitialized(() => {
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
@@ -118,7 +90,7 @@ connection.onInitialized(() => {
 		connection.workspace.onDidChangeWorkspaceFolders((_event) => {
 			connection.console.log('Workspace folder change event received.');
 		});
-	}	
+	}
 });
 
 // The example settings
@@ -267,22 +239,28 @@ connection.onDefinition((params): Definition | null => {
 		return null;
 	}
 	const position = params.position;
-	const word = document.getText({
+	const lineText = document.getText({
 		start: Position.create(position.line, 0),
 		end: Position.create(position.line, 255),
 	});
-	const match = word.match(/(\d+) 0 obj/);
-	if (!match) {
-		return null;
-	}
-
-	const objNum = parseInt(match[1]);
 	const xrefTable = extractXrefTable(document);
 
-	const byteOffset = getByteOffsetForObj(objNum, xrefTable);
+	let byteOffset = -1;
+	// check for X Y Obj definition
+	const objMatch = lineText.match(/(\d+) 0 obj/);
+	if (objMatch) {
+		byteOffset = getByteOffsetForObj(parseInt(objMatch[1]), xrefTable);
+	}
+
+	// check for xref table entries
+	const xrefMatch = lineText.match(/\b(\d+) (\d+) (n)\b/);
+	if (xrefMatch) {
+		byteOffset = parseInt(xrefMatch[0].split(' ')[0]);
+	}
 	if (byteOffset === -1) {
 		return null;
 	}
+
 	const line = getLineFromByteOffset(document, byteOffset);
 	if (line === -1) {
 		return null;
@@ -295,66 +273,7 @@ connection.onDefinition((params): Definition | null => {
 			end: { line, character: 0 },
 		},
 	};
-
-	// let position = params.position; // the position where the user invoked "Go to Definition"
-    // let textDocument = documents.get(params.textDocument.uri); // the document where the user invoked "Go to Definition"
-    
-    // // Code to get the object identifier at the position...
-    // let objectId = getObjectIdAtPosition(textDocument, position);
-
-    // // Look up the definition in the map
-    // let definition = objectDefinitions[objectId];
-    
-    // // Code to create a Location object from the definition...
-    // let location = createLocationFromDefinition(definition);
-
-    // // Return the location of the definition
-    // return location;
 });
-
-// connection.onDefinition((params: TextDocumentPositionParams): Location | undefined => {
-// 	console.log("we are onDefinition")
-//     let document = documents.get(params.textDocument.uri);
-//     if (!document) {
-//         return;
-//     }
-//     let position = params.position;
-// 	let line = document.getText({
-//         start: { line: position.line, character: 0 },
-//         end: { line: position.line, character: Number.MAX_VALUE }
-//     });
-// 	let wordMatch = line.slice(0, position.character + 1).match(/\w+$/);
-
-//     // let wordRange = document?.getWordRangeAtPosition(position);
-//     // if (!wordRange) {
-//     //     return;
-//     // }
-
-// 	if (!wordMatch) {
-//         return;
-//     }
-
-//     let word = wordMatch[0];
-
-//     if (objectDefinitions.hasOwnProperty(word)) {
-//         let definition = objectDefinitions[word];
-//         return Location.create(document.uri, {
-//             start: definition.position,
-//             end: Position.create(definition.position.line, definition.position.character + definition.content.length),
-//         });
-//     }
-
-//     // let word = document.getText(wordRange);
-
-//     // if (objectDefinitions.hasOwnProperty(word)) {
-//     //     let definition = objectDefinitions[word];
-//     //     return Location.create(document.uri, {
-//     //         start: definition.position,
-//     //         end: Position.create(definition.position.line, definition.position.character + definition.content.length),
-//     //     });
-//     // }
-// });
-
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
