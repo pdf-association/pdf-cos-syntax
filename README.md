@@ -40,15 +40,18 @@ It also includes an End-to-End test.
 
 Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor. 
 
-If you see either of these messages in VSCode then your PDF file is unsuitable for editing with this extension and will get corrupted if saved:
+If you see either of these messages in VSCode then your PDF file is unsuitable for editing with this extension and _**will get corrupted if saved!**_:
 
 ![VSCode binary file error](assets/VSCode-BinaryError.png)
 
 ![VSCode invisible Unicode warning](assets/VSCode-InvisibleUnicode.png)
 
-## Features
+# Features
 
-Syntax highlighting of PDF COS ("Carousel Object System”") synax and PDF content streams including special handling of PDF rules for delimiters and whitespace:
+The following functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS ("_Carousel Object System_") syntax and file structure.
+
+## Syntax Highlighting
+Syntax highlighting of PDF COS syntax and PDF content streams including special handling of PDF rules for delimiters and whitespace:
 - PDF dictionary objects (start `<<` and end `>>`)
 - PDF array objects (start `[` and end `]`)
 - PDF literal string objects (start `(` and end `)` with `\` escape sequences) 
@@ -56,28 +59,46 @@ Syntax highlighting of PDF COS ("Carousel Object System”") synax and PDF conte
 - PDF name objects (start `/` with `#` hex pairs)
 - PDF integer and real number objects (including with leading `+`, `-`, `.` or multiple `0`s)
 - PDF comments (start with `%` to end-of-line)
-- all case sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` including associated object identifier, `R` including associated object identifier, `startxref`, `stream`,  `trailer`, `true`, `xref`)
-- PDF content stream operators when occuring between `steram` and `endstream` keywords
+- all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` including associated object identifier, `R` including associated object identifier, `startxref`, `stream`,  `trailer`, `true`, `xref`)
+- PDF content stream operators when occuring between `stream` and `endstream` keywords
 
-Functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS syntax.
+## Folding
+Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`).
 
-Folding is enabled for PDF objects (`obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`).
-- Windows folding shortcuts:
-    - `CTRL` + `SHIFT` + `[` = fold region
-    - `CTRL` + `SHIFT` + `]` = unfold region
-    - `CTRL` + `K`, `CTRL` + `[` = fold all subregions
-    - `CTRL` + `K`, `CTRL` + `]` = unfold all subregions
-    - `CTRL` + `K`, `CTRL` + `0` = fold all regions
-    - `CTRL` + `K`, `CTRL` + `J` = unfold all regions
-- Mac folding shortcuts:
-    - &#8984; `[` = fold region
-    - &#8984; `]` = unfold region
-    - &#8984; `K`, &#8984; `[` = fold all subregions
-    - &#8984; `K`, &#8984; `]` = unfold all subregions
-    - &#8984; `K`, &#8984; `0` = fold all regions
-    - &#8984; `K`, &#8984; `J` = unfold all regions
+### Windows folding shortcuts:
+- `CTRL` + `SHIFT` + `[` = fold region
+- `CTRL` + `SHIFT` + `]` = unfold region
+- `CTRL` + `K`, `CTRL` + `[` = fold all subregions
+- `CTRL` + `K`, `CTRL` + `]` = unfold all subregions
+- `CTRL` + `K`, `CTRL` + `0` = fold all regions
+- `CTRL` + `K`, `CTRL` + `J` = unfold all regions
+### Mac folding shortcuts:
+- &#8984; `[` = fold region
+- &#8984; `]` = unfold region
+- &#8984; `K`, &#8984; `[` = fold all subregions
+- &#8984; `K`, &#8984; `]` = unfold all subregions
+- &#8984; `K`, &#8984; `0` = fold all regions
+- &#8984; `K`, &#8984; `J` = unfold all regions
 
-## Creation of largely text-based PDFs
+## GoTo Functionality
+VSCode allows easy navigation and examination of definitions, declarations and references. For PDF the following equivalences are used:
+- "definition": a PDF object (`X Y obj`)
+- "declaration": the cross-reference table entry of a PDF object
+- "reference": an indirect references (`X Y R`) to a PDF object
+
+### Windows GoTo shortcuts
+- `F12` = goto definition
+- `ALT` + `F12` = peek definition
+- `CTRL` + `K`, `F12` = open definition to the side
+- `SHIFT` + `F12` = show references
+### Mac GoTo shortcuts
+- `F12` = goto definition
+- &#8997; `F12` = peek definition
+- &#8984; `K`, `F12` = open definition to the side
+- &#8679;  `F12` = show references
+
+
+# Creation of largely text-based PDFs
 
 Using [QPDF](https://github.com/qpdf/qpdf):
 ```bash
