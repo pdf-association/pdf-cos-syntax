@@ -34,9 +34,19 @@ It also includes an End-to-End test.
 - Press ▷ to run the launch config (F5).
 - In the [Extension Development Host](https://code.visualstudio.com/api/get-started/your-first-extension#:~:text=Then%2C%20inside%20the%20editor%2C%20press%20F5.%20This%20will%20compile%20and%20run%20the%20extension%20in%20a%20new%20Extension%20Development%20Host%20window.) instance of VSCode, open a PDF document in 'plain text' language mode.
 
-# Features
+# VSCode PDF extension
+
+## PDF files are BINARY!
 
 Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor. 
+
+If you see either of these messages in VSCode then your PDF file is unsuitable for editing with this extension and will get corrupted if saved:
+
+![VSCode binary file error](assets/VSCode-BinaryError.png)
+
+![VSCode invisible Unicode warning](assets/VSCode-InvisibleUnicode.png)
+
+## Features
 
 Syntax highlighting of PDF COS ("Carousel Object System”") synax and PDF content streams including special handling of PDF rules for delimiters and whitespace:
 - PDF dictionary objects (start `<<` and end `>>`)
