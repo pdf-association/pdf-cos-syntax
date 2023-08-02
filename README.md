@@ -123,3 +123,30 @@ Using Adobe Acrobat (_commercial tool_):
     - Clean Up: make sure "Object compression options" = "Remove compression"
 
 Note that the Adobe Acrobat method will not be as "pure text" as the QPDF method as content streams, etc. have their compression filters retained whereas QPDF will convert all streams to uncompressed raw data.
+
+## Locating PDFs with specific features
+
+* Number of incremental updates = number of `%%EOF` lines
+
+```bash
+grep --text --count -P "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr
+```
+
+* Find the number of objects in each PDF (trailer /Size entry)
+
+```bash
+grep --text -Po "/Size [0-9]+" *.pdf
+```
+
+* Find all conventional cross-reference table entries
+
+```bash
+grep --text -P "^[0-9]{10} [0-9]{5} [fn]" *.pdf
+grep --text -P "^([0-9]{10} [0-9]{5} [fn]|xref)" *.pdf
+``` 
+
+* Unreliable: find the xref sub-section marker lines for conventional cross-reference table PDFs. Can then find sparse cross-reference tables in incremental updates. Multi-line so must use `pcregrep -M`.
+
+```bash
+pcregrep -M --color=auto --buffer-size=999999 --text "^xref\n[0-9]+ *[0-9]+" *.pdf
+```
