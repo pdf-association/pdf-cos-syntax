@@ -80,11 +80,18 @@ Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF d
 - &#8984; `K`, &#8984; `0` = fold all regions
 - &#8984; `K`, &#8984; `J` = unfold all regions
 
-## GoTo Functionality
+## Go To Functionality
 VSCode allows easy navigation and examination of definitions, declarations and references. For PDF the following equivalences are used:
 - "definition": a PDF object (`X Y obj`)
 - "declaration": the cross-reference table entry of a PDF object
 - "reference": an indirect references (`X Y R`) to a PDF object
+
+Placing the cursor anywhere in a cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). Note that the very first entry in the cross-reference table of an original PDF (without incremental updates) is always `0000000000 65535 f` and represents the start of the free list and thus there is no associated object 0. 
+
+Placing the cursor anywhere on an indirect reference (`X Y R`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`).
+
+Placing the cursor anywhere on an object definition (`X Y obj`), and then selecting "Show references" will find all indirect references (`X Y R`) to that object.
+
 
 ### Windows GoTo shortcuts
 - `F12` = goto definition
