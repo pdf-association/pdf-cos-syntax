@@ -126,10 +126,13 @@ Note that the Adobe Acrobat method will not be as "pure text" as the QPDF method
 
 ## Locating PDFs with specific features
 
-* Number of incremental updates = number of `%%EOF` lines
+Avoid using `^` start-of-line due to PDFs specific end-of-line rules which can vary and not match the current platform.
+
+* Number of incremental updates = approximated by number of `%%EOF` or `startxref` lines
 
 ```bash
-grep --text --count -P "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr
+grep --text --count -Po "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr
+grep --text --byte-offset -Po "%%EOF" *.pdf
 ```
 
 * Find the number of objects in each PDF (trailer /Size entry)
@@ -138,15 +141,15 @@ grep --text --count -P "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort 
 grep --text -Po "/Size [0-9]+" *.pdf
 ```
 
-* Find all conventional cross-reference table entries
+* Find all conventional cross-reference table entries (in use = `n`', free = `f`)
 
 ```bash
-grep --text -P "^[0-9]{10} [0-9]{5} [fn]" *.pdf
-grep --text -P "^([0-9]{10} [0-9]{5} [fn]|xref)" *.pdf
+grep --text -Po "[0-9]{10} [0-9]{5} [fn]" *.pdf
+grep --text -Po --count "[0-9]{10} [0-9]{5} f" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr
 ``` 
 
-* Unreliable: find the xref sub-section marker lines for conventional cross-reference table PDFs. Can then find sparse cross-reference tables in incremental updates. Multi-line so must use `pcregrep -M`.
+* Find the xref sub-section marker lines for conventional cross-reference table PDFs. Can then find sparse cross-reference tables in incremental updates. Multi-line so must use `pcregrep -M`. 
 
 ```bash
-pcregrep -M --color=auto --buffer-size=999999 --text "^xref\n[0-9]+ *[0-9]+" *.pdf
+pcregrep -Mo --color=auto --buffer-size=999999 --text "[^t]xref[\r\n][0-9]+ *[0-9]+" *.pdf
 ```
