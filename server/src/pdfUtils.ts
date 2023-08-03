@@ -7,7 +7,7 @@ export function getByteOffsetForObj(objNum: number, xrefTable: string): number {
 
 	for (let i = 0; i < lines.length; i++) {
 		if (lines[i].includes('f') || lines[i].includes('n')) {
-			if (i == objNum - startObjNum + 1) {
+			if (i == objNum + startObjNum - 1) {
 				return parseInt(lines[i].split(' ')[0]);
 			}
 		} else {

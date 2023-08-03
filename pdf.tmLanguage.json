@@ -3,6 +3,10 @@
 	"scopeName": "source.pdf",
 	"patterns": [
 		{
+			"name": "comment.line.percentage.pdf",
+			"match": "%.*"
+		},
+		{
 			"name": "string.quoted.pdf",
 			"begin": "\\(",
 			"end": "\\)",
@@ -34,17 +38,92 @@
 			]
 		},
 		{
-			"name": "comment.line.percentage.pdf",
-			"match": "%.*"
-		},
-		{
-			"name": "keyword.control.stream.pdf",
-			"match": "\\b(?:stream|endstream)\\b"
+			"name": "string.quoted.hex.pdf",
+			"match": "<[^>]*>"
 		},
 		{
 			"name": "keyword.control.pdf",
-			"match": "\\b(?:\\d+ \\d+ R|startxref|xref|trailer|null|true|false|^\\d+ \\d+ obj|^endobj)\\b"
-		},		
+			"match": "\\b(?:\\d+ \\d+ R|startxref|xref|trailer|null|true|false|^\\d+ \\d+ obj|^endobj|endstream|stream)\\b"
+		},
+		{
+			"name": "punctuation.definition.dictionary.pdf",
+			"begin": "<<",
+			"end": ">>",
+			"patterns": [
+				{
+					"name": "comment.line.percentage.pdf",
+					"match": "%.*"
+				},
+				{
+					"name": "keyword.control.true.pdf",
+					"match": "\\btrue\\b"
+				},
+				{
+					"name": "keyword.control.reference.pdf",
+					"match": "\\b\\d+ \\d+ R\\b"
+				},
+				{
+					"name": "punctuation.definition.dictionary.end.pdf",
+					"match": ">>"
+				},
+				{
+					"name": "variable.other.pdf",
+					"match": "/[^\\s]*"
+				}
+			]
+		},
+		{
+			"name": "punctuation.definition.array.pdf",
+			"begin": "\\[",
+			"end": "\\]",
+			"patterns": [
+				{
+					"name": "comment.line.percentage.pdf",
+					"match": "%.*"
+				},
+				{
+					"name": "keyword.control.special.pdf",
+					"match": "\\b(?:true|false|null)\\b"
+				}
+			]
+		},
+		{
+			"name": "variable.other.pdf",
+			"match": "/[^\\s]*"
+		},
+		{
+			"name": "constant.numeric.real.pdf",
+			"match": "\\b[-+]?\\d*\\.\\d+\\b"
+		},
+		{
+			"name": "constant.numeric.integer.pdf",
+			"match": "\\b[+-]?\\d+\\b"
+		},
+		{
+			"name": "meta.content-stream.pdf",
+			"begin": "\\bstream\\b",
+			"end": "\\bendstream\\b",
+			"patterns": [
+				{
+					"name": "comment.line.percentage.pdf",
+					"match": "%.*"
+				},
+				{
+					"name": "binary.data.pdf",
+					"begin": "\\bID\\b",
+					"end": "\\bEI\\b",
+					"contentName": "text.plain"
+				},
+				{
+					"name": "keyword.operator.content-stream.pdf",
+					"match": "\\b(w|J|j|M|d|ri|i|gs|q|Q|cm|cs|CS|SC|SCN|G|g|RG|rg|K|k|m|l|c|v|y|h|re|S|s|f|F|f\\*|B|B\\*|b|b\\*|n|W|W\\*|sh|BI|ID|EI|Do|Tc|Tw|Tz|TL|Tf|Tr|Ts|Td|TD|Tm|T\\*|do|d1|MP|DP|BMC|BDC|EMC|BX|EX|BT|ET|Tj|TJ|Tf|Tc|Tw|Td|cm)\\b"
+				}
+			]
+		},
+		{
+			"name": "markup.underline.link.pdf",
+			"match": "\\b(http|https)://[a-zA-Z0-9\\-.]+(/[a-zA-Z0-9\\-._?,'+&%$#=~]*)*\\b"
+		},
 		{
 			"name": "keyword.section.xref-trailer.pdf",
 			"begin": "\\bxref\\b",
@@ -61,72 +140,8 @@
 			]
 		},
 		{
-			"name": "punctuation.definition.dictionary.begin.pdf",
-			"match": "<<"
-		},
-		{
-			"name": "punctuation.definition.dictionary.end.pdf",
-			"match": ">>"
-		},
-		{
-			"name": "punctuation.definition.array.begin.pdf",
-			"match": "\\["
-		},
-		{
-			"name": "punctuation.definition.array.end.pdf",
-			"match": "\\]"
-		},
-		{
-			"name": "variable.other.pdf",
-			"match": "/[^\\s]*"
-		},
-		{
-			"name": "string.quoted.pdf",
-			"match": "<[^>]*>"
-		},
-		{
-			"name": "constant.numeric.real.pdf",
-			"match": "\\b[-+]?\\d*\\.\\d+\\b"
-		},
-		{
-			"name": "constant.numeric.integer.pdf",
-			"match": "[+-]?\\d+\\b"
-		},
-		{
-			"name": "markup.underline.link.pdf",
-			"match": "\\b(http|https)://[a-zA-Z0-9\\-.]+(/[a-zA-Z0-9\\-._?,'+&%$#=~]*)*\\b"
-		},
-		{
-			"name": "string.quoted.double.pdf",
-			"begin": "\\(",
-			"end": "\\)",
-			"patterns": [
-				{
-					"name": "constant.character.escape.pdf",
-					"match": "\\\\."
-				}
-			]
-		},
-		{
-			"name": "meta.content-stream.pdf",
-			"begin": "\\bstream\\b",
-			"end": "\\bendstream\\b",
-			"patterns": [
-				{
-					"name": "binary.data.pdf",
-					"begin": "\\bID\\b",
-					"end": "\\bEI\\b",
-					"contentName": "text.plain"
-				},
-				{
-					"name": "keyword.operator.content-stream.pdf",
-					"match": "\\b(w|J|j|M|d|ri|i|gs|q|Q|cm|cs|CS|SC|SCN|G|g|RG|rg|K|k|m|l|c|v|y|h|re|S|s|f|F|f\\*|B|B\\*|b|b\\*|n|W|W\\*|sh|BI|ID|EI|Do|Tc|Tw|Tz|TL|Tf|Tr|Ts|Td|TD|Tm|T\\*|do|d1|MP|DP|BMC|BDC|EMC|BX|EX|BT|ET|Tj|TJ|Tf|Tc|Tw|Td|cm)\\b"
-				},
-				{
-					"name": "comment.line.percentage.pdf",
-					"match": "%.*"
-				}
-			]
+			"name": "keyword.control.stream.pdf",
+			"match": "\\b(?:stream|endstream)\\b"
 		}
 	],
 	"repository": {
