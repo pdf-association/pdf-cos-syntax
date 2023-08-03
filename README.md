@@ -46,6 +46,10 @@ If you see either of these messages in VSCode then your PDF file is unsuitable f
 
 ![VSCode invisible Unicode warning](assets/VSCode-InvisibleUnicode.png)
 
+If you see this VSCode error message then you **must** choose "Ignore":
+
+![VSCode mixed end-of-line error message](assets/VSCode-MixedEOLs.png)
+
 # Features
 
 The following functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS ("_Carousel Object System_") syntax and file structure.
