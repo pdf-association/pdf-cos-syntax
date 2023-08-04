@@ -75,7 +75,7 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 | Comment | `comment.line.percent.pdf` |
 | Dictionary | `punctuation.definition.dictionary.pdf` |
 | Hex string | `string.quoted.hex.pdf` |
-| Indirect reference `X Y R` | `keyword.control.reference.pdf` |
+| Indirect reference `X Y R` (_not inside content streams_) | `keyword.control.reference.pdf` |
 | Inline image data (_only between `ID` and `EI` operators_) | `binary.data.inlineimage.pdf` |
 | Integer | `"constant.numeric.integer.pdf` |
 | Keywords `endobj`, `false`, `null`, `X Y obj`, `startxref`, `true` | `keyword.control.pdf` | 
