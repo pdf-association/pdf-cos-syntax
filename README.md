@@ -66,6 +66,9 @@ Syntax highlighting of PDF COS syntax and PDF content streams including special 
 - all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` including associated object identifier, `R` including associated object identifier, `startxref`, `stream`,  `trailer`, `true`, `xref`)
 - PDF content stream operators when occuring between `stream` and `endstream` keywords
 
+To inspect the token that the syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode command pallette via the View menu. For convenience assign a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8984; &#8679; `I`.
+
+
 ## Folding
 Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`).
 
