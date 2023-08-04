@@ -79,7 +79,7 @@
 					"match": "%.*"
 				},
 				{
-					"name": "keyword.control.special.pdf",
+					"name": "keyword.control.pdf",
 					"match": "\\b(?:true|false|null)\\b"
 				},
 				{
@@ -153,7 +153,7 @@
 					"match": "%.*"
 				},
 				{
-					"name": "keyword.control.special.pdf",
+					"name": "keyword.control.pdf",
 					"match": "\\b(?:true|false|null)\\b"
 				},
 				{
@@ -223,19 +223,11 @@
 			"end": "\\bendstream\\b",
 			"patterns": [
 				{
-					"name": "keyword.control.stream.pdf",
-					"match": "\\bstream\\b"
-				},
-				{
-					"name": "keyword.control.endstream.pdf",
-					"match": "\\bendstream\\b"
-				},
-				{
 					"name": "comment.line.percent.pdf",
 					"match": "%.*"
 				},
 				{
-					"name": "keyword.control.special.pdf",
+					"name": "keyword.control.pdf",
 					"match": "\\b(?:true|false|null)\\b"
 				},
 				{
@@ -294,6 +286,150 @@
 					]
 				},
 				{
+					"name": "punctuation.definition.dictionary.pdf",
+					"begin": "<<",
+					"end": ">>",
+					"patterns": [
+						{
+							"name": "comment.line.percent.pdf",
+							"match": "%.*"
+						},
+						{
+							"name": "keyword.control.pdf",
+							"match": "\\b(?:true|false|null)\\b"
+						},
+						{
+							"name": "keyword.control.reference.pdf",
+							"match": "\\b\\d+ \\d+ R\\b"
+						},
+						{
+							"name": "variable.other.name.pdf",
+							"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+						},
+						{
+							"name": "constant.numeric.real.pdf",
+							"match": "\\b[-+]?\\d*\\.\\d+\\b"
+						},
+						{
+							"name": "constant.numeric.integer.pdf",
+							"match": "\\b[+-]?\\d+\\b"
+						},
+						{
+							"name": "string.quoted.hex.pdf",
+							"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+						},
+						{
+							"name": "string.quoted.literal.pdf",
+							"begin": "\\(",
+							"end": "[^\\\\]\\)",
+							"patterns": [
+								{
+									"name": "constant.character.escape.linefeed.pdf",
+									"match": "\\\\n"
+								},
+								{
+									"name": "constant.character.escape.return.pdf",
+									"match": "\\\\r"
+								},
+								{
+									"name": "constant.character.escape.tab.pdf",
+									"match": "\\\\t"
+								},
+								{
+									"name": "constant.character.escape.backspace.pdf",
+									"match": "\\\\b"
+								},
+								{
+									"name": "constant.character.escape.formfeed.pdf",
+									"match": "\\\\f"
+								},
+								{
+									"name": "constant.character.escape.backslash.pdf",
+									"match": "\\\\\\\\"
+								},
+								{
+									"name": "constant.character.escape.eol.pdf",
+									"match": "\\\\$"
+								},
+								{
+									"name": "constant.character.escape.octal.pdf",
+									"match": "\\\\[0-7]]{3}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "punctuation.definition.array.pdf",
+					"begin": "\\[",
+					"end": "\\]",
+					"patterns": [
+						{
+							"name": "comment.line.percent.pdf",
+							"match": "%.*"
+						},
+						{
+							"name": "keyword.control.pdf",
+							"match": "\\b(?:true|false|null)\\b"
+						},
+						{
+							"name": "variable.other.name.pdf",
+							"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+						},
+						{
+							"name": "constant.numeric.real.pdf",
+							"match": "\\b[-+]?\\d*\\.\\d+\\b"
+						},
+						{
+							"name": "constant.numeric.integer.pdf",
+							"match": "\\b[+-]?\\d+\\b"
+						},
+						{
+							"name": "string.quoted.hex.pdf",
+							"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+						},
+						{
+							"name": "string.quoted.literal.pdf",
+							"begin": "\\(",
+							"end": "[^\\\\]\\)",
+							"patterns": [
+								{
+									"name": "constant.character.escape.linefeed.pdf",
+									"match": "\\\\n"
+								},
+								{
+									"name": "constant.character.escape.return.pdf",
+									"match": "\\\\r"
+								},
+								{
+									"name": "constant.character.escape.tab.pdf",
+									"match": "\\\\t"
+								},
+								{
+									"name": "constant.character.escape.backspace.pdf",
+									"match": "\\\\b"
+								},
+								{
+									"name": "constant.character.escape.formfeed.pdf",
+									"match": "\\\\f"
+								},
+								{
+									"name": "constant.character.escape.backslash.pdf",
+									"match": "\\\\\\\\"
+								},
+								{
+									"name": "constant.character.escape.eol.pdf",
+									"match": "\\\\$"
+								},
+								{
+									"name": "constant.character.escape.octal.pdf",
+									"match": "\\\\[0-7]]{3}"
+								}
+							]
+						}
+					]
+				},
+				{
 					"name": "binary.data.inlineimage.pdf",
 					"begin": "\\bID\\b",
 					"end": "\\bEI\\b",
@@ -310,14 +446,6 @@
 			"begin": "\\bxref\\b",
 			"end": "\\btrailer\\b",
 			"patterns": [
-				{
-					"name": "keyword.control.xref.pdf",
-					"match": "\\bxref\\b"
-				},
-				{
-					"name": "keyword.control.trailer.pdf",
-					"match": "\\btrailer\\b"
-				},
 				{
 					"name": "keyword.control.free-object.pdf",
 					"match": "\\b\\d{10} \\d{5} f\\b"

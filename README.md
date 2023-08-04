@@ -66,8 +66,29 @@ Syntax highlighting of PDF COS syntax and PDF content streams including special 
 - all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` including associated object identifier, `R` including associated object identifier, `startxref`, `stream`,  `trailer`, `true`, `xref`)
 - PDF content stream operators when occuring between `stream` and `endstream` keywords
 
-To inspect the token that the syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode command pallette via the View menu. For convenience assign a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8984; &#8679; `I`.
+To inspect the tokens that the TextMate syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode command pallette via the View menu. For convenience, assign the command a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8984; &#8679; `I`. 
 
+| PDF construct | TextMate token name |
+| --- | --- |
+| Array | `punctuation.definition.array.pdf` |
+| Content stream operators (_only between `stream` and `endstream` keywords_) | `keyword.section.content-stream.pdf`</br> `keyword.operator.content-stream.pdf` |
+| Comment | `comment.line.percent.pdf` |
+| Dictionary | `punctuation.definition.dictionary.pdf` |
+| Hex string | `string.quoted.hex.pdf` |
+| Indirect reference `X Y R` | `keyword.control.reference.pdf` |
+| Inline image data (_only between `ID` and `EI` operators_) | `binary.data.inlineimage.pdf` |
+| Integer | `"constant.numeric.integer.pdf` |
+| Keywords `endobj`, `false`, `null`, `X Y obj`, `startxref`, `true` | `keyword.control.pdf` | 
+| Literal string | `string.quoted.literal.pdf` |
+| Literal string escape sequences |  `constant.character.escape.backslash.pdf`</br> `constant.character.escape.backspace.pdf`</br> `constant.character.escape.eol.pdf`</br> `constant.character.escape.formfeed.pdf`</br> `constant.character.escape.linefeed.pdf`</br> `constant.character.escape.octal.pdf`</br> `constant.character.escape.return.pdf`</br> `constant.character.escape.tab.pdf`|
+| Name | `variable.other.name.pdf` |
+| Real number | `constant.numeric.real.pdf` |
+| Cross-reference table section (_only between `xref` and `trailer` keywords_) | `keyword.section.xref-trailer.pdf`</br> `keyword.control.xref-subsection.pdf`</br> `keyword.control.free-object.pdf`</br> `keyword.control.inuse-object.pdf` |
+| | |
+
+### Known issues with TextMate grammar (pdf.tmLanguage.json)
+- PDF literal strings with `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
+- the PDF content stream text operator `"` is not supported 
 
 ## Folding
 Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`).
@@ -93,7 +114,7 @@ VSCode allows easy navigation and examination of definitions, declarations and r
 - "declaration": the cross-reference table entry of a PDF object
 - "reference": an indirect references (`X Y R`) to a PDF object
 
-Placing the cursor anywhere in a cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). Note that the very first entry in the cross-reference table of an original PDF (without incremental updates) is always `0000000000 65535 f` and represents the start of the free list and thus there is no associated object 0. 
+Placing the cursor anywhere in a conventional cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). Note that the very first entry in the cross-reference table of an original PDF (without incremental updates) should always be `0000000000 65535 f` and represents the start of the free list and thus there is no associated object 0. 
 
 Placing the cursor anywhere on an indirect reference (`X Y R`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`).
 
@@ -121,7 +142,7 @@ qpdf -qdf file.pdf file-as-qdf.pdf
 
 Using Adobe Acrobat (_commercial tool_):
 - open a PDF
-- File | Save as Other... | Optimized PDF...
+- menu: File | Save as Other... | Optimized PDF...
 - create a new PDF Optimizer profile and save as "Human readable"
     - "Make compatible with" = retain existing
     - ensure all Image settings have "Downsample" = "Off" and "Compression" = "retain existing"
@@ -129,7 +150,7 @@ Using Adobe Acrobat (_commercial tool_):
     - disable Transparency, Discard Objects and Discard User Data tabs
     - Clean Up: make sure "Object compression options" = "Remove compression"
 
-Note that the Adobe Acrobat method will not be as "pure text" as the QPDF method as content streams, etc. have their compression filters retained whereas QPDF will convert all streams to uncompressed raw data.
+Note that this Adobe Acrobat method will not be as "pure text" as the QPDF method as content streams, etc. have their compression filters retained whereas QPDF will convert all streams to uncompressed raw data.
 
 ## Locating PDFs with specific features
 
