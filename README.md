@@ -97,9 +97,10 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 ### Known issues with TextMate grammar (pdf.tmLanguage.json)
 - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
+- `#` hex codes in literal strings are not highlighted
 
 ## Folding
-Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. the key name in a containing dictionary for an inline dictionary).
+Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`).
 
 ### Windows folding shortcuts:
 - `CTRL` + `SHIFT` + `[` = fold region
