@@ -142,6 +142,34 @@ Placing the cursor anywhere on an object definition (`X Y obj`), and then select
 - &#8679;  `F12` = show references
 
 
+## Bracket Matching
+
+Many IDEs for programming languages support bracketing matching, where the cursor can jump to a matching open or close bracket (e.g., `{` with `}` or `(` with `)`). In PDF, the equivalent brackets are:
+
+- PDF dictionary objects (start `<<` and end `>>`)
+- PDF array objects (start `[` and end `]`)
+- PDF literal string objects (start `(` and end `)`) 
+- PDF hex string objects (start `<` and end `>`)
+- PDF content stream operator pairs
+    - graphics state push and pop (`q` and `Q`)
+    - text object (start `BT` and end `ET`)
+    - compatibility operators (start `BX` and end `EX`)
+    - marked content regions (start `BDC` or `BMC`, and end `EMC`)
+
+### Windows Matching Bracket
+- `CTRL` + `SHIFT` + `\` = jump to matching bracket
+### Mac  Matching Bracket
+- &#8679; &#8984; `\` = jump to matching bracket
+
+
+## Commenting / uncommenting lines 
+
+T.B.D.
+
+
+---
+---
+
 # Creation of largely text-based PDFs
 
 Using [QPDF](https://github.com/qpdf/qpdf):
