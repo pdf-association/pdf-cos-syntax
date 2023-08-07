@@ -35,7 +35,7 @@ export function activate(context: ExtensionContext) {
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'myPdf' }],
+		documentSelector: [{ scheme: 'file', language: 'pdf' }],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc'),
@@ -51,7 +51,16 @@ export function activate(context: ExtensionContext) {
 	);
 
 	const provider = new PDFFoldingRangeProvider();
-	context.subscriptions.push(languages.registerFoldingRangeProvider('myPdf', provider));
+	context.subscriptions.push(languages.registerFoldingRangeProvider('pdf', provider));
+
+	// line commenting
+	context.subscriptions.push(
+		languages.setLanguageConfiguration('pdf', {
+			comments: {
+				lineComment: '%',
+			},
+		})
+	);
 
 	// Start the client. This will also launch the server
 	client.start();
