@@ -58,6 +58,12 @@ Although PDF files are technically binary, when first learning PDF or when manua
 
 A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc.
 
+### Alternatives
+
+The free open-osurce [VIM editor](https://www.vim.org/) ("Vi IMproved") also supports basic PDF COS syntax highlighting, but lacks other features this extension provides.
+
+Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain changes to PDF files, however the exact syntax (such as whitespace and delimiteres) and precise file layout (such as incremental updates and cross reference tables) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus as a learning or educational tools they have limited value.
+
 # Features
 
 The following functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS ("_Carousel Object System_") syntax and file structure.
@@ -125,9 +131,9 @@ VSCode allows easy navigation and examination of definitions, declarations and r
 
 Placing the cursor anywhere in a conventional cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). Note that the very first entry in the cross-reference table of an original PDF (i.e. one without any incremental updates) should always be `0000000000 65535 f` and represents the start of the free list and thus there is no associated object 0. 
 
-Placing the cursor anywhere on an indirect reference (`X Y R`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`), using the cross reference table information.
+**NOT IMPLEMENTED YET:** Placing the cursor anywhere on an indirect reference (`X Y R`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`), using the cross reference table information.
 
-Placing the cursor anywhere on an object definition (`X Y obj`), and then selecting "Show references" will find all indirect references (`X Y R`) to that object.
+**NOT IMPLEMENTED YET:** Placing the cursor anywhere on an object definition (`X Y obj`), and then selecting "Show references" will find all indirect references (`X Y R`) to that object.
 
 
 ### Windows Go To shortcuts
@@ -143,6 +149,8 @@ Placing the cursor anywhere on an object definition (`X Y obj`), and then select
 
 
 ## Bracket Matching
+
+**NOT IMPLEMENTED YET** 
 
 Many IDEs for programming languages support bracketing matching, where the cursor can jump to a matching open or close bracket (e.g., `{` with `}` or `(` with `)`). In PDF, the equivalent brackets are:
 
@@ -164,20 +172,48 @@ Many IDEs for programming languages support bracketing matching, where the curso
 
 ## Commenting / uncommenting lines 
 
+**NOT IMPLEMENTED YET** 
+
+Commenting and uncommenting lines in a PDF enables features and capabilities to be switched easily. As PDF only supports line comments (`%`) block comments are not supported.
+
+### Windows line commenting
+- `CTRL` + `/` = toggle line comment
+### Mac folding shortcuts:
+- &#8984; `/` = toggle line comment
+
 T.B.D.
 
+## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
+
+**NOT IMPLEMENTED YET** 
+
+Snippets are templated fragments of PDF syntax that can be automatically inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (`CTRL` + `SPACE` / &#8984; `SPACE`)
+
+- a completely empty "skeleton" PDF file
+- a new PDF object
+- a new PDF stream object 
 
 ---
 ---
 
 # Creation of largely text-based PDFs
 
-Using [QPDF](https://github.com/qpdf/qpdf):
+This section describes how real-world heavily binary PDFs that would otherwise be unsuitable for reviewing using VSCode can be converted to a largely-text based equivalents more suited to VSCode. Success is dependent on both the third party tool and the specific features in the PDF file. While the output is mostly equivalent, some features will get lost by the conversion process (such as incremental updates, the exact lexical conventions used in the input PDF, etc.).
+
+## Using [QPDF](https://github.com/qpdf/qpdf) (OSS)
 ```bash
 qpdf -qdf file.pdf file-as-qdf.pdf
 ```
 
-Using Adobe Acrobat (_commercial tool_):
+## Using [Apache PDFBox-app](https://pdfbox.apache.org/2.0/commandline.html#writedecodeddoc) (OSS)
+
+Note that only PDFBox 2.x appears to have the `WriteDecodedDoc` functionality (_PDFBox 3.0.0 beta1 doesn't_):
+
+```bash
+java -jar pdfbox-app-2.0.29.jar WriteDecodedDoc file.pdf output.pdf
+```
+
+## Using Adobe Acrobat DC (_commercial tool_):
 - open a PDF
 - menu: File | Save as Other... | Optimized PDF...
 - create a new PDF Optimizer profile and save as "Human readable"
@@ -187,11 +223,11 @@ Using Adobe Acrobat (_commercial tool_):
     - disable Transparency, Discard Objects and Discard User Data tabs
     - Clean Up: make sure "Object compression options" = "Remove compression"
 
-Note that this Adobe Acrobat method will not be as "pure text" as the QPDF method as content streams, etc. have their compression filters retained whereas QPDF will convert all streams to uncompressed raw data.
+Note that this Adobe Acrobat method will not be as "pure text" as other methods as content streams, etc. have their compression filters retained whereas other methods convert content streams to uncompressed raw data.
 
 ## Locating PDFs with specific features
 
-Avoid using `^` start-of-line due to PDFs specific end-of-line rules which can vary and not match the current platform.
+Avoid using `^` start-of-line due to PDFs specific end-of-line rules which can vary and not match the current platform which `grep` will then ignore.
 
 * Number of incremental updates = approximated by number of `%%EOF` or `startxref` lines
 
