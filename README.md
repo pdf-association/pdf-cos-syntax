@@ -24,7 +24,7 @@ It also includes an End-to-End test.
         └── server.ts // Language Server entry point
 ```
 
-## Running the Sample
+## Running 
 
 - Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
 - Open VS Code on this folder.
@@ -33,6 +33,17 @@ It also includes an End-to-End test.
 - Select `Launch Client` from the drop down (if it is not already).
 - Press ▷ to run the launch config (F5).
 - In the [Extension Development Host](https://code.visualstudio.com/api/get-started/your-first-extension#:~:text=Then%2C%20inside%20the%20editor%2C%20press%20F5.%20This%20will%20compile%20and%20run%20the%20extension%20in%20a%20new%20Extension%20Development%20Host%20window.) instance of VSCode, open a PDF document in 'plain text' language mode.
+
+## Packaging as VSIX
+```bash
+npm install -g @vscode/vsce
+vsce package
+```
+
+See also https://code.visualstudio.com/api/working-with-extensions/publishing-extension.
+
+---
+---
 
 # VSCode PDF extension
 
@@ -185,13 +196,13 @@ T.B.D.
 
 ## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
 
-**NOT IMPLEMENTED YET** 
+Snippets are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (`CTRL` + `SPACE` / &#8984; `SPACE`)
 
-Snippets are templated fragments of PDF syntax that can be automatically inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (`CTRL` + `SPACE` / &#8984; `SPACE`)
+* `obj` - an empty PDF object. If you prefix with the object number (e.g. `10 obj`) then the snippet will expand nicely for you and add a default generation number of `0`.
+* `stream` - an empty PDF stream object.  If you prefix with the object number (e.g. `10 stream`) then the snippet will expand nicely for you  and add a default generation number of `0`.
+* `PDF-` - a complete minimal empty PDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does not do snippet expansion inside comments! The snippet will insert the `%` for you.
+  - The easiest way to use this snippet is to create an empty file with a `.pdf` (or `.fdf`) extension in the Explorer pane. Then open the new file, type `PDF-` on line 1 and select the snippet.
 
-- a completely empty "skeleton" PDF file
-- a new PDF object
-- a new PDF stream object 
 
 ---
 ---
