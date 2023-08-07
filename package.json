@@ -28,7 +28,7 @@
 		"vscode": "^1.75.0"
 	},
 	"activationEvents": [
-		"onLanguage:myPdf"
+		"onLanguage:pdf"
 	],
 	"icon": "./assets/pdf-light.png",
 	"main": "./client/out/extension",
@@ -59,6 +59,7 @@
 		"languages": [
 			{
 				"id": "pdf",
+				"configuration": "./language-configuration.json",
 				"extensions": [
 					".pdf",
 					".fdf"
