@@ -183,16 +183,12 @@ Many IDEs for programming languages support bracketing matching, where the curso
 
 ## Commenting / uncommenting lines 
 
-**NOT IMPLEMENTED YET** 
-
-Commenting and uncommenting lines in a PDF enables features and capabilities to be switched easily. As PDF only supports line comments (`%`) block comments are not supported.
+Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF and toggle comments.
 
 ### Windows line commenting
 - `CTRL` + `/` = toggle line comment
 ### Mac folding shortcuts:
 - &#8984; `/` = toggle line comment
-
-T.B.D.
 
 ## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
 
