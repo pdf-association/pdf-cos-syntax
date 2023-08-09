@@ -1,4 +1,5 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { Location, Position } from 'vscode-languageserver';
 
 export function getByteOffsetForObj(objNum: number, xrefTable: string): number {
 	let lines = xrefTable.split('\n');
@@ -53,4 +54,36 @@ export function extractXrefTable(document: TextDocument): string {
 	xrefTable = xrefLines.join('\n');
 
 	return xrefTable;
+}
+
+
+
+export function findAllReferences(objectId: number, document: TextDocument): Location[] {
+  const references: Location[] = [];
+  const text = document.getText();
+	const objectPattern = new RegExp(`\\b${objectId} 0 obj\\b`, 'g');
+  const referencePattern = /\b(\d+) (\d+) R\b/g;
+
+  let objectMatch;
+  while ((objectMatch = objectPattern.exec(text)) !== null) {
+    const startPosition = document.positionAt(objectMatch.index);
+    const endPosition = document.positionAt(objectMatch.index + objectMatch[0].length);
+
+    const objectText = text.slice(objectMatch.index, text.indexOf('endobj', objectMatch.index));
+
+    let referenceMatch;
+
+    while ((referenceMatch = referencePattern.exec(objectText)) !== null) {
+      const position = document.positionAt(referenceMatch.index + objectMatch.index);
+      references.push({
+        uri: document.uri,
+        range: {
+          start: position,
+          end: Position.create(position.line, position.character + referenceMatch[0].length),
+        },
+      });
+    }
+  }
+
+  return references;
 }

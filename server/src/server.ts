@@ -17,10 +17,11 @@ import {
 	InitializeResult,
 	Position,
 	Definition,
+	Location,
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable } from './pdfUtils';
+import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable, findAllReferences } from './pdfUtils';
 
 // for server debug.
 import { debug } from 'console';
@@ -68,6 +69,7 @@ connection.onInitialize((params: InitializeParams) => {
 				resolveProvider: true,
 			},
 			definitionProvider: true,
+			referencesProvider: true,
 		},
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -274,6 +276,27 @@ connection.onDefinition((params): Definition | null => {
 		},
 	};
 });
+
+connection.onReferences((params): Location[] | null => {
+	const document = documents.get(params.textDocument.uri)
+	if (!document) {
+		return null
+	}
+
+	const position = params.position
+	const lineText = document.getText({
+		start: Position.create(position.line, 0),
+		end: Position.create(position.line, 255),
+	})
+
+	const objMatch = lineText.match(/(\d+) 0 obj/)
+	if (!objMatch) {
+		return null
+	}
+
+	const objectId = parseInt(objMatch[1])
+	return findAllReferences(objectId, document)
+})
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
