@@ -47,9 +47,20 @@ See also https://code.visualstudio.com/api/working-with-extensions/publishing-ex
 
 # VSCode PDF extension
 
-PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)).
+## TL;DR
 
-## PDF files are BINARY!
+PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features:
+
+- support for `.pdf` and `.fdf` files
+- PDF COS [syntax highlighting](#syntax-highlighting) 
+- PDF content stream operator [syntax highlighting](#syntax-highlighting) 
+- [folding](#folding) for PDF objects and dictionaries
+- "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
+- "[Bracket matching](#bracket-matching)" for special PDF tokens  
+- single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
+- [snippets](#snippets) for new object, new stream and empty PDF file
+
+## PDF files are _BINARY_!
 
 Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor. 
 
@@ -73,7 +84,7 @@ A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary ma
 
 The free open-osurce [VIM editor](https://www.vim.org/) ("Vi IMproved") also supports basic PDF COS syntax highlighting, but lacks other features this extension provides.
 
-Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain changes to PDF files, however the exact syntax (such as whitespace and delimiteres) and precise file layout (such as incremental updates and cross reference tables) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus as a learning or educational tools they have limited value.
+Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain changes to PDF files, however the exact syntax (such as whitespace and delimiters) and precise file layout (such as incremental updates and cross reference tables) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus as introductory learning or educational tools they have limited value.
 
 # Features
 
@@ -111,22 +122,23 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 | Conventional cross-reference table (_between `xref` and `trailer` keywords_) | `keyword.section.xref-trailer.pdf`</br> `keyword.control.xref-subsection.pdf`</br> `keyword.control.free-object.pdf`</br> `keyword.control.inuse-object.pdf` |
 | | |
 
-### Known issues with TextMate grammar (pdf.tmLanguage.json)
+### Known issues with [TextMate grammar](./pdf.tmLanguage.json)
 - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
 - `#` hex codes in literal strings are not highlighted
+- binary data can confuse syntax highlighting
 
 ## Folding
 Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`).
 
-### Windows folding shortcuts:
+### Windows folding shortcuts
 - `CTRL` + `SHIFT` + `[` = fold region
 - `CTRL` + `SHIFT` + `]` = unfold region
 - `CTRL` + `K`, `CTRL` + `[` = fold all subregions
 - `CTRL` + `K`, `CTRL` + `]` = unfold all subregions
 - `CTRL` + `K`, `CTRL` + `0` = fold all regions
 - `CTRL` + `K`, `CTRL` + `J` = unfold all regions
-### Mac folding shortcuts:
+### Mac folding shortcuts
 - &#8984; `[` = fold region
 - &#8984; `]` = unfold region
 - &#8984; `K`, &#8984; `[` = fold all subregions
@@ -175,9 +187,9 @@ Many IDEs for programming languages support bracketing matching, where the curso
     - compatibility operators (start `BX` and end `EX`)
     - marked content regions (start `BDC` or `BMC`, and end `EMC`)
 
-### Windows Matching Bracket
+### Windows shortcut
 - `CTRL` + `SHIFT` + `\` = jump to matching bracket
-### Mac  Matching Bracket
+### Mac shortcut
 - &#8679; &#8984; `\` = jump to matching bracket
 
 
@@ -185,18 +197,18 @@ Many IDEs for programming languages support bracketing matching, where the curso
 
 Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF and toggle comments.
 
-### Windows line commenting
+### Windows shortcut
 - `CTRL` + `/` = toggle line comment
-### Mac folding shortcuts:
+### Mac shortcut
 - &#8984; `/` = toggle line comment
 
 ## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
 
-Snippets are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (`CTRL` + `SPACE` / &#8984; `SPACE`)
+Snippets are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (Windows: `CTRL` + `SPACE`, or Mac: &#8984; `SPACE`)
 
 * `obj` - an empty PDF object. If you prefix with the object number (e.g. `10 obj`) then the snippet will expand nicely for you and add a default generation number of `0`.
 * `stream` - an empty PDF stream object.  If you prefix with the object number (e.g. `10 stream`) then the snippet will expand nicely for you  and add a default generation number of `0`.
-* `PDF-` - a complete minimal empty PDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does not do snippet expansion inside comments! The snippet will insert the `%` for you.
+* `PDF-` - a complete minimal empty PDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does not do snippet expansion inside comments! The snippet will automatically insert the `%` for you.
   - The easiest way to use this snippet is to create an empty file with a `.pdf` (or `.fdf`) extension in the Explorer pane. Then open the new file, type `PDF-` on line 1 and select the snippet.
 
 
@@ -207,12 +219,13 @@ Snippets are templated fragments of PDF syntax that can be inserted into a PDF a
 
 This section describes how real-world heavily binary PDFs that would otherwise be unsuitable for reviewing using VSCode can be converted to a largely-text based equivalents more suited to VSCode. Success is dependent on both the third party tool and the specific features in the PDF file. While the output is mostly equivalent, some features will get lost by the conversion process (such as incremental updates, the exact lexical conventions used in the input PDF, etc.).
 
-## Using [QPDF](https://github.com/qpdf/qpdf) (OSS)
+## Using [QPDF](https://github.com/qpdf/qpdf) (_OSS_)
+
 ```bash
 qpdf -qdf file.pdf file-as-qdf.pdf
 ```
 
-## Using [Apache PDFBox-app](https://pdfbox.apache.org/2.0/commandline.html#writedecodeddoc) (OSS)
+## Using [Apache PDFBox-app](https://pdfbox.apache.org/2.0/commandline.html#writedecodeddoc) (_OSS_)
 
 Note that only PDFBox 2.x appears to have the `WriteDecodedDoc` functionality (_PDFBox 3.0.0 beta1 doesn't_):
 
