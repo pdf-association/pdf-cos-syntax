@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === 'development') {
 	require('source-map-support').install();
 }
 
-console.log('server debugging');
+// console.log('server debugging');
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
