@@ -49,7 +49,7 @@ See also https://code.visualstudio.com/api/working-with-extensions/publishing-ex
 
 ## TL;DR
 
-PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features:
+PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDFs that use conventional cross-reference tables:
 
 - support for `.pdf` and `.fdf` files
 - PDF COS [syntax highlighting](#syntax-highlighting) 
@@ -62,7 +62,9 @@ PDF (**Portable Document Format**) is an open page description language standard
 
 ## PDF files are _BINARY_!
 
-Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor. 
+Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken and certain features are avoided. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor!
+
+In particular, VSCode interprets sequences of bytes as multi-byte UTF-8 sequences which can then result in corrupted PDF files as invalid UTF-8 sequences are removed!
 
 If you see any of these messages in VSCode then your PDF file is unsuitable/incompatible with this extension and _**will get corrupted if saved!**_:
 
@@ -76,9 +78,11 @@ If you see this VSCode error message then you **must** choose "Ignore":
 
 ## Learning PDF
 
-Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is more productive to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, go to definition, etc.
+Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is more productive to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, go to definition, find references, etc.
 
-A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc.
+A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. When chosen carefully, this sequence of bytes can avoid the UTF-8 misinterpretation by VSCode. All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc.
+
+A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF files with either cross-reference (`/Type /XRef`) streams or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
 
 ### Alternatives
 

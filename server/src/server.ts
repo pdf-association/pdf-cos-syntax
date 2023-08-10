@@ -153,7 +153,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	const settings = await getDocumentSettings(textDocument.uri);
 
-	// The validator creates diagnostics for all uppercase words length 2 and more
+/* 	// The validator creates diagnostics for all uppercase words length 2 and more
 	const text = textDocument.getText();
 	const pattern = /\b[A-Z]{2,}\b/g;
 	let m: RegExpExecArray | null;
@@ -193,7 +193,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	}
 
 	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics }); */
 }
 
 connection.onDidChangeWatchedFiles((_change) => {
@@ -240,25 +240,43 @@ connection.onDefinition((params): Definition | null => {
 	if (!document) {
 		return null;
 	}
+
+	// Get text either side of the cursor. Because finding object definitions is limited to "X Y R" 
+	// and the 20-byte in-use cross reference table entries, can select bytes either side of 
+	// character position on line (to try and avoid long lines with multiple "X Y R" for example)
 	const position = params.position;
 	const lineText = document.getText({
-		start: Position.create(position.line, 0),
-		end: Position.create(position.line, 255),
+		start: Position.create(position.line, Math.max(position.character - 20, 0)),
+		end: Position.create(position.line, position.character + 20),
 	});
+
+	// Get 1st conventional xref table (if one exists)
 	const xrefTable = extractXrefTable(document);
 
 	let byteOffset = -1;
-	// check for X Y Obj definition
-	const objMatch = lineText.match(/(\d+) 0 obj/);
-	if (objMatch) {
-		byteOffset = getByteOffsetForObj(parseInt(objMatch[1]), xrefTable);
+	// find the object definition for an "X Y R" indirect reference
+	const indirectObjMatch = lineText.match(/(\d+) (\d+) R/);
+	if (indirectObjMatch && xrefTable) {
+		const objNum = parseInt(indirectObjMatch[1]);
+		const genNum = parseInt(indirectObjMatch[2]);
+		byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
+		if (byteOffset === -1) {
+			// No object matches indirect reference for <objNum, genNum>
+			return null;
+		}
 	}
 
-	// check for xref table entries
-	const xrefMatch = lineText.match(/\b(\d+) (\d+) (n)\b/);
+	// find the object definition for a conventional xref table in-use ("n") entry
+	const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
 	if (xrefMatch) {
-		byteOffset = parseInt(xrefMatch[0].split(' ')[0]);
+		byteOffset = parseInt(xrefMatch[1]);
+		if (byteOffset === -1) {
+			// For some reason the byte offset "\d{10}" didn't parseInt!
+			return null;
+		}
 	}
+
+	// Nothing relevant was selected for finding a definition
 	if (byteOffset === -1) {
 		return null;
 	}
@@ -283,19 +301,25 @@ connection.onReferences((params): Location[] | null => {
 		return null;
 	}
 
+	// Get text either side of the cursor. Because finding all references is limited to "X Y R" 
+	// or "X Y obj",  select very few bytes prior to current char position on the line (to try and
+	// avoid lists of indirect references confusing things: "1 0 R 2 0 R") but still allowing for
+	// large object numbers.
 	const position = params.position;
 	const lineText = document.getText({
-		start: Position.create(position.line, 0),
-		end: Position.create(position.line, 255),
+		start: Position.create(position.line, Math.max(position.character - 4, 0)),
+		end: Position.create(position.line, position.character + 10),
 	});
 
-	const objMatch = lineText.match(/(\d+) 0 obj/);
+	// Object ID = object number and generation number (may not always be 0)
+	const objMatch = lineText.match(/(\d+) (\d+) (obj|R)/);
 	if (!objMatch) {
 		return null;
 	}
 
-	const objectId = parseInt(objMatch[1]);
-	return findAllReferences(objectId, document);
+	const objectNumber = parseInt(objMatch[1]);
+	const genNumber = parseInt(objMatch[2]);
+	return findAllReferences(objectNumber, genNumber, document);
 });
 
 // Make the text document manager listen on the connection
