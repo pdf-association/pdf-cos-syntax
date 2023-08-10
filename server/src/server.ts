@@ -278,25 +278,25 @@ connection.onDefinition((params): Definition | null => {
 });
 
 connection.onReferences((params): Location[] | null => {
-	const document = documents.get(params.textDocument.uri)
+	const document = documents.get(params.textDocument.uri);
 	if (!document) {
-		return null
+		return null;
 	}
 
-	const position = params.position
+	const position = params.position;
 	const lineText = document.getText({
 		start: Position.create(position.line, 0),
 		end: Position.create(position.line, 255),
-	})
+	});
 
-	const objMatch = lineText.match(/(\d+) 0 obj/)
+	const objMatch = lineText.match(/(\d+) 0 obj/);
 	if (!objMatch) {
-		return null
+		return null;
 	}
 
-	const objectId = parseInt(objMatch[1])
-	return findAllReferences(objectId, document)
-})
+	const objectId = parseInt(objMatch[1]);
+	return findAllReferences(objectId, document);
+});
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
