@@ -58,6 +58,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
+- basic PDF file structure validation
 - [snippets](#snippets) for new object, new stream and empty PDF file
 
 ## PDF files are _BINARY_!
@@ -103,7 +104,7 @@ Syntax highlighting of PDF COS syntax and PDF content streams including special 
 - PDF name objects (start `/` with `#` hex pairs)
 - PDF integer and real number objects (including with leading `+`, `-`, `.` or multiple `0`s)
 - PDF comments (start with `%` to end-of-line)
-- all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` including associated object identifier, `R` including associated object identifier, `startxref`, `stream`,  `trailer`, `true`, `xref`)
+- all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` (including associated object ID integers), `R` (including associated object ID integers), `startxref`, `stream`,  `trailer`, `true`, `xref`)
 - PDF content stream operators when occuring between `stream` and `endstream` keywords
 
 To inspect the tokens that the TextMate syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode command pallette via the View menu. For convenience, assign the command a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8984; &#8679; `I`. 
@@ -153,14 +154,14 @@ Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF d
 ## Go To Functionality
 VSCode allows easy navigation and examination of definitions, declarations and references. For PDF the following programming language equivalences are used:
 - **definition**: a PDF object (`X Y obj`)
-- **declaration**: the in-use cross-reference table entry of a PDF object (e.g., `0000003342 00000 n`)
+- **declaration**: the in-use cross-reference table entry for a PDF object (e.g., `0000003342 00000 n`)
 - **reference**: an indirect references (`X Y R`) to a PDF object
 
-Placing the cursor anywhere in a conventional cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). Note that the very first entry in the cross-reference table of an original PDF (i.e. one without any incremental updates) should always be `0000000000 65535 f` and represents the start of the free list and thus there is no associated object 0. 
+Placing the cursor anywhere in the object ID (the object number `X` or generation number `Y`) of an indirect reference (`X Y R`) or on the line of a conventional cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). 
 
-**NOT IMPLEMENTED YET:** Placing the cursor anywhere on an indirect reference (`X Y R`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`), using the cross reference table information.
+Placing the cursor anywhere in the object ID (the object number `X` or generation number `Y`) of an object definition (`X Y obj`) or indirect reference (`X Y R`), and then selecting "Find all references" will find all indirect references (`X Y R`) to that object. The references will be listed in the "References" sidebar panel.
 
-**NOT IMPLEMENTED YET:** Placing the cursor anywhere on an object definition (`X Y obj`), and then selecting "Show references" will find all indirect references (`X Y R`) to that object.
+**NOT IMPLEMENTED** - goto declaration... from `X Y R` or `XY obj` to the xref table in-use entry
 
 
 ### Windows Go To shortcuts
@@ -197,14 +198,28 @@ Many IDEs for programming languages support bracketing matching, where the curso
 - &#8679; &#8984; `\` = jump to matching bracket
 
 
-## Commenting / uncommenting lines 
+## Commenting & uncommenting lines 
 
-Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF and toggle comments.
+Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF and use the "Toggle Line Comment" command.
 
 ### Windows shortcut
 - `CTRL` + `/` = toggle line comment
 ### Mac shortcut
 - &#8984; `/` = toggle line comment
+
+
+## Basic PDF file structure validation
+
+VScode can perform basic validation on _conventional_ PDF files (i.e. those **not** using cross-reference table streams). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
+
+Validation checks include:
+
+- checking validity of the PDF header including PDF version number (1st line) `%PDF-x.y`
+- checking validity of the PDF binary comment marker (2nd line)
+- checking that the PDF contains the necessary keywords to be a conventional PDF file (i.e. `xref`, `trailer` and `startxref` keywords are all present). 
+    - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!_
+- checking that the last non-blank line of the PDF starts with `%%EOF`
+
 
 ## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
 
@@ -212,8 +227,8 @@ Snippets are templated fragments of PDF syntax that can be inserted into a PDF a
 
 * `obj` - an empty PDF object. If you prefix with the object number (e.g. `10 obj`) then the snippet will expand nicely for you and add a default generation number of `0`.
 * `stream` - an empty PDF stream object.  If you prefix with the object number (e.g. `10 stream`) then the snippet will expand nicely for you  and add a default generation number of `0`.
-* `PDF-` - a complete minimal empty PDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does not do snippet expansion inside comments! The snippet will automatically insert the `%` for you.
-  - The easiest way to use this snippet is to create an empty file with a `.pdf` (or `.fdf`) extension in the Explorer pane. Then open the new file, type `PDF-` on line 1 and select the snippet.
+* `PDF-` - a complete minimal empty PDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does **not** do snippet expansion inside comments! The snippet will automatically add the `%` for you.
+  - The easiest way to use this snippet is to create an empty file with a `.pdf` (or `.fdf`) extension in the Explorer panel. Then open the new file, type `PDF-` on line 1 and select the snippet.
 
 
 ---
