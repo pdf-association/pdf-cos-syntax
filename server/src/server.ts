@@ -18,9 +18,10 @@ import {
 	Position,
 	Definition,
 	Location,
+	// Range,
 } from 'vscode-languageserver/node';
 
-import { TextDocument } from 'vscode-languageserver-textdocument';
+import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable, findAllReferences } from './pdfUtils';
 
 // for server debug.
@@ -156,188 +157,197 @@ documents.onDidChangeContent((change) => {
  * 3. check last line for "%%EOF"
  * 4. check conventional PDF file: xref, trailer and startxref keywords need to exist
  */
+// async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+// 	// In this simple example we get the settings for every validate run.
+// 	const settings = await getDocumentSettings(textDocument.uri);
+
+// 	let problems = 0;
+// 	const diagnostics: Diagnostic[] = [];
+// 	let m: RegExpExecArray | null;
+// 	let errorMsg;
+
+// 	// 1st line of PDF should be a valid PDF header "%PDF-x.y"
+// 	const firstLine = textDocument.getText({
+// 		start: Position.create(0,0),
+// 		end: Position.create(0, "%PDF-x.y".length),
+// 	});
+// 	if (!firstLine.startsWith("%PDF-")) {
+// 		const diagnostic: Diagnostic = {
+// 			severity: DiagnosticSeverity.Error,
+// 			range: {
+// 				start: Position.create(0,0),
+// 				end: Position.create(0,5)
+// 			},
+// 			message: 'First line of PDF does not start with required file marker "%PDF-"',
+// 			source: 'vscode-pdf',
+// 		};
+// 		diagnostics.push(diagnostic);
+// 		problems++;
+// 	}
+
+// 	const pdfVers = firstLine.slice(5,8);
+// 	if ((pdfVers !== "1.0") && (pdfVers !== "1.1") && (pdfVers !== "1.2") && (pdfVers !== "1.3") &&
+// 		(pdfVers !== "1.4") && (pdfVers !== "1.5") && (pdfVers !== "1.6") && (pdfVers !== "1.7") &&
+// 		(pdfVers !== "2.0")) {
+// 			const diagnostic: Diagnostic = {
+// 				severity: DiagnosticSeverity.Error,
+// 				range: {
+// 					start: Position.create(0,5),
+// 					end: Position.create(0,8)
+// 				},
+// 				message: 'PDF header version is not valid',
+// 				source: 'vscode-pdf',
+// 			};
+// 			diagnostics.push(diagnostic);
+// 			problems++;
+// 		}
+
+// 	// 2nd line of PDF should be comment followed by at least 4 bytes > 127
+// 	const secondLine = textDocument.getText({
+// 		start: Position.create(1,0),
+// 		end: Position.create(1, 8),
+// 	});
+// 	if ((secondLine.charAt(0) !== '%') || (secondLine.charCodeAt(1) <= 127) || (secondLine.charCodeAt(2) <= 127) ||
+// 		(secondLine.charCodeAt(3) <= 127) || (secondLine.charCodeAt(4) <= 127)) {
+// 		const diagnostic: Diagnostic = {
+// 			severity: DiagnosticSeverity.Warning,
+// 			range: {
+// 				start: Position.create(1,0),
+// 				end: Position.create(1,5)
+// 			},
+// 			message: '2nd line in PDF should be the binary file marker comment (%) followed by at least 4 bytes > 127',
+// 			source: 'vscode-pdf',
+// 		};
+// 		diagnostics.push(diagnostic);
+// 		problems++;
+// 	}
+
+// 	// Last non-blank line of PDF should be "%%EOF" marker
+// 	const text = textDocument.getText();
+// 	let i = textDocument.lineCount;
+// 	let lastLine = textDocument.getText({
+// 		start: Position.create(i, 0),
+// 		end: Position.create(i, 6)
+// 	}).trim();
+// 	while (lastLine.length === 0) {
+// 		i--;
+// 		lastLine = textDocument.getText({
+// 			start: Position.create(i, 0),
+// 			end: Position.create(i, 6)
+// 		}).trim();
+// 	}
+// 	if (!lastLine.startsWith("%%EOF")) {
+// 		const position = textDocument.positionAt(i);
+// 		const diagnostic: Diagnostic = {
+// 			severity: DiagnosticSeverity.Error,
+// 			range: { // Last non-blank line in file
+// 				start: position,
+// 				end: position
+// 			},
+// 			message: 'PDF files must end with a line "%%EOF"',
+// 			source: 'vscode-pdf',
+// 		};
+// 		diagnostics.push(diagnostic);
+// 		problems++;
+// 	}
+
+
+// 	// Check for "xref", "trailer" and "startxref" keywords needed in conventional PDFs
+// 	// Note that because "xref" is a subset of "startxref" so need to use regex and not indexOf!
+// 	const trailerRegex = new RegExp('\\btrailer\\b', 'g');
+// 	const startxrefRegex =  new RegExp('\\bstartxref\\b', 'g');
+// 	const xrefRegex =  new RegExp('\\bxref\\b', 'g');
+
+// 	if ((m = trailerRegex.exec(text)) == null) {
+// 		const diagnostic: Diagnostic = {
+// 			severity: DiagnosticSeverity.Error,
+// 			range: { // %PDF-x.y
+// 				start: Position.create(0,0),
+// 				end: Position.create(0,8)
+// 			},
+// 			message: 'PDF does not contain the "trailer" keyword required for a conventional PDF',
+// 			source: 'vscode-pdf',
+// 		};
+// 		diagnostics.push(diagnostic);
+// 		problems++;
+// 	}
+
+// 	if ((m = startxrefRegex.exec(text)) == null) {
+// 		const diagnostic: Diagnostic = {
+// 			severity: DiagnosticSeverity.Error,
+// 			range: { // %PDF-x.y
+// 				start: Position.create(0,0),
+// 				end: Position.create(0,8)
+// 			},
+// 			message: 'PDF does not contain the "startxref" keyword required for a conventional PDF',
+// 			source: 'vscode-pdf',
+// 		};
+// 		diagnostics.push(diagnostic);
+// 		problems++;
+// 	}
+
+// 	if ((m = xrefRegex.exec(text)) == null) {
+// 		const diagnostic: Diagnostic = {
+// 			severity: DiagnosticSeverity.Error,
+// 			range: { // %PDF-x.y
+// 				start: Position.create(0,0),
+// 				end: Position.create(0,8)
+// 			},
+// 			message: 'PDF does not contain the "xref" keyword required for a conventional PDF',
+// 			source: 'vscode-pdf',
+// 		};
+// 		diagnostics.push(diagnostic);
+// 		problems++;
+// 	}
+// 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics }); 
+// }
+
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-	// In this simple example we get the settings for every validate run.
 	const settings = await getDocumentSettings(textDocument.uri);
-
-	let problems = 0;
 	const diagnostics: Diagnostic[] = [];
-	let m: RegExpExecArray | null;
-	let errorMsg;
-
-	// 1st line of PDF should be a valid PDF header "%PDF-x.y"
-	const firstLine = textDocument.getText({
-		start: Position.create(0,0),
-		end: Position.create(0, "%PDF-x.y".length),
-	});
-	if (!firstLine.startsWith("%PDF-")) {
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Error,
-			range: {
-				start: Position.create(0,0),
-				end: Position.create(0,5)
-			},
-			message: 'First line of PDF does not start with required file marker "%PDF-"',
-			source: 'vscode-pdf',
-		};
-		diagnostics.push(diagnostic);
-		problems++;
-	}
-
-	const pdfVers = firstLine.slice(5,8);
-	if ((pdfVers !== "1.0") && (pdfVers !== "1.1") && (pdfVers !== "1.2") && (pdfVers !== "1.3") &&
-		(pdfVers !== "1.4") && (pdfVers !== "1.5") && (pdfVers !== "1.6") && (pdfVers !== "1.7") &&
-		(pdfVers !== "2.0")) {
-			const diagnostic: Diagnostic = {
-				severity: DiagnosticSeverity.Error,
-				range: {
-					start: Position.create(0,5),
-					end: Position.create(0,8)
-				},
-				message: 'PDF header version is not valid',
-				source: 'vscode-pdf',
-			};
-			diagnostics.push(diagnostic);
-			problems++;
-		}
-
-	// 2nd line of PDF should be comment followed by at least 4 bytes > 127
-	const secondLine = textDocument.getText({
-		start: Position.create(1,0),
-		end: Position.create(1, 8),
-	});
-	if ((secondLine.charAt(0) !== '%') || (secondLine.charCodeAt(1) <= 127) || (secondLine.charCodeAt(2) <= 127) ||
-		(secondLine.charCodeAt(3) <= 127) || (secondLine.charCodeAt(4) <= 127)) {
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Warning,
-			range: {
-				start: Position.create(1,0),
-				end: Position.create(1,5)
-			},
-			message: '2nd line in PDF should be the binary file marker comment (%) followed by at least 4 bytes > 127',
-			source: 'vscode-pdf',
-		};
-		diagnostics.push(diagnostic);
-		problems++;
-	}
-
-	// Last non-blank line of PDF should be "%%EOF" marker
 	const text = textDocument.getText();
-	let i = textDocument.lineCount;
-	let lastLine = textDocument.getText({
-		start: Position.create(i, 0),
-		end: Position.create(i, 6)
-	}).trim();
+
+	const addDiagnostic = (start: Position, end: Position, message: string, severity: DiagnosticSeverity = DiagnosticSeverity.Error) => {
+		diagnostics.push({ severity, range: { start, end }, message, source: 'vscode-pdf' });
+	};
+
+	// Validate PDF header
+	const firstLine = textDocument.getText({ start: Position.create(0, 0), end: Position.create(0, 8) });
+	if (!firstLine.startsWith("%PDF-")) {
+		addDiagnostic(Position.create(0, 0), Position.create(0, 5), 'First line of PDF does not start with required file marker "%PDF-"');
+	}
+	if (!['1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '2.0'].includes(firstLine.slice(5, 8))) {
+		addDiagnostic(Position.create(0, 5), Position.create(0, 8), 'PDF header version is not valid');
+	}
+
+	// Validate 2nd line of PDF
+	const secondLine = textDocument.getText({ start: Position.create(1, 0), end: Position.create(1, 8) });
+	if (secondLine.charAt(0) !== '%' || [...secondLine.slice(1)].some(ch => ch.charCodeAt(0) <= 127)) {
+		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF should be the binary file marker comment (%) followed by at least 4 bytes > 127', DiagnosticSeverity.Warning);
+	}
+
+	// Validate "%%EOF" marker
+	let i = textDocument.lineCount - 1;
+	let lastLine = textDocument.getText({ start: Position.create(i, 0), end: Position.create(i, 6) }).trim();
 	while (lastLine.length === 0) {
 		i--;
-		lastLine = textDocument.getText({
-			start: Position.create(i, 0),
-			end: Position.create(i, 6)
-		}).trim();
+		lastLine = textDocument.getText({ start: Position.create(i, 0), end: Position.create(i, 6) }).trim();
 	}
 	if (!lastLine.startsWith("%%EOF")) {
-		const position = textDocument.positionAt(i);
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Error,
-			range: { // Last non-blank line in file
-				start: position,
-				end: position
-			},
-			message: 'PDF files must end with a line "%%EOF"',
-			source: 'vscode-pdf',
-		};
-		diagnostics.push(diagnostic);
-		problems++;
+		const position = Position.create(i, 0);
+		addDiagnostic(position, position, 'PDF files must end with a line "%%EOF"');
 	}
 
-
-	// Check for "xref", "trailer" and "startxref" keywords needed in conventional PDFs
-	// Note that because "xref" is a subset of "startxref" so need to use regex and not indexOf!
-	const trailerRegex = new RegExp('\\btrailer\\b', 'g');
-	const startxrefRegex =  new RegExp('\\bstartxref\\b', 'g');
-	const xrefRegex =  new RegExp('\\bxref\\b', 'g');
-
-	if ((m = trailerRegex.exec(text)) == null) {
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Error,
-			range: { // %PDF-x.y
-				start: Position.create(0,0),
-				end: Position.create(0,8)
-			},
-			message: 'PDF does not contain the "trailer" keyword required for a conventional PDF',
-			source: 'vscode-pdf',
-		};
-		diagnostics.push(diagnostic);
-		problems++;
-	}
-
-	if ((m = startxrefRegex.exec(text)) == null) {
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Error,
-			range: { // %PDF-x.y
-				start: Position.create(0,0),
-				end: Position.create(0,8)
-			},
-			message: 'PDF does not contain the "startxref" keyword required for a conventional PDF',
-			source: 'vscode-pdf',
-		};
-		diagnostics.push(diagnostic);
-		problems++;
-	}
-
-	if ((m = xrefRegex.exec(text)) == null) {
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Error,
-			range: { // %PDF-x.y
-				start: Position.create(0,0),
-				end: Position.create(0,8)
-			},
-			message: 'PDF does not contain the "xref" keyword required for a conventional PDF',
-			source: 'vscode-pdf',
-		};
-		diagnostics.push(diagnostic);
-		problems++;
-	}
-
-	/* 
-	const text = textDocument.getText();
-	const pattern = /\b[A-Z]{2,}\b/g;
-
-	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-		problems++;
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Warning,
-			range: {
-				start: textDocument.positionAt(m.index),
-				end: textDocument.positionAt(m.index + m[0].length),
-			},
-			message: `${m[0]} is all uppercase.`,
-			source: 'ex',
-		};
-		if (hasDiagnosticRelatedInformationCapability) {
-			diagnostic.relatedInformation = [
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range),
-					},
-					message: 'Spelling matters',
-				},
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range),
-					},
-					message: 'Particularly for names',
-				},
-			];
+	// Validate keywords needed in conventional PDFs
+	['trailer', 'startxref', 'xref'].forEach(keyword => {
+		if (!new RegExp(`\\b${keyword}\\b`, 'g').exec(text)) {
+			addDiagnostic(Position.create(0, 0), Position.create(0, 8), `PDF does not contain the "${keyword}" keyword required for a conventional PDF`);
 		}
-		diagnostics.push(diagnostic);
-	}
- */
-	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics }); 
+	});
+
+	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
+
 
 connection.onDidChangeWatchedFiles((_change) => {
 	// Monitored files have change in VSCode
