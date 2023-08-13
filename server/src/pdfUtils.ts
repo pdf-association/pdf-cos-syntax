@@ -120,3 +120,22 @@ export function findAllReferences(objNum: number, genNum: number, document: Text
 	}
 	return references;
 }
+
+/**
+ * Determine if the given document is an FDF file based on its URI extension.
+ * @param document  the document object containing information about the file
+ * @returns true if the document is an FDF file, false otherwise
+ */
+export function isFileFDF(document: TextDocument): boolean {
+  return document.uri.toLowerCase().endsWith('.fdf');
+}
+
+/**
+ * Determine if the given document is a PDF file based on its URI extension.
+ * @param document  the document object containing information about the file
+ * @returns true if the document is a PDF file, false otherwise
+ */
+export function isFilePDF(document: TextDocument): boolean {
+  return document.uri.toLowerCase().endsWith('.pdf');
+}
+
