@@ -7,7 +7,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 - support for both `.pdf` and `.fdf` files
 - PDF COS [syntax highlighting](#syntax-highlighting) 
 - PDF content stream operator [syntax highlighting](#syntax-highlighting) 
-- [folding](#folding) for PDF objects and dictionaries
+- [folding](#folding) for PDF objects and multi-line dictionaries
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
