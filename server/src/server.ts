@@ -133,7 +133,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'languageServerExample', // @TODO - this should be changed to something else (vscode-pdf?).
+			section: 'vscode-pdf',
 		});
 		documentSettings.set(resource, result);
 	}
