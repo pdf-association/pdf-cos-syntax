@@ -1,6 +1,7 @@
 {
 	"name": "vscode-pdf",
-	"description": "PDF COS syntax extension",
+	"displayName": "PDF COS support",
+	"description": "PDF and FDF COS syntax extension",
 	"author": "PDF Association",
 	"license": "Apache-2.0",
 	"version": "0.0.2",
@@ -18,32 +19,29 @@
 		"PDF",
 		"FDF",
 		"Portable Document Format",
+		"Forms Data Format",
 		"COS syntax",
-		"ISO 32000",
-		"ISO 32000-1",
+		"ISO 32000-1:2008",
 		"ISO 32000-2",
 		"Adobe PDF"
 	],
 	"engines": {
 		"vscode": "^1.75.0"
 	},
-	"activationEvents": [
-		"onLanguage:pdf"
-	],
 	"icon": "./assets/pdf-light.png",
 	"main": "./client/out/extension",
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Example configuration",
+			"title": "PDF/FDF extension configuration",
 			"properties": {
-				"languageServerExample.maxNumberOfProblems": {
+				"vscode-pdf.maxNumberOfProblems": {
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
-				"languageServerExample.trace.server": {
+				"vscode-pdf.trace.server": {
 					"scope": "window",
 					"type": "string",
 					"enum": [
@@ -61,24 +59,41 @@
 				"id": "pdf",
 				"configuration": "./language-configuration.json",
 				"extensions": [
-					".pdf",
-					".fdf"
+					".pdf", 
+					".PDF"
 				],
-				"firstLine": "^%[PF]DF-[1-9]\\.[0-9]\b",
+				"firstLine": "^%PDF-[1-2]\\.[0-7]\b",
 				"aliases": [
 					"PDF",
-					"pdf",
-					"FDF",
-					"fdf"
+					"pdf"
 				],
 				"mimetypes": [
-					"application/pdf",
-					"application/fdf",
-					"application/vnd.fdf"
+					"application/pdf"
 				],
 				"icon": {
 					"light": "./assets/pdf-light.png",
 					"dark": "./assets/pdf-dark.png"
+				}
+			},
+			{
+				"id": "fdf",
+				"configuration": "./language-configuration.json",
+				"extensions": [
+					".fdf",
+					".FDF"
+				],
+				"firstLine": "^%FDF-1\\.[0-7]\b",
+				"aliases": [
+					"FDF",
+					"fdf"
+				],
+				"mimetypes": [
+					"application/fdf",
+					"application/vnd.fdf"
+				],
+				"icon": {
+					"light": "./assets/fdf-light.png",
+					"dark": "./assets/fdf-dark.png"
 				}
 			}
 		],
@@ -87,14 +102,23 @@
 				"language": "pdf",
 				"scopeName": "source.pdf",
 				"path": "./pdf.tmLanguage.json"
+			},
+			{
+				"language": "fdf",
+				"scopeName": "source.pdf",
+				"path": "./pdf.tmLanguage.json"
 			}
 		],
 		"snippets": [
 			{
 			  "language": "pdf",
 			  "path": "./snippets/pdf-snippets.json"
+			},
+			{
+				"language": "fdf",
+				"path": "./snippets/pdf-snippets.json"
 			}
-		]
+		  ]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

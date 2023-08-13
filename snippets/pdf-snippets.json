@@ -32,7 +32,7 @@
 		"prefix": "PDF-",
 		"body":[
 			"%PDF-1.7",
-			"%%╬╝ß┐ª",
+			"%╬╝ß┐ª",
 			"",
 			"1 0 obj",
 			"<<",
@@ -91,5 +91,23 @@
 			"%%EOF",
 			""
 		]
-	}
+	},
+	"Create a minimal empty FDF file" : {
+		"description": "A minimal empty FDF file",
+		"prefix": "FDF-",
+		"body":[
+			"%FDF-1.2",
+			"1 0 obj",
+			"<<",
+			"    /Type /Catalog",
+			"    /FDF << /Annots [",
+			"    ] >>",	
+			">>",
+			"endobj",
+			"trailer",
+			"<< /Root 1 0 R >>",
+			"%%EOF",
+			""
+		]
+	}	
 }

@@ -1,57 +1,10 @@
-# LSP Example
-
-Heavily documented sample code for https://code.visualstudio.com/api/language-extensions/language-server-extension-guide
-
-## Functionality
-
-This Language Server works for plain text file. It has the following language features:
-- Completions
-- Diagnostics regenerated on each file change or configuration change
-
-It also includes an End-to-End test.
-
-## Structure
-
-```
-.
-├── client // Language Client
-│   ├── src
-│   │   ├── test // End to End tests for Language Client / Server
-│   │   └── extension.ts // Language Client entry point
-├── package.json // The extension manifest.
-└── server // Language Server
-    └── src
-        └── server.ts // Language Server entry point
-```
-
-## Running 
-
-- Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
-- Open VS Code on this folder.
-- Press Ctrl+Shift+B to start compiling the client and server in [watch mode](https://code.visualstudio.com/docs/editor/tasks#:~:text=The%20first%20entry%20executes,the%20HelloWorld.js%20file.).
-- Switch to the Run and Debug View in the Sidebar (Ctrl+Shift+D).
-- Select `Launch Client` from the drop down (if it is not already).
-- Press ▷ to run the launch config (F5).
-- In the [Extension Development Host](https://code.visualstudio.com/api/get-started/your-first-extension#:~:text=Then%2C%20inside%20the%20editor%2C%20press%20F5.%20This%20will%20compile%20and%20run%20the%20extension%20in%20a%20new%20Extension%20Development%20Host%20window.) instance of VSCode, open a PDF document in 'plain text' language mode.
-
-## Packaging as VSIX
-```bash
-npm install -g @vscode/vsce
-vsce package
-```
-
-See also https://code.visualstudio.com/api/working-with-extensions/publishing-extension.
-
----
----
-
 # VSCode PDF extension
 
 ## TL;DR
 
-PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDFs that use conventional cross-reference tables:
+PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use conventional cross-reference tables:
 
-- support for `.pdf` and `.fdf` files
+- support for both `.pdf` and `.fdf` files
 - PDF COS [syntax highlighting](#syntax-highlighting) 
 - PDF content stream operator [syntax highlighting](#syntax-highlighting) 
 - [folding](#folding) for PDF objects and dictionaries
@@ -59,13 +12,13 @@ PDF (**Portable Document Format**) is an open page description language standard
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
 - basic PDF file structure validation
-- [snippets](#snippets) for new object, new stream and empty PDF file
+- [snippets](#snippets) for new object, new stream, and empty PDF/FDF files
 
 ## PDF files are _BINARY_!
 
-Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken and certain features are avoided. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor!
+Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken and certain features are avoided. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "far too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor!
 
-In particular, VSCode interprets sequences of bytes as multi-byte UTF-8 sequences which can then result in corrupted PDF files as invalid UTF-8 sequences are removed!
+In particular, VSCode interprets sequences of bytes above 127 as multi-byte UTF-8 sequences which will result in corrupted PDF files as these byte sequences invalid UTF-8 sequences are removed or replaced!
 
 If you see any of these messages in VSCode then your PDF file is unsuitable/incompatible with this extension and _**will get corrupted if saved!**_:
 
@@ -79,7 +32,7 @@ If you see this VSCode error message then you **must** choose "Ignore":
 
 ## Learning PDF
 
-Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is more productive to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, go to definition, find references, etc.
+Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is more productive to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, Go To definition, find all references, snippet insertion, etc.
 
 A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. When chosen carefully, this sequence of bytes can avoid the UTF-8 misinterpretation by VSCode. All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc.
 
@@ -93,7 +46,7 @@ Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://githu
 
 # Features
 
-The following functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS ("_Carousel Object System_") syntax and file structure.
+The following VSCode functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS ("_Carousel Object System_") syntax and file structure.
 
 ## Syntax Highlighting
 Syntax highlighting of PDF COS syntax and PDF content streams including special handling of _most_ PDF rules for delimiters and whitespace:
@@ -131,7 +84,7 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
 - `#` hex codes in literal strings are not highlighted
-- binary data can confuse syntax highlighting
+- binary data will confuse syntax highlighting!
 
 ## Folding
 Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`).
@@ -161,7 +114,7 @@ Placing the cursor anywhere in the object ID (the object number `X` or generatio
 
 Placing the cursor anywhere in the object ID (the object number `X` or generation number `Y`) of an object definition (`X Y obj`) or indirect reference (`X Y R`), and then selecting "Find all references" will find all indirect references (`X Y R`) to that object. The references will be listed in the "References" sidebar panel.
 
-**NOT IMPLEMENTED** - goto declaration... from `X Y R` or `XY obj` to the xref table in-use entry
+**NOT IMPLEMENTED YET** - goto declaration... from `X Y R` or `XY obj` to the xref table in-use entry
 
 
 ### Windows Go To shortcuts
@@ -200,7 +153,7 @@ Many IDEs for programming languages support bracketing matching, where the curso
 
 ## Commenting & uncommenting lines 
 
-Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF and use the "Toggle Line Comment" command.
+Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF/FDF file and use the "Toggle Line Comment" command.
 
 ### Windows shortcut
 - `CTRL` + `/` = toggle line comment
@@ -217,7 +170,8 @@ Validation checks include:
 - checking validity of the PDF header including PDF version number (1st line) `%PDF-x.y`
 - checking validity of the PDF binary comment marker (2nd line)
 - checking that the PDF contains the necessary keywords to be a conventional PDF file (i.e. `xref`, `trailer` and `startxref` keywords are all present). 
-    - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!_
+    - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!
+- checking that there is a conventional cross-reference table that starts with object 0 (as the start of the free list) = **NOT IMPLEMENTED YET**
 - checking that the last non-blank line of the PDF starts with `%%EOF`
 
 
@@ -229,6 +183,7 @@ Snippets are templated fragments of PDF syntax that can be inserted into a PDF a
 * `stream` - an empty PDF stream object.  If you prefix with the object number (e.g. `10 stream`) then the snippet will expand nicely for you  and add a default generation number of `0`.
 * `PDF-` - a complete minimal empty PDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does **not** do snippet expansion inside comments! The snippet will automatically add the `%` for you.
   - The easiest way to use this snippet is to create an empty file with a `.pdf` (or `.fdf`) extension in the Explorer panel. Then open the new file, type `PDF-` on line 1 and select the snippet.
+* `FDF-` - a complete minimal empty FDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does **not** do snippet expansion inside comments! The snippet will automatically add the `%` for you.
 
 
 ---
@@ -275,11 +230,13 @@ grep --text --count -Po "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort
 grep --text --byte-offset -Po "%%EOF" *.pdf
 ```
 
+
 * Find the number of objects in each PDF (trailer /Size entry)
 
 ```bash
 grep --text -Po "/Size [0-9]+" *.pdf
 ```
+
 
 * Find all conventional cross-reference table entries (in use = `n`', free = `f`)
 
@@ -288,8 +245,10 @@ grep --text -Po "[0-9]{10} [0-9]{5} [fn]" *.pdf
 grep --text -Po --count "[0-9]{10} [0-9]{5} f" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr
 ``` 
 
+
 * Find the xref sub-section marker lines for conventional cross-reference table PDFs. Can then find sparse cross-reference tables in incremental updates. Multi-line so must use `pcregrep -M`. 
 
 ```bash
 pcregrep -Mo --color=auto --buffer-size=999999 --text "[^t]xref[\r\n][0-9]+ *[0-9]+" *.pdf
 ```
+
