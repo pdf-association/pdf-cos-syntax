@@ -11,7 +11,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
-- basic PDF file structure validation
+- basic conventional PDF file structure validation
 - [snippets](#snippets) for new object, new stream, and empty PDF/FDF files
 
 ## PDF files are _BINARY_!
