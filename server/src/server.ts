@@ -26,6 +26,7 @@ import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable, findAllRe
 
 // for server debug.
 import { debug } from 'console';
+import { TextEncoder } from 'util';
 
 if (process.env.NODE_ENV === 'development') {
 	debug(`Using development version of the language server`);
@@ -180,9 +181,15 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	// Validate 2nd line of PDF
 	// @TODO: fix for encoding!!!
-	const secondLine = textDocument.getText({ start: Position.create(1, 0), end: Position.create(1, 8) });
-	if (secondLine.charAt(0) !== '%' || [...secondLine.slice(1)].some(ch => ch.charCodeAt(0) <= 127)) {
-		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF should be the binary file marker comment (%) followed by at least 4 bytes > 127', DiagnosticSeverity.Warning);
+	const encoder = new TextEncoder(); // UTF-8 codepoints --> bytes
+	const secondLine = textDocument.getText({ start: Position.create(1, 0), end: Position.create(1, 5) });
+	if (secondLine.charCodeAt(0) !== '%'.charCodeAt(0)) {
+		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF should be a binary file marker comment (%)', DiagnosticSeverity.Warning);
+	} 
+	let bytes = encoder.encode(secondLine);
+	bytes = bytes.slice(1,5); // 1st 4 bytes after '%' (could be 2-, 3- or 4-byte UTF-8 sequences)
+	if ([...bytes.slice(0)].some(i => i <= 127)) {
+		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF should be the binary file marker comment (%) with at least 4 bytes > 127', DiagnosticSeverity.Warning);
 	}
 
 	// Validate "%%EOF" marker
