@@ -62,7 +62,6 @@
 					".pdf", 
 					".PDF"
 				],
-				"firstLine": "^%PDF-[1-2]\\.[0-7]\b",
 				"aliases": [
 					"PDF",
 					"pdf"
@@ -82,7 +81,6 @@
 					".fdf",
 					".FDF"
 				],
-				"firstLine": "^%FDF-1\\.[0-7]\b",
 				"aliases": [
 					"FDF",
 					"fdf"
