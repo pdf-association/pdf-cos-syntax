@@ -1,10 +1,10 @@
 {
 	"name": "pdf-cos-syntax",
 	"displayName": "PDF COS syntax support",
-	"description": "PDF and FDF COS syntax extension for PDF developers",
+	"description": "PDF and FDF COS syntax extension for PDF developers interested in learning PDF as a page description language syntax",
 	"author": "PDF Association",
 	"license": "Apache-2.0",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/pdf-association/pdf-cos-syntax"
