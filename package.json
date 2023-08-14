@@ -1,15 +1,15 @@
 {
-	"name": "vscode-pdf",
-	"displayName": "PDF COS support",
-	"description": "PDF and FDF COS syntax extension",
+	"name": "pdf-cos-syntax",
+	"displayName": "PDF COS syntax support",
+	"description": "PDF and FDF COS syntax extension for PDF developers",
 	"author": "PDF Association",
 	"license": "Apache-2.0",
 	"version": "0.0.2",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/pdf-association/vscode-pdf"
+		"url": "https://github.com/pdf-association/pdf-cos-syntax"
 	},
-	"publisher": "pdf-association",
+	"publisher": "pdfassociation",
 	"categories": [
 		"Other",
 		"Snippets",
@@ -38,13 +38,13 @@
 			"type": "object",
 			"title": "PDF/FDF extension configuration",
 			"properties": {
-				"vscode-pdf.maxNumberOfProblems": {
+				"pdf-cos-syntax.maxNumberOfProblems": {
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
-				"vscode-pdf.trace.server": {
+				"pdf-cos-syntax.trace.server": {
 					"scope": "window",
 					"type": "string",
 					"enum": [

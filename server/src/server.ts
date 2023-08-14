@@ -133,7 +133,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'vscode-pdf',
+			section: 'pdf-cos-syntax',
 		});
 		documentSettings.set(resource, result);
 	}
@@ -167,7 +167,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	const text = textDocument.getText();
 
 	const addDiagnostic = (start: Position, end: Position, message: string, severity: DiagnosticSeverity = DiagnosticSeverity.Error) => {
-		diagnostics.push({ severity, range: { start, end }, message, source: 'vscode-pdf' });
+		diagnostics.push({ severity, range: { start, end }, message, source: 'pdf-cos-syntax' });
 	};
 
 	// Validate PDF header
