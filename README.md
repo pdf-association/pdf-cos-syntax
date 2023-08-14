@@ -36,14 +36,14 @@ If you see this VSCode error message then you **must** choose "Ignore":
 
 Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is more productive to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, Go To definition, find all references, snippet insertion, etc.
 
-A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. When chosen carefully, this sequence of bytes can avoid confusion by VSCode, even if the display is not correct. The following 5 byte sequence meets the PDF requirement to have a comment (`%`) followed by 4 bytes all above 0x7F (127) while also being valid 2-byte UTF-8 sequences - as a result VSCode will _**only display 2 characters representing the 4 binary bytes in the PDF!**_:
+A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. When chosen carefully, this sequence of bytes can avoid confusion by VSCode, even if the display is not correct. The following 5 byte sequence meets the PDF requirement to have a comment (`%` = 0x25) followed by 4 bytes all above 0x7F (>127) while also being valid 2-byte UTF-8 sequences - as a result VSCode will _**only display 2 characters representing the 4 binary bytes in the PDF!**_:
 
 - In binary (hex values):  `25 C2 A9 C2 A9`
 - As shown in VSCode (as UTF-8): `%©©`
 
 If saved from VSCode, this will remain valid and thus is highly recommended for PDF created with VSCode
 
-All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc.
+All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc. To assist with visualizing  whitespace and any non-printable control bytes, it is **strongly recommended** to enable both "Render whitespace" and "Render Control Characters" via the View \| Appearance... submenu.
 
 A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF files with either cross-reference (`/Type /XRef`) streams or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
 
@@ -69,7 +69,7 @@ Syntax highlighting of PDF COS syntax and PDF content streams including special 
 - all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` (including associated object ID integers), `R` (including associated object ID integers), `startxref`, `stream`,  `trailer`, `true`, `xref`)
 - PDF content stream operators when occuring between `stream` and `endstream` keywords
 
-To inspect the tokens that the TextMate syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode command pallette via the View menu. For convenience, assign the command a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8984; &#8679; `I`. 
+To inspect the tokens that the TextMate syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode Command Palette (`CTRL` + `SHIFT` + `P` or or &#8679; &#8984; `P`) via the View menu. For convenience, assign the command a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8679; &#8984; `I`, for `I` = inspect. 
 
 | PDF construct | [TextMate token name](https://macromates.com/manual/en/language_grammars#naming_conventions) |
 | --- | --- |
@@ -174,12 +174,12 @@ Commenting and uncommenting one or more lines in a PDF enables features and capa
 
 ## Basic PDF file structure validation
 
-VScode can perform basic validation on _conventional_ PDF files (i.e. those **not** using cross-reference table streams). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
+VSCode can perform basic validation on _conventional_ PDF files (i.e. those **not** using cross-reference table streams). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
 
 Validation checks include:
 
 - checking validity of the PDF header including PDF version number (1st line) `%PDF-x.y`
-- checking validity of the PDF binary comment marker (2nd line)
+- checking validity of the PDF binary file comment marker (2nd line)
 - checking that the PDF contains the necessary keywords to be a conventional PDF file (i.e. `xref`, `trailer` and `startxref` keywords are all present). 
     - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!
 - checking that there is a conventional cross-reference table that starts with object 0 (as the start of the free list) = **NOT IMPLEMENTED YET**
@@ -202,7 +202,7 @@ Snippets are templated fragments of PDF syntax that can be inserted into a PDF a
 
 # Creation of largely text-based PDFs
 
-This section describes how real-world heavily binary PDFs that would otherwise be unsuitable for reviewing using VSCode can be converted to a largely-text based equivalents more suited to VSCode. Success is dependent on both the third party tool and the specific features in the PDF file. While the output is mostly equivalent, some features will get lost by the conversion process (such as incremental updates, the exact lexical conventions used in the input PDF, etc.).
+This section describes how real-world heavily binary PDFs that would otherwise be unsuitable for reviewing using VSCode can be converted to a largely text-based equivalents more suited to VSCode. Success is dependent on both the third party tool and the specific features in the PDF file. While the output is mostly equivalent, some features will get lost by the conversion process (such as incremental updates, the exact lexical conventions used in the input PDF, etc.).
 
 ## Using [QPDF](https://github.com/qpdf/qpdf) (_OSS_)
 
