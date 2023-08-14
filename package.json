@@ -28,7 +28,10 @@
 	"engines": {
 		"vscode": "^1.75.0"
 	},
-	"icon": "./assets/pdf-light.png",
+	"activationEvents": [
+		"onLanguage:pdf"
+	],
+	"icon": "assets/pdf-light.png",
 	"main": "./client/out/extension",
 	"contributes": {
 		"configuration": {
