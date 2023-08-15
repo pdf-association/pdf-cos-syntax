@@ -34,8 +34,11 @@ export function activate(context: ExtensionContext) {
 
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
-		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'pdf' }],
+		// Register the server for plain text documents for both PDF and FDF
+		documentSelector: [
+			{ scheme: 'file', language: 'pdf' }, 
+			{scheme: 'file', language: 'fdf'}
+		],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc'),
@@ -44,18 +47,18 @@ export function activate(context: ExtensionContext) {
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'languageServerExample',
-		'Language Server Example',
+		'languageServerExample', // @TODO rename ???
+		'Language Server Example', // @TODO rename ???
 		serverOptions,
 		clientOptions
 	);
 
 	const provider = new PDFFoldingRangeProvider();
-	context.subscriptions.push(languages.registerFoldingRangeProvider('pdf', provider));
+	context.subscriptions.push(languages.registerFoldingRangeProvider('pdf', provider)); // @TODO FDF folding ???
 
 	// line commenting
 	context.subscriptions.push(
-		languages.setLanguageConfiguration('pdf', {
+		languages.setLanguageConfiguration('pdf', { // @TODO FDF commenting ??? vs language-configuration.json
 			comments: {
 				lineComment: '%',
 			},
