@@ -1,10 +1,10 @@
 {
-	"name": "PDF-COS-Syntax-client",
-	"description": "VSCode part of a language server",
-	"author": "Microsoft Corporation",
-	"license": "MIT",
-	"version": "0.0.1",
-	"publisher": "vscode",
+	"name": "pdf-cos-syntax-client",
+	"description": "VSCode part of the PDF COS syntax language server",
+	"author": "PDF Association",
+	"license": "Apache-2.0",
+	"version": "0.1.2",
+	"publisher": "pdfassociation",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/pdf-association/pdf-cos-syntax"

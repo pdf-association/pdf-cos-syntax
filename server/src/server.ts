@@ -285,25 +285,47 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   // Validate keywords needed in conventional PDFs (not FDF)
   if (isFilePDF(textDocument)) {
     ["trailer", "startxref", "xref"].forEach((keyword) => {
-      if (!new RegExp(`\\b${keyword}\\b`, "g").exec(text)) {
+      if (!new RegExp(`\\b${keyword}\\b`, "g").test(text)) {
         addDiagnostic(
           Position.create(0, 0),
           Position.create(0, 8),
-          `PDF does not contain the "${keyword}" keyword required for a conventional PDF`
+          `PDF does not contain the "${keyword}" keyword required in a conventional PDF`
         );
       }
     });
 
-    // @TODO: check for correct start to a cross-reference table for an original PDF:
-    // 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f"
-    // Error Message: PDF does not contain a conventional cross reference table starting with object 0 as the start of the free list
-    const crossReferenceRegex = /xref\s0\s\d+\s\d{10}\s65535\sf/;
-    if (!crossReferenceRegex.test(text)) {
+    // Check for correct cross-reference table for an original PDF:
+    // 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f" allowing for PDFs variable EOLs
+    // If that works, then know number of objects in cross-ref table and whether there are any free objects
+    const firstXref = new RegExp(`\\bxref\\s+0 (\\d+)\\s+(\\d{10}) 65535 f\\b`).exec(text);
+    if (!firstXref) {
       addDiagnostic(
         Position.create(0, 0),
         Position.create(0, 8),
-        "PDF does not contain a conventional cross reference table starting with object 0 as the start of the free list"
+        "PDF does not contain a conventional cross reference table starting with object 0 (beginning of the free list)"
       );
+    }
+    else {
+      // @TODO - check the xref table entries - for free list, that numObj matches entries, etc.
+      const xrefLine = getLineFromByteOffset(textDocument, firstXref.index);
+      const numObj = parseInt(firstXref[1]);
+      const nextFree = parseInt(firstXref[2]);
+      if (numObj < 5) {
+        addDiagnostic(
+          Position.create(xrefLine, 0),
+          Position.create(xrefLine, 4),
+          `Original PDF cross reference table only has ${numObj} objects which is too few for a valid PDF`,
+          DiagnosticSeverity.Information
+        );
+      }
+      if (nextFree !== 0) {
+        addDiagnostic(
+          Position.create(xrefLine, 0),
+          Position.create(xrefLine, 4),
+          "Original PDF cross reference table had at least 1 object on the free list",
+          DiagnosticSeverity.Information
+        );
+      }
     }
   }
 
@@ -510,7 +532,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 /**
- *  "Go to definition" for "X Y R" and in-use cross reference table entries
+ *  "Go to definition" for "X Y R" and in-use ("n") cross reference table entries
  */
 connection.onDefinition((params): Definition | null => {
   const document = documents.get(params.textDocument.uri);
@@ -530,6 +552,7 @@ connection.onDefinition((params): Definition | null => {
     start: Position.create(position.line, Math.max(position.character - 20, 0)),
     end: Position.create(position.line, position.character + 20),
   });
+  // console.log(`Go To Definition = ${lineText}`);
 
   // Get 1st conventional xref table (if one exists)
   const xrefTable = extractXrefTable(document);
@@ -541,6 +564,7 @@ connection.onDefinition((params): Definition | null => {
     const objNum = parseInt(indirectObjMatch[1]);
     const genNum = parseInt(indirectObjMatch[2]);
     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
+    // console.log(`Go To Definition for ${objNum} ${genNum} R --> ${byteOffset}`);
     if (byteOffset === -1) {
       // No object matches indirect reference for <objNum, genNum>
       return null;
@@ -549,11 +573,12 @@ connection.onDefinition((params): Definition | null => {
 
   // Add logic for "X Y obj" pattern
   const objMatch = lineText.match(/(\d+) (\d+) obj/);
-  if (objMatch && xrefTable && byteOffset === -1) {
+  if (objMatch && xrefTable && (byteOffset === -1)) {
     // Make sure it's not already found by "X Y R"
     const objNum = parseInt(objMatch[1]);
     const genNum = parseInt(objMatch[2]);
     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
+    // console.log(`Go To Definition for ${objNum} ${genNum} obj --> ${byteOffset}`);
     if (byteOffset === -1) {
       return null;
     }
@@ -561,8 +586,9 @@ connection.onDefinition((params): Definition | null => {
 
   // find the object definition for a conventional xref table in-use ("n") entry
   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
-  if (xrefMatch) {
+  if (xrefMatch && (byteOffset === -1)) {
     byteOffset = parseInt(xrefMatch[1]);
+    // console.log(`Go To Definition for in-use object --> ${byteOffset}`);
     if (byteOffset === -1) {
       // For some reason the byte offset "\d{10}" didn't parseInt!
       return null;

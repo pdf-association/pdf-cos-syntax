@@ -9,15 +9,17 @@ import { Location, Position } from 'vscode-languageserver';
  * @returns a byte offset for the object or -1 if no such in-use object.
  */
 export function getByteOffsetForObj(objNum: number,  genNum: number, xrefTable: string): number {
-	const lines = xrefTable.split('\n');
-	let startObjNum = 0;
+	let xref = xrefTable.replace('\r', '\n');
+	xref = xrefTable.replace('\n\n', '\n');
+	const lines = xref.split('\n');
+	let startObjNum = 1;
 	let totalEntries = 0;
 
 	for (let i = 0; i < lines.length; i++) {
 		if (lines[i].includes(' f') || lines[i].includes(' n')) {
 			// 20-byte entry: in-use (n) or free (f) 
 			const parts = lines[i].split(' ');
-			if ((i == objNum + startObjNum - 1) && (parts.length >= 3)) {
+			if ((objNum === i + startObjNum - 1) && (parts.length >= 3)) {
 				// Found the object
 				if ((parts[2].includes('n')) && (parseInt(parts[1]) === genNum)) {
 					return parseInt(lines[i].split(' ')[0]);

@@ -1,9 +1,9 @@
 {
-	"name": "PDF-COS-Syntax-server",
-	"description": "PDF COS Syntax implementation of a language server in node.",
-	"version": "1.0.0",
-	"author": "Microsoft Corporation",
-	"license": "MIT",
+	"name": "pdf-cos-syntax-server",
+	"description": "PDF COS Syntax language server in Node.",
+	"version": "0.1.2",
+	"author": "PDF Association",
+	"license": "Apache-2.0",
 	"engines": {
 		"node": "*"
 	},

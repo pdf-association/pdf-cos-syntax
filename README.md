@@ -1,8 +1,19 @@
 # VSCode PDF extension
 
+![Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/pdfassociation.pdf-cos-syntax)
+&nbsp;&nbsp;&nbsp;
+![License](https://img.shields.io/github/license/pdf-association/pdf-cos-syntax)
+&nbsp;&nbsp;&nbsp;
+![LinkedIn](https://img.shields.io/static/v1?style=social&label=LinkedIn&logo=linkedin&message=PDF-Association)
+&nbsp;&nbsp;&nbsp;
+![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCJL_M0VH2lm65gvGVarUTKQ?style=social)
+
+
 ## TL;DR
 
-PDF (**Portable Document Format**) is an open page description language standard for electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use conventional cross-reference tables:
+This is **NOT** a debugger, renderer or text extractor for PDF.
+
+PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use conventional cross-reference tables:
 
 - support for both `.pdf` and `.fdf` files
 - PDF COS [syntax highlighting](#syntax-highlighting) 
@@ -11,10 +22,8 @@ PDF (**Portable Document Format**) is an open page description language standard
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
-- basic conventional PDF file structure validation
+- basic PDF and FDF file validation
 - [snippets](#snippets) for new object, new stream, and empty PDF/FDF files
-
-Currently both PDF and FDF are treated identically, but this will be updated in a future release.
 
 ## PDF files are _BINARY_!
 
@@ -172,18 +181,19 @@ Commenting and uncommenting one or more lines in a PDF enables features and capa
 - &#8984; `/` = toggle line comment
 
 
-## Basic PDF file structure validation
+## Basic PDF/FDF validation
 
-VSCode can perform basic validation on _conventional_ PDF files (i.e. those **not** using cross-reference table streams). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
+VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
 
 Validation checks include:
 
-- checking validity of the PDF header including PDF version number (1st line) `%PDF-x.y`
-- checking validity of the PDF binary file comment marker (2nd line)
+- checking validity of the PDF header including PDF version number (1st line) `%PDF-x.y` or `%FDF-x.y`
+- checking validity of the PDF/FDF binary file comment marker (2nd line)
 - checking that the PDF contains the necessary keywords to be a conventional PDF file (i.e. `xref`, `trailer` and `startxref` keywords are all present). 
     - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!
 - checking that there is a conventional cross-reference table that starts with object 0 (as the start of the free list) = **NOT IMPLEMENTED YET**
-- checking that the last non-blank line of the PDF starts with `%%EOF`
+- checking that there are no comments in conventional cross-reference tables = **NOT IMPLEMENTED YET**
+- checking that the last non-blank line of the PDF/FDF starts with `%%EOF`
 
 
 ## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
