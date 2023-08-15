@@ -3,7 +3,7 @@
 	"description": "VSCode part of the PDF COS syntax language server",
 	"author": "PDF Association",
 	"license": "Apache-2.0",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"publisher": "pdfassociation",
 	"repository": {
 		"type": "git",
