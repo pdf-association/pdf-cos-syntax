@@ -117,7 +117,7 @@
 			},
 			{
 				"language": "fdf",
-				"path": "./snippets/pdf-snippets.json"
+				"path": "./snippets/fdf-snippets.json"
 			}
 		  ]
 	},

@@ -1,0 +1,48 @@
+{
+	"Create a new FDF dictionary object": {
+		"description": "Insert an empty FDF dictionary object",
+		"prefix": "obj",
+		"body": [
+			"0 obj",
+			"<<",
+			"    /Type ${1:/}",
+			">>",
+			"endobj",
+			""
+		]
+	},
+	"Creat a new FDF stream object": {
+		"description": "Insert an empty FDF stream object",
+		"prefix": "stream",
+		"body": [
+			"0 obj",
+			"<<",
+			"    /Length ${1:0}",
+			"    /Filter null",
+			">>",
+			"stream",
+			"",
+			"endstream",
+			"endobj",
+			""
+		]
+	},
+	"Create a minimal empty FDF file" : {
+		"description": "A minimal empty FDF file",
+		"prefix": "FDF-",
+		"body":[
+			"%FDF-1.2",
+			"1 0 obj",
+			"<<",
+			"    /Type /Catalog",
+			"    /FDF << /Annots [",
+			"    ] >>",	
+			">>",
+			"endobj",
+			"trailer",
+			"<< /Root 1 0 R >>",
+			"%%EOF",
+			""
+		]
+	}	
+}
