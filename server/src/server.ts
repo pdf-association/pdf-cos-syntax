@@ -372,7 +372,7 @@ connection.onDefinition((params): Definition | null => {
 	if (!isFilePDF(document)) {
 		return null;
 	}
-	
+
 	// Get text either side of the cursor. Because finding object definitions is limited to "X Y R" 
 	// and the 20-byte in-use cross reference table entries, can select bytes either side of 
 	// character position on line (to try and avoid long lines with multiple "X Y R" for example)
@@ -398,6 +398,17 @@ connection.onDefinition((params): Definition | null => {
 		}
 	}
 
+	// Add logic for "X Y obj" pattern
+	const objMatch = lineText.match(/(\d+) (\d+) obj/);
+	if (objMatch && xrefTable && byteOffset === -1) { // Make sure it's not already found by "X Y R"
+			const objNum = parseInt(objMatch[1]);
+			const genNum = parseInt(objMatch[2]);
+			byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
+			if (byteOffset === -1) {
+					return null;
+			}
+	}
+	
 	// find the object definition for a conventional xref table in-use ("n") entry
 	const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
 	if (xrefMatch) {
