@@ -22,7 +22,7 @@ import {
 } from 'vscode-languageserver/node';
 
 import { Range, TextDocument } from 'vscode-languageserver-textdocument';
-import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable, findAllReferences } from './pdfUtils';
+import { getLineFromByteOffset, getByteOffsetForObj, extractXrefTable, findAllReferences, isFileFDF, isFilePDF } from './pdfUtils';
 
 // for server debug.
 import { debug } from 'console';
@@ -170,29 +170,41 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		diagnostics.push({ severity, range: { start, end }, message, source: 'pdf-cos-syntax' });
 	};
 
-	// Validate PDF header
+	// Validate PDF/FDF header
 	const firstLine = textDocument.getText({ start: Position.create(0, 0), end: Position.create(0, 8) });
-	if (!firstLine.startsWith("%PDF-")) {
-		addDiagnostic(Position.create(0, 0), Position.create(0, 5), 'First line of PDF does not start with required file marker "%PDF-"');
+	if (isFileFDF(textDocument)) {
+		if (!firstLine.startsWith("%FDF-")) {
+			addDiagnostic(Position.create(0, 0), Position.create(0, 5), 'First line of FDF does not start with required file marker "%FDF-"');
+		}
+		if (!['1.2'].includes(firstLine.slice(5, 8))) {
+			addDiagnostic(Position.create(0, 5), Position.create(0, 8), 'FDF header version is not valid: should be 1.2');
+		}
 	}
-	if (!['1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '2.0'].includes(firstLine.slice(5, 8))) {
-		addDiagnostic(Position.create(0, 5), Position.create(0, 8), 'PDF header version is not valid');
+	else if (isFilePDF(textDocument)) {
+		if (!firstLine.startsWith("%PDF-")) {
+			addDiagnostic(Position.create(0, 0), Position.create(0, 5), 'First line of PDF does not start with required file marker "%PDF-"');
+		}
+		if (!['1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '2.0'].includes(firstLine.slice(5, 8))) {
+			addDiagnostic(Position.create(0, 5), Position.create(0, 8), 'PDF header version is not valid: should be 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7 or 2.0');
+		}
+	}
+	else {
+		addDiagnostic(Position.create(0, 0), Position.create(0, 0), 'PDF file extension should be ".pdf"');
 	}
 
-	// Validate 2nd line of PDF
-	// @TODO: fix for encoding!!!
+	// Validate 2nd line of both PDF and FDF
 	const encoder = new TextEncoder(); // UTF-8 codepoints --> bytes
 	const secondLine = textDocument.getText({ start: Position.create(1, 0), end: Position.create(1, 5) });
 	if (secondLine.charCodeAt(0) !== '%'.charCodeAt(0)) {
-		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF should be a binary file marker comment (%)', DiagnosticSeverity.Warning);
+		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF/FDF should be a binary file marker comment (%)', DiagnosticSeverity.Warning);
 	} 
 	let bytes = encoder.encode(secondLine);
 	bytes = bytes.slice(1,5); // 1st 4 bytes after '%' (could be 2-, 3- or 4-byte UTF-8 sequences)
 	if ([...bytes.slice(0)].some(i => i <= 127)) {
-		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF should be the binary file marker comment (%) with at least 4 bytes > 127', DiagnosticSeverity.Warning);
+		addDiagnostic(Position.create(1, 0), Position.create(1, 5), '2nd line in PDF/FDF should be the binary file marker comment (%) with at least 4 bytes > 127', DiagnosticSeverity.Warning);
 	}
 
-	// Validate "%%EOF" marker
+	// Validate "%%EOF" marker for both PDF and FDF
 	let i = textDocument.lineCount - 1;
 	let lastLine = textDocument.getText({ start: Position.create(i, 0), end: Position.create(i, 6) }).trim();
 	while (lastLine.length === 0) {
@@ -201,19 +213,21 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	}
 	if (!lastLine.startsWith("%%EOF")) {
 		const position = Position.create(i, 0);
-		addDiagnostic(position, position, 'PDF files must end with a line "%%EOF"');
+		addDiagnostic(position, position, 'PDF/FDF files must end with a line "%%EOF"');
 	}
 
-	// Validate keywords needed in conventional PDFs
-	['trailer', 'startxref', 'xref'].forEach(keyword => {
-		if (!new RegExp(`\\b${keyword}\\b`, 'g').exec(text)) {
-			addDiagnostic(Position.create(0, 0), Position.create(0, 8), `PDF does not contain the "${keyword}" keyword required for a conventional PDF`);
-		}
-	});
+	// Validate keywords needed in conventional PDFs (not FDF)
+	if (isFilePDF(textDocument)) {
+		['trailer', 'startxref', 'xref'].forEach(keyword => {
+			if (!new RegExp(`\\b${keyword}\\b`, 'g').exec(text)) {
+				addDiagnostic(Position.create(0, 0), Position.create(0, 8), `PDF does not contain the "${keyword}" keyword required for a conventional PDF`);
+			}
+		});
 
-	// @TODO: check for correct start to a cross-reference table for an original PDF:
-	// 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f"
-	// Error Message: PDF does not contain a conventional cross reference table starting with object 0 as the start of the free list
+		// @TODO: check for correct start to a cross-reference table for an original PDF:
+		// 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f"
+		// Error Message: PDF does not contain a conventional cross reference table starting with object 0 as the start of the free list
+	}
 
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
