@@ -13,7 +13,7 @@
 
 This is **NOT** a debugger, renderer or text extractor for PDF.
 
-PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use conventional cross-reference tables:
+PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use _conventional_ cross-reference tables (i.e. not cross-reference streams introduced with PDF 1.5):
 
 - support for both `.pdf` and `.fdf` files
 - PDF COS [syntax highlighting](#syntax-highlighting) 
@@ -54,7 +54,7 @@ If saved from VSCode, this will remain valid and thus is highly recommended for 
 
 All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc. To assist with visualizing  whitespace and any non-printable control bytes, it is **strongly recommended** to enable both "Render whitespace" and "Render Control Characters" via the View \| Appearance... submenu.
 
-A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF files with either cross-reference (`/Type /XRef`) streams or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
+A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF 1.5 or later files with either cross-reference (`/Type /XRef`) streams or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
 
 ### Alternatives
 
@@ -134,7 +134,7 @@ Placing the cursor anywhere in the object ID (the object number `X` or generatio
 
 Placing the cursor anywhere in the object ID (the object number `X` or generation number `Y`) of an object definition (`X Y obj`) or indirect reference (`X Y R`), and then selecting "Find all references" will find all indirect references (`X Y R`) to that object. The references will be listed in the "References" sidebar panel.
 
-**NOT IMPLEMENTED YET** - goto declaration... from `X Y R` or `XY obj` to the xref table in-use entry
+**NOT IMPLEMENTED YET** - goto declaration... from `X Y R` or `X Y obj` to the xref table in-use entry
 
 
 ### Windows Go To shortcuts
@@ -151,15 +151,13 @@ Placing the cursor anywhere in the object ID (the object number `X` or generatio
 
 ## Bracket Matching
 
-**NOT IMPLEMENTED YET** 
-
 Many IDEs for programming languages support bracketing matching, where the cursor can jump to a matching open or close bracket (e.g., `{` with `}` or `(` with `)`). In PDF, the equivalent brackets are:
 
 - PDF dictionary objects (start `<<` and end `>>`)
 - PDF array objects (start `[` and end `]`)
-- PDF literal string objects (start `(` and end `)`) 
+- PDF literal string objects (start `(` and end `)`)  - **NOT IMPLEMENTED YET** 
 - PDF hex string objects (start `<` and end `>`)
-- PDF content stream operator pairs
+- PDF content stream operator pairs - **NOT IMPLEMENTED YET** 
     - graphics state push and pop (`q` and `Q`)
     - text object (start `BT` and end `ET`)
     - compatibility operators (start `BX` and end `EX`)
@@ -183,16 +181,18 @@ Commenting and uncommenting one or more lines in a PDF enables features and capa
 
 ## Basic PDF/FDF validation
 
-VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
+VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams introduced in PDF 1.5). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
 
 Validation checks include:
 
 - checking validity of the PDF header including PDF version number (1st line) `%PDF-x.y` or `%FDF-x.y`
 - checking validity of the PDF/FDF binary file comment marker (2nd line)
 - checking that the PDF contains the necessary keywords to be a conventional PDF file (i.e. `xref`, `trailer` and `startxref` keywords are all present). 
-    - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!
+    - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!_
 - checking that there is a conventional cross-reference table that starts with object 0 (as the start of the free list) = **NOT IMPLEMENTED YET**
 - checking that there are no comments in conventional cross-reference tables = **NOT IMPLEMENTED YET**
+- checking that cross-reference subsections are valid = **NOT IMPLEMENTED YET**
+- checking that the cross-reference table free list of objects is valid = **NOT IMPLEMENTED YET**
 - checking that the last non-blank line of the PDF/FDF starts with `%%EOF`
 
 

@@ -115,7 +115,7 @@ interface ExampleSettings {
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
+const defaultSettings: ExampleSettings = { maxNumberOfProblems: 100 };
 let globalSettings: ExampleSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -326,171 +326,27 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
           DiagnosticSeverity.Information
         );
       }
+      // check if cross-reference table contains any prohibited stuff such as
+      // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or 
+      // PDF whitespace or PDF EOLs). Note that extractXrefTable() will have normalized '\r'
+      // to '\n' too.
+      const xrefTable = extractXrefTable(textDocument);
+      if (xrefTable != null) {
+        const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(xrefTable);
+        if (badInXref != null) {
+          addDiagnostic(
+            Position.create(xrefLine, 0),
+            Position.create(xrefLine, 4),
+            `PDF cross reference table contains illegal characters: "${badInXref[1]}"`
+          );
+        }
+      }
     }
   }
 
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
-// async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-//   const diagnostics: Diagnostic[] = [];
-//   const text = textDocument.getText();
-
-//   const addDiagnostic = (
-//     start: Position,
-//     end: Position,
-//     message: string,
-//     severity: DiagnosticSeverity = DiagnosticSeverity.Error
-//   ) => {
-//     diagnostics.push({
-//       severity,
-//       range: { start, end },
-//       message,
-//       source: "pdf-cos-syntax",
-//     });
-//   };
-
-//   validateHeader(textDocument, addDiagnostic);
-//   validateSecondLine(textDocument, addDiagnostic);
-//   validateEOFMarker(textDocument, addDiagnostic);
-
-//   if (isFilePDF(textDocument)) {
-//     validateKeywords(textDocument, addDiagnostic);
-//     validateCrossReferenceTable(text, addDiagnostic);
-//   }
-
-//   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-// }
-
-// function validateHeader(textDocument: TextDocument, addDiagnostic: Function) {
-//   const firstLine = textDocument.getText({
-//     start: Position.create(0, 0),
-//     end: Position.create(0, 8),
-//   });
-
-//   if (isFileFDF(textDocument)) {
-//     if (!firstLine.startsWith("%FDF-")) {
-//       addDiagnostic(
-//         Position.create(0, 0),
-//         Position.create(0, 5),
-//         'First line of FDF does not start with required file marker "%FDF-"'
-//       );
-//     }
-//     if (!["1.2"].includes(firstLine.slice(5, 8))) {
-//       addDiagnostic(
-//         Position.create(0, 5),
-//         Position.create(0, 8),
-//         "FDF header version is not valid: should be 1.2"
-//       );
-//     }
-//   } else if (isFilePDF(textDocument)) {
-//     if (!firstLine.startsWith("%PDF-")) {
-//       addDiagnostic(
-//         Position.create(0, 0),
-//         Position.create(0, 5),
-//         'First line of PDF does not start with required file marker "%PDF-"'
-//       );
-//     }
-//     if (
-//       !["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "2.0"].includes(
-//         firstLine.slice(5, 8)
-//       )
-//     ) {
-//       addDiagnostic(
-//         Position.create(0, 5),
-//         Position.create(0, 8),
-//         "PDF header version is not valid: should be 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7 or 2.0"
-//       );
-//     }
-//   } else {
-//     addDiagnostic(
-//       Position.create(0, 0),
-//       Position.create(0, 0),
-//       'PDF file extension should be ".pdf"'
-//     );
-//   }
-// }
-
-// function validateSecondLine(
-//   textDocument: TextDocument,
-//   addDiagnostic: Function
-// ) {
-//   const encoder = new TextEncoder();
-//   const secondLine = textDocument.getText({
-//     start: Position.create(1, 0),
-//     end: Position.create(1, 5),
-//   });
-
-//   if (secondLine.charCodeAt(0) !== "%".charCodeAt(0)) {
-//     addDiagnostic(
-//       Position.create(1, 0),
-//       Position.create(1, 5),
-//       "2nd line in PDF/FDF should be a binary file marker comment (%)",
-//       DiagnosticSeverity.Warning
-//     );
-//   }
-
-//   let bytes = encoder.encode(secondLine);
-//   bytes = bytes.slice(1, 5);
-//   if ([...bytes.slice(0)].some((i) => i <= 127)) {
-//     addDiagnostic(
-//       Position.create(1, 0),
-//       Position.create(1, 5),
-//       "2nd line in PDF/FDF should be the binary file marker comment (%) with at least 4 bytes > 127",
-//       DiagnosticSeverity.Warning
-//     );
-//   }
-// }
-
-// function validateEOFMarker(
-//   textDocument: TextDocument,
-//   addDiagnostic: Function
-// ) {
-//   let i = textDocument.lineCount - 1;
-//   let lastLine = textDocument
-//     .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
-//     .trim();
-
-//   while (lastLine.length === 0) {
-//     i--;
-//     lastLine = textDocument
-//       .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
-//       .trim();
-//   }
-
-//   if (!lastLine.startsWith("%%EOF")) {
-//     const position = Position.create(i, 0);
-//     addDiagnostic(
-//       position,
-//       position,
-//       'PDF/FDF files must end with a line "%%EOF"'
-//     );
-//   }
-// }
-
-// function validateKeywords(textDocument: TextDocument, addDiagnostic: Function) {
-//   const text = textDocument.getText();
-//   ["trailer", "startxref", "xref"].forEach((keyword) => {
-//     if (!new RegExp(`\\b${keyword}\\b`, "g").exec(text)) {
-//       addDiagnostic(
-//         Position.create(0, 0),
-//         Position.create(0, 8),
-//         `PDF does not contain the "${keyword}" keyword required for a conventional PDF`
-//       );
-//     }
-//   });
-// }
-
-// function validateCrossReferenceTable(text: string, addDiagnostic: Function) {
-//   const crossReferenceRegex = /xref\s0\s\d+\s\d{10}\s65535\sf/;
-//   if (!crossReferenceRegex.test(text)) {
-//     addDiagnostic(
-//       Position.create(0, 0),
-//       Position.create(0, 8),
-//       "PDF does not contain a conventional cross reference table starting with object 0 as the start of the free list"
-//     );
-//   }
-// }
 
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode
@@ -544,23 +400,28 @@ connection.onDefinition((params): Definition | null => {
     return null;
   }
 
-  // Get text either side of the cursor. Because finding object definitions is limited to "X Y R"
-  // and the 20-byte in-use cross reference table entries, can select bytes either side of
-  // character position on line (to try and avoid long lines with multiple "X Y R" for example)
+  // Get text either side of the cursor. Because finding object definitions is limited to "X Y R", "X Y obj"
+  // and the 20-byte in-use cross reference table entries, first select VERY few bytes either side of
+  // character position on line (to try and avoid lines with adjacent "X Y R" for example):
+  // "[ 1 0 R 2 0 R 3 0 R ]" or "1 0 obj 2 0 R endobj" 
+  // If this fails then assume it is a 20-byte in-use cross reference table entry and grab more bytes
   const position = params.position;
-  const lineText = document.getText({
-    start: Position.create(position.line, Math.max(position.character - 20, 0)),
-    end: Position.create(position.line, position.character + 20),
+  let lineText = document.getText({
+    start: Position.create(position.line, Math.max(position.character - 5, 0)),
+    end: Position.create(position.line, position.character + 8)
   });
   // console.log(`Go To Definition = ${lineText}`);
 
   // Get 1st conventional xref table (if one exists)
   const xrefTable = extractXrefTable(document);
+  if (!xrefTable) {
+    return null;
+  }
 
   let byteOffset = -1;
-  // find the object definition for an "X Y R" indirect reference
-  const indirectObjMatch = lineText.match(/(\d+) (\d+) R/);
-  if (indirectObjMatch && xrefTable) {
+  // find the object definition for an "X Y R" indirect reference. Avoid RG operator
+  const indirectObjMatch = lineText.match(/(\d+) (\d+) R(?=[^G])/);
+  if (indirectObjMatch) {
     const objNum = parseInt(indirectObjMatch[1]);
     const genNum = parseInt(indirectObjMatch[2]);
     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
@@ -571,9 +432,13 @@ connection.onDefinition((params): Definition | null => {
     }
   }
 
-  // Add logic for "X Y obj" pattern
+  // Add logic for "X Y obj" pattern --> assume at start of a line
+  lineText = document.getText({
+    start: Position.create(position.line, 0),
+    end: Position.create(position.line, 12)
+  });
   const objMatch = lineText.match(/(\d+) (\d+) obj/);
-  if (objMatch && xrefTable && (byteOffset === -1)) {
+  if (objMatch && (byteOffset === -1)) {
     // Make sure it's not already found by "X Y R"
     const objNum = parseInt(objMatch[1]);
     const genNum = parseInt(objMatch[2]);
@@ -584,7 +449,11 @@ connection.onDefinition((params): Definition | null => {
     }
   }
 
-  // find the object definition for a conventional xref table in-use ("n") entry
+  // find the object definition for a conventional xref table in-use ("n") entry --> get full entry
+  lineText = document.getText({
+    start: Position.create(position.line, 0),
+    end: Position.create(position.line, 24),
+  });
   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
   if (xrefMatch && (byteOffset === -1)) {
     byteOffset = parseInt(xrefMatch[1]);
