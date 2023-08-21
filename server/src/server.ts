@@ -559,7 +559,6 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
     const { textDocument, position } = params;
-console.log("position: ", position)
     // Get the document corresponding to the URI
     const document = documents.get(textDocument.uri);
     if (!document) return null;
@@ -571,7 +570,6 @@ console.log("position: ", position)
     }
     // Fetch the semantic token at the given position
     const tokenInfo = getSemanticTokenAtPosition(document, position);
-console.log("tokenInfo: ", tokenInfo)
     // If no semantic token is found, return null
     if (!tokenInfo) return null;
 
@@ -582,7 +580,7 @@ console.log("tokenInfo: ", tokenInfo)
       document,
       xrefTable
     );
-console.log("targetLocation: ", targetLocation)
+    
     return targetLocation;
   }
 );

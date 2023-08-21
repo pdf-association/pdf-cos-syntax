@@ -214,20 +214,22 @@ export function getSemanticTokenAtPosition(
   console.log("lineText: ", lineText);
 
   // Check for reference pattern "X Y R"
-  const indirectObjMatch = lineText.match(/(\d+) (\d+) R(?=[^G])/);
-  console.log("indirectObjMatch: ", indirectObjMatch);
-  if (indirectObjMatch) {
-    const matchStart = indirectObjMatch.index!;
-    return {
-      type: "reference",
-      range: {
-        start: { line: position.line, character: matchStart },
-        end: {
-          line: position.line,
-          character: matchStart + indirectObjMatch[0].length,
+  const regex = /(\d+) (\d+) R(?=[^G])/g;
+  let match: RegExpExecArray | null;
+  
+  while ((match = regex.exec(lineText)) !== null) {
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    if (matchStart <= position.character && position.character <= matchEnd) {
+      return {
+        type: "reference",
+        range: {
+          start: { line: position.line, character: matchStart },
+          end: { line: position.line, character: matchEnd },
         },
-      },
-    };
+      };
+    }
   }
 
   // Check for "X Y obj" pattern
