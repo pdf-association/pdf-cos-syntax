@@ -12,7 +12,7 @@
 		},
 		{
 			"name": "string.quoted.hex.pdf",
-			"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+			"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
 		},
 		{
 			"name": "keyword.control.pdf",
@@ -20,7 +20,7 @@
 		},
 		{
 			"name": "variable.other.name.pdf",
-			"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+			"match": "/[^ \\t\\r\\n\\f\\0<>\\[\\]\\(\\)\\/%]*"
 		},
 		{
 			"name": "constant.numeric.real.pdf",
@@ -33,7 +33,7 @@
 		{
 			"name": "string.quoted.literal.pdf",
 			"begin": "\\(",
-			"end": "[^\\\\]\\)",
+			"end": "(?<=[^\\\\])\\)",
 			"patterns": [
 				{
 					"name": "constant.character.escape.linefeed.pdf",
@@ -65,7 +65,7 @@
 				},
 				{
 					"name": "constant.character.escape.octal.pdf",
-					"match": "\\\\[0-7]]{3}"
+					"match": "\\\\[0-7]{3}"
 				}
 			]
 		},
@@ -88,7 +88,7 @@
 				},
 				{
 					"name": "variable.other.name.pdf",
-					"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+					"match": "/[^ \\t\\r\\n\\f\\0<>\\[\\]\\(\\)\\/%]*"
 				},
 				{
 					"name": "constant.numeric.real.pdf",
@@ -100,12 +100,12 @@
 				},
 				{
 					"name": "string.quoted.hex.pdf",
-					"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+					"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
 				},
 				{
 					"name": "string.quoted.literal.pdf",
 					"begin": "\\(",
-					"end": "[^\\\\]\\)",
+					"end": "(?<=[^\\\\])\\)",
 					"patterns": [
 						{
 							"name": "constant.character.escape.linefeed.pdf",
@@ -137,7 +137,7 @@
 						},
 						{
 							"name": "constant.character.escape.octal.pdf",
-							"match": "\\\\[0-7]]{3}"
+							"match": "\\\\[0-7]{3}"
 						}
 					]
 				}
@@ -162,7 +162,7 @@
 				},
 				{
 					"name": "variable.other.name.pdf",
-					"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+					"match": "/[^ \\t\\r\\n\\f\\0<>\\[\\]\\(\\)\\/%]*"
 				},
 				{
 					"name": "constant.numeric.real.pdf",
@@ -174,12 +174,12 @@
 				},
 				{
 					"name": "string.quoted.hex.pdf",
-					"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+					"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
 				},
 				{
 					"name": "string.quoted.literal.pdf",
 					"begin": "\\(",
-					"end": "[^\\\\]\\)",
+					"end": "(?<=[^\\\\])\\)",
 					"patterns": [
 						{
 							"name": "constant.character.escape.linefeed.pdf",
@@ -211,7 +211,7 @@
 						},
 						{
 							"name": "constant.character.escape.octal.pdf",
-							"match": "\\\\[0-7]]{3}"
+							"match": "\\\\[0-7]{3}"
 						}
 					]
 				}
@@ -232,7 +232,7 @@
 				},
 				{
 					"name": "variable.other.name.pdf",
-					"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+					"match": "/[^ \\t\\r\\n\\f\\0<>\\[\\]\\(\\)\\/%]*"
 				},
 				{
 					"name": "constant.numeric.real.pdf",
@@ -244,12 +244,12 @@
 				},
 				{
 					"name": "string.quoted.hex.pdf",
-					"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+					"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
 				},
 				{
 					"name": "string.quoted.literal.pdf",
 					"begin": "\\(",
-					"end": "[^\\\\]\\)",
+					"end": "(?<=[^\\\\])\\)",
 					"patterns": [
 						{
 							"name": "constant.character.escape.linefeed.pdf",
@@ -281,7 +281,7 @@
 						},
 						{
 							"name": "constant.character.escape.octal.pdf",
-							"match": "\\\\[0-7]]{3}"
+							"match": "\\\\[0-7]{3}"
 						}
 					]
 				},
@@ -304,7 +304,7 @@
 						},
 						{
 							"name": "variable.other.name.pdf",
-							"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+							"match": "/[^ \\t\\r\\n\\f\\0<>\\[\\]\\(\\)\\/%]*"
 						},
 						{
 							"name": "constant.numeric.real.pdf",
@@ -316,12 +316,12 @@
 						},
 						{
 							"name": "string.quoted.hex.pdf",
-							"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+							"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
 						},
 						{
 							"name": "string.quoted.literal.pdf",
 							"begin": "\\(",
-							"end": "[^\\\\]\\)",
+							"end": "(?<=[^\\\\])\\)",
 							"patterns": [
 								{
 									"name": "constant.character.escape.linefeed.pdf",
@@ -353,7 +353,7 @@
 								},
 								{
 									"name": "constant.character.escape.octal.pdf",
-									"match": "\\\\[0-7]]{3}"
+									"match": "\\\\[0-7]{3}"
 								}
 							]
 						}
@@ -374,7 +374,7 @@
 						},
 						{
 							"name": "variable.other.name.pdf",
-							"match": "/[^ \\t\\r\\n\\s<>\\[\\]\\(\\)\\/%]*"
+							"match": "/[^ \\t\\r\\n\\f\\0<>\\[\\]\\(\\)\\/%]*"
 						},
 						{
 							"name": "constant.numeric.real.pdf",
@@ -386,12 +386,12 @@
 						},
 						{
 							"name": "string.quoted.hex.pdf",
-							"match": "<[0-9a-fA-F \\t\\r\\n]*>"
+							"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
 						},
 						{
 							"name": "string.quoted.literal.pdf",
 							"begin": "\\(",
-							"end": "[^\\\\]\\)",
+							"end": "(?<=[^\\\\])\\)",
 							"patterns": [
 								{
 									"name": "constant.character.escape.linefeed.pdf",
@@ -423,7 +423,7 @@
 								},
 								{
 									"name": "constant.character.escape.octal.pdf",
-									"match": "\\\\[0-7]]{3}"
+									"match": "\\\\[0-7]{3}"
 								}
 							]
 						}
