@@ -16,7 +16,7 @@
 		},
 		{
 			"name": "keyword.control.pdf",
-			"match": "\\b(?:\\d+ \\d+ R|startxref|null|true|false|(^|\\r|\\n)\\d+ \\d+ obj|endobj)\\b"
+			"match": "\\b(?:\\d+ \\d+ R|startxref|null|true|false|(^|\\r*\\n)\\d+ \\d+ obj|endobj|stream|endstream)\\b"
 		},
 		{
 			"name": "variable.other.name.pdf",
@@ -72,7 +72,7 @@
 		{
 			"name": "punctuation.definition.dictionary.pdf",
 			"begin": "<<",
-			"end": ">>",
+			"end": "(>>|endstream|endobj)",
 			"patterns": [
 				{
 					"name": "comment.line.percent.pdf",
@@ -220,7 +220,7 @@
 		{
 			"name": "keyword.section.content-stream.pdf",
 			"begin": "\\bstream\\b",
-			"end": "\\bendstream\\b",
+			"end": "\\b(endstream|endobj)\\b",
 			"patterns": [
 				{
 					"name": "comment.line.percent.pdf",
@@ -288,7 +288,7 @@
 				{
 					"name": "punctuation.definition.dictionary.pdf",
 					"begin": "<<",
-					"end": ">>",
+					"end": "(>>|endstream|endobj)",
 					"patterns": [
 						{
 							"name": "comment.line.percent.pdf",
@@ -432,7 +432,7 @@
 				{
 					"name": "binary.data.inlineimage.pdf",
 					"begin": "\\bID\\b",
-					"end": "\\bEI\\b",
+					"end": "(EI|endstream|endobj)\\b",
 					"contentName": "text.plain"
 				},
 				{
