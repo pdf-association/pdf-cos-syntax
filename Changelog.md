@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.1.3 - 2023-08-xx
 - (FIXED/ADDED) bracket matching
 - (ADDED) Additional validation checks of conventional cross reference tables
-- 
+- (ADDED) Auto-complete and auto-closing for arrays (`[`,`]`), literal strings (`(`/`)`), hex strings (`<`/`>`) and PostScript brackets (`{`/`}`). Dictionaries (`<<`,`>>`)
+- (ADDED) LSP semantic token processor used by "go to" functionality to ensure correct token is located
+- (IMPROVED) TextMate grammar updates for syntax highlighting for PDFs with binary data
+- (IMPROVED) Folding support for objects, streams, conventional cross-reference tables and paired content stream operators 
+
 
 ## 0.1.2 - 2023-08-15
 - (ADDED) Distinguish handling of FDF and PDF for validation checks and snippets

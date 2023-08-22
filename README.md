@@ -113,8 +113,17 @@ Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
 - other text-centric streams such as CMaps, XMP metadata (XML), and PostScript Type 4 functions are not explicitly highlighted.
 
 
-## Folding
-Folding is enabled for PDF streams (`stream` to `endstream`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`). The dictionary end token `<<` also needs to be a line by itself.
+## Auto-complete and auto-closing
+This extension supports auto-complete and auto-closing for arrays (`[`,`]`), literal strings (`(`/`)`), hex strings (`<`/`>`), dictionaries (`<<`/`>>`) and PostScript brackets (`{`/`}`), outside of strings and comments.
+If text is highlighted, and one of the above PDF token start symbols is then typed, VSCode will automatically add the corresponding PDF token end symbol after the highlighted text. If these tokens are entered, then the corresponding PDF token end symbol will be added after the cursor (except for dictionaries).
+
+
+## Multi-line folding
+Folding is enabled for PDF objects streams (`X Y obj`/`endobj`), streams (`stream`/`endstream`), conventional cross reference tables (`xref`/`trailer`) and multi-line PDF dictionary objects (`<<`/`>>`). The dictionary start token `<<` must be on a line by itself or preceded by a PDF name object (e.g. a key name). The dictionary end token `>>` must also be at the start of a line. 
+
+Folding is also available for the paired PDF content stream operators `q`/`Q` `BT`/`ET`, `BX`/`EX`, `BDC`/`EMC`, and `BMC`/`EMC` when they are at the start of a line (preceded by the required operands in the case of `BDC` and `BMC`). 
+
+Folding markers may get confused by comments, literal strings, or binary data containing these tokens. 
 
 ### Windows folding shortcuts
 - `CTRL`+`SHIFT`+`[` = fold region
@@ -130,6 +139,22 @@ Folding is enabled for PDF streams (`stream` to `endstream`) and multi-line PDF 
 - &#8984; `K`, &#8984; `]` = unfold all subregions
 - &#8984; `K`, &#8984; `0` = fold all regions
 - &#8984; `K`, &#8984; `J` = unfold all regions
+
+
+## Bracket Matching
+Many IDEs for programming languages support bracketing matching, where the cursor can jump to a matching open or close bracket (e.g., `{` with `}` or `(` with `)`). In PDF, the equivalent brackets are:
+
+- PDF dictionary objects (start `<<` and end `>>`)
+- PDF array objects (start `[` and end `]`)
+- PDF hex string objects (start `<` and end `>`)
+- POstScript brackets (start `{` and end `}`)
+
+### Windows shortcut
+- `CTRL`+`SHIFT`+`\` = jump to matching bracket
+- `ALT`+`LEFT-ARROW` = return to previous location
+### Mac shortcut
+- &#8679; &#8984; `\` = jump to matching bracket
+- &#8997; `LEFT-ARROW` = return to previous location
 
 
 ## Go To Functionality
@@ -157,29 +182,7 @@ Placing the cursor anywhere in the object ID (the object number `X` or generatio
 - &#8679; `F12` = show references
 
 
-## Bracket Matching
-
-Many IDEs for programming languages support bracketing matching, where the cursor can jump to a matching open or close bracket (e.g., `{` with `}` or `(` with `)`). In PDF, the equivalent brackets are:
-
-- PDF dictionary objects (start `<<` and end `>>`)
-- PDF array objects (start `[` and end `]`)
-- PDF hex string objects (start `<` and end `>`)
-- PDF content stream operator pairs - **NOT IMPLEMENTED YET** 
-    - graphics state push and pop (`q` and `Q`)
-    - text object (start `BT` and end `ET`)
-    - compatibility operators (start `BX` and end `EX`)
-    - marked content regions (start `BDC` or `BMC`, and end `EMC`)
-
-### Windows shortcut
-- `CTRL`+`SHIFT`+`\` = jump to matching bracket
-- `ALT`+`LEFT-ARROW` = return to previous location
-### Mac shortcut
-- &#8679; &#8984; `\` = jump to matching bracket
-- &#8997; `LEFT-ARROW` = return to previous location
-
-
 ## Commenting & uncommenting lines 
-
 Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF/FDF file and use the "Toggle Line Comment" command.
 
 ### Windows shortcut
