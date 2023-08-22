@@ -11,14 +11,15 @@
 
 ## TL;DR
 
-This is **NOT** a debugger, renderer or text extractor for PDF.
+This is **NOT** a debugger, renderer or text extractor for PDF!!
 
-PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use _conventional_ cross-reference tables (i.e. _not_ cross-reference streams introduced with PDF 1.5):
+PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for learning about text-based PDF files that use _conventional_ cross-reference tables (i.e. _not_ cross-reference streams introduced with PDF 1.5):
 
-- Support for both `.pdf` and `.fdf` files based on file extension
-- PDF COS and content stream operator [syntax highlighting](#syntax-highlighting) 
+- Support for both `.pdf` and `.fdf` files (based on file extension)
+- PDF COS syntax and content stream operator [syntax highlighting](#syntax-highlighting) 
 - [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, and PostScript brackets
-- [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables and the various paired graphics operators
+- [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables, and all paired graphics operators
+- [Auto-indent and auto-outdent](#auto-indent-and-auto-outdent-on-enter) on ENTER 
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - Single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
@@ -27,7 +28,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 
 ## PDF files are _BINARY_!
 
-Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode - as this can break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if sufficient care is taken and certain features are avoided. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "far too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor!
+Technically all PDF files are **binary files** and should **never** be arbitrarily edited in text-based editors such as VSCode as this **will** break them! However, for the purposes of learning PDF or manually writing targeted PDF test files, it is possible to use a text editor if extra care is taken and certain features are avoided. The functionality provided by this extension is **NOT** intended for debugging or analysis of real-world PDF files as such files are "far too binary" for text editors such as VSCode. Use a proper PDF forensic inspection utility or a dedicated hex editor!
 
 In particular, VSCode interprets sequences of bytes above 127 as multi-byte UTF-8 sequences which will result in corrupted PDF files as these byte sequences invalid UTF-8 sequences are removed or replaced!
 
@@ -43,14 +44,14 @@ If you see this VSCode error message then you **must** choose "Ignore":
 
 ## Learning PDF
 
-Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is more productive to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, Go To definition, find all references, snippet insertion, etc.
+Although PDF files are technically binary, when first learning PDF or when manually creating targeted test files it is convenient to use  "pure text" PDF files. As a result it is helpful to have a modern development/IDE environment with features such as syntax highlighting, folding, Intellisense, Go To definition, find all references, snippet insertion, auto-indenting, auto-closing, etc.
 
 A minimal PDF only requires binary bytes (>127) for the 4-bytes of the binary marker comment in the 2nd line of the file. When chosen carefully, this sequence of bytes can avoid confusion by VSCode, even if the display is not correct. The following 5 byte sequence meets the PDF requirement to have a comment (`%` = 0x25) followed by 4 bytes all above 0x7F (>127) while also being valid 2-byte UTF-8 sequences - as a result VSCode will _**only display 2 characters representing the 4 binary bytes in the PDF!**_:
 
 - In binary (hex values):  `25 C2 A9 C2 A9`
 - As shown in VSCode (as UTF-8): `%©©`
 
-If saved from VSCode, this will remain valid and thus is highly recommended for PDF created with VSCode
+If saved from VSCode, this will remain valid and thus is **highly recommended** for PDF files created with VSCode.
 
 All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc. To assist with visualizing  whitespace and any non-printable control bytes, it is **strongly recommended** to enable both "Render whitespace" and "Render Control Characters" via the View \| Appearance... submenu.
 
@@ -151,15 +152,24 @@ Many IDEs for programming languages support bracketing matching, where the curso
 - PDF hex string objects (start `<` and end `>`)
 - POstScript brackets (start `{` and end `}`)
 
-### Windows shortcut
+This is visualized in VSCode with an box around the paired brackets, and with the same color.
+
+### Windows bracket matching shortcut
 - `CTRL`+`SHIFT`+`\` = jump to matching bracket
-- `ALT`+`LEFT-ARROW` = return to previous location
-### Mac shortcut
+### Mac bracket matching shortcut
 - &#8679; &#8984; `\` = jump to matching bracket
-- &#8997; `LEFT-ARROW` = return to previous location
 
 
-## Go To Functionality
+## Auto-indent and Auto-outdent on ENTER
+When ENTER is hit after certain PDF start tokens (_listed below_), the next line will be automatically indented and the appropriate PDF end token will be inserted. This helps ensure that [multi-line folding support](#multi-line-folding) will work.
+
+- PDF dictionary objects (start `<<` and end `>>`)
+- PDF array objects (start `[` and end `]`)
+- PDF hex string objects (start `<` and end `>`)
+- POstScript brackets (start `{` and end `}`)
+
+
+## "Go To" Functionality
 VSCode allows easy navigation and examination of definitions, declarations and references. For PDF the following programming language equivalences are used:
 - **definition**: a PDF object (`X Y obj`)
 - **declaration**: the in-use cross-reference table entry for a PDF object (e.g., `0000003342 00000 n`)
@@ -177,19 +187,21 @@ Placing the cursor anywhere in the object ID (the object number `X` or generatio
 - `ALT`+`F12` = peek definition
 - `CTRL`+`K`, `F12` = open definition to the side
 - `SHIFT`+`F12` = show references
+- `ALT`+`LEFT-ARROW` = return to previous location
 ### Mac Go To shortcuts
 - `F12` = goto definition
 - &#8997; `F12` = peek definition
 - &#8984; `K`, `F12` = open definition to the side
 - &#8679; `F12` = show references
+- &#8997; `LEFT-ARROW` = return to previous location
 
 
 ## Commenting & uncommenting lines 
 Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF/FDF file and use the "Toggle Line Comment" command.
 
-### Windows shortcut
+### Windows comment shortcut
 - `CTRL`+`/` = toggle line comment
-### Mac shortcut
+### Mac comment shortcut
 - &#8984; `/` = toggle line comment
 
 
@@ -210,9 +222,9 @@ Validation checks include:
 - checking that the last non-blank line of the PDF/FDF starts with `%%EOF`
 
 
-## [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
+## Snippets
 
-Snippets are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (Windows: `CTRL` + `SPACE`, or Mac: &#8984; `SPACE`)
+[Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets) are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (Windows: `CTRL` + `SPACE`, or Mac: &#8984; `SPACE`)
 
 * `obj` - an empty PDF object. If you prefix with the object number (e.g. `10 obj`) then the snippet will expand nicely for you and add a default generation number of `0`.
 * `stream` - an empty PDF stream object.  If you prefix with the object number (e.g. `10 stream`) then the snippet will expand nicely for you  and add a default generation number of `0`.
