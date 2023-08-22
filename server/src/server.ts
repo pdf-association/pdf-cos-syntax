@@ -580,7 +580,7 @@ connection.onDefinition(
       document,
       xrefTable
     );
-    
+
     return targetLocation;
   }
 );
@@ -588,32 +588,67 @@ connection.onDefinition(
 /**
  *  "Find all references" for "X Y R" and "X Y obj"
  */
+// connection.onReferences((params): Location[] | null => {
+//   const document = documents.get(params.textDocument.uri);
+//   if (!document) {
+//     return null;
+//   }
+
+//   // Get text either side of the cursor. Because finding all references is limited to "X Y R"
+//   // or "X Y obj", select _very_ few bytes prior to current char position on the line (to try and
+//   // avoid lists of indirect references confusing things: "1 0 R 2 0 R") but still allowing for
+//   // large object numbers.
+//   const position = params.position;
+//   const lineText = document.getText({
+//     start: Position.create(position.line, Math.max(position.character - 4, 0)),
+//     end: Position.create(position.line, position.character + 10),
+//   });
+
+//   // Object ID = object number and generation number (may not always be 0)
+//   const objMatch = lineText.match(/(\d+) (\d+) (obj|R)/);
+//   if (!objMatch) {
+//     return null;
+//   }
+
+//   const objectNumber = parseInt(objMatch[1]);
+//   const genNumber = parseInt(objMatch[2]);
+//   return findAllReferences(objectNumber, genNumber, document);
+// });
+
 connection.onReferences((params): Location[] | null => {
   const document = documents.get(params.textDocument.uri);
   if (!document) {
     return null;
   }
 
-  // Get text either side of the cursor. Because finding all references is limited to "X Y R"
-  // or "X Y obj", select _very_ few bytes prior to current char position on the line (to try and
-  // avoid lists of indirect references confusing things: "1 0 R 2 0 R") but still allowing for
-  // large object numbers.
   const position = params.position;
-  const lineText = document.getText({
-    start: Position.create(position.line, Math.max(position.character - 4, 0)),
-    end: Position.create(position.line, position.character + 10),
-  });
+  const token = getSemanticTokenAtPosition(document, position);
 
-  // Object ID = object number and generation number (may not always be 0)
-  const objMatch = lineText.match(/(\d+) (\d+) (obj|R)/);
-  if (!objMatch) {
+  if (!token) {
     return null;
   }
 
-  const objectNumber = parseInt(objMatch[1]);
-  const genNumber = parseInt(objMatch[2]);
+  let objectNumber: number;
+  let genNumber: number;
+  
+  switch (token.type) {
+    case "reference":
+    case "inUseObject":
+      const lineText = document.getText(token.range);
+      const objMatch = lineText.match(/(\d+) (\d+)/);
+      if (!objMatch) {
+        return null;
+      }
+      objectNumber = parseInt(objMatch[1]);
+      genNumber = parseInt(objMatch[2]);
+      break;
+    default:
+      return null;
+  }
+
   return findAllReferences(objectNumber, genNumber, document);
 });
+
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
