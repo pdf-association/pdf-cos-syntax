@@ -355,7 +355,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   // Validate keywords needed in conventional PDFs (not FDF)
   if (isFilePDF(textDocument)) {
     ["trailer", "startxref", "xref"].forEach((keyword) => {
-      if (!new RegExp(`\\b${keyword}\\b`, "g").test(text)) {
+      if (!new RegExp(`${keyword}\\b`, "g").test(text)) {
         addDiagnostic(
           Position.create(0, 0),
           Position.create(0, 8),
@@ -368,7 +368,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     // 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f" allowing for PDFs variable EOLs
     // If that works, then know number of objects in cross-ref table and whether there are any free objects
     const firstXref = new RegExp(
-      `\\bxref\\s+0 (\\d+)\\s+(\\d{10}) 65535 f\\b`
+      `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`, 'm' // multi-line regex!
     ).exec(text);
     if (!firstXref) {
       addDiagnostic(
@@ -381,6 +381,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       const xrefLine = getLineFromByteOffset(textDocument, firstXref.index);
       const numObj = parseInt(firstXref[1]);
       const nextFree = parseInt(firstXref[2]);
+      const freeGen = parseInt(firstXref[3]);
       if (numObj < 5) {
         addDiagnostic(
           Position.create(xrefLine, 0),
@@ -395,6 +396,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
           Position.create(xrefLine, 4),
           "Original PDF cross reference table had at least 1 object on the free list",
           DiagnosticSeverity.Information
+        );
+      }
+      if (freeGen !== 65535) {
+        addDiagnostic(
+          Position.create(xrefLine, 0),
+          Position.create(xrefLine, 4),
+          `Object 0 at start of free list did not have a generation number of 65535 (was "${freeGen}")`
         );
       }
       // check if cross-reference table contains any prohibited stuff such as
