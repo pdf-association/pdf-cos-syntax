@@ -73,7 +73,7 @@ Syntax highlighting of PDF COS syntax and PDF content streams including special 
 - PDF literal string objects (start `(` and end `)` with `\` escape sequences) 
 - PDF hex string objects (start `<` and end `>`)
 - PDF name objects (start `/` with `#` hex pairs)
-- PDF integer and real number objects (including with leading `+`, `-`, `.` or multiple `0`s)
+- PDF integer and real number objects (including with leading `+`, `-`, `.` or multiple leading `0`s)
 - PDF comments (start with `%` to end-of-line)
 - all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` (including associated object ID integers), `R` (including associated object ID integers), `startxref`, `stream`,  `trailer`, `true`, `xref`)
 - PDF content stream operators when occuring between `stream` and `endstream` keywords
@@ -99,12 +99,17 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 | | |
 
 ### Known issues with [TextMate grammar](./pdf.tmLanguage.json)
-- PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
+Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
+- PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)`.
+    - The easiest solution is to include a backslash (i.e. use `\)` and `\(`) for any brackets inside literal strings. e.g. write `(\(\))` instead of of `(())`.
+    - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
+- UTF-16BE and UTF-8 byte order markers in PDF text strings are not specifically identified (_and they also do not display!_)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
-- `#` hex codes in literal strings are not highlighted
-- the syntax highlighter can get confused between hex strings `<`/`>` and dictionary start tokens `<<`/`>>` (as a dictionary start token can look like a malformed hex string!).
-    - one way to overcome this confusion is to put the dictionary close token (`>>`) on a new line 
-- binary data will confuse syntax highlighting!
+- `#` hex codes in literal strings are not specifically highlighted
+- the syntax highlighter can get confused between hex strings `<`/`>` and dictionary start tokens `<<`/`>>`, especially if a hex string spans multiple lines.
+    - one way to overcome this confusion is to always have hex strings on a single and  put the dictionary close token (`>>`) on a separate new line. 
+- other text-centric streams such as CMaps, XMP metadata (XML), and PostScript Type 4 functions are not explicitly highlighted.
+
 
 ## Folding
 Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`).
