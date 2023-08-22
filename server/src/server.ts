@@ -225,7 +225,6 @@ documents.onDidClose((e) => {
 //   // tokenCache.set(change.document.uri, parseDocumentForTokens(change.document));
 // });
 
-
 /** The content of a text document has changed. This event is emitted
  *  when the text document first opened or when its content has changed.
  *  Re-validate the PDF.
@@ -562,7 +561,7 @@ connection.onDefinition(
     // Get the document corresponding to the URI
     const document = documents.get(textDocument.uri);
     if (!document) return null;
-    
+
     // Get 1st conventional xref table (if one exists)
     const xrefTable = extractXrefTable(document);
     if (!xrefTable) {
@@ -630,10 +629,10 @@ connection.onReferences((params): Location[] | null => {
 
   let objectNumber: number;
   let genNumber: number;
-  
+
   switch (token.type) {
     case "reference":
-    case "inUseObject":
+    case "inUseObject": {
       const lineText = document.getText(token.range);
       const objMatch = lineText.match(/(\d+) (\d+)/);
       if (!objMatch) {
@@ -642,6 +641,7 @@ connection.onReferences((params): Location[] | null => {
       objectNumber = parseInt(objMatch[1]);
       genNumber = parseInt(objMatch[2]);
       break;
+    }
     default:
       return null;
   }
@@ -649,11 +649,9 @@ connection.onReferences((params): Location[] | null => {
   return findAllReferences(objectNumber, genNumber, document);
 });
 
-
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
-
