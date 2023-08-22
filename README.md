@@ -66,6 +66,8 @@ Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://githu
 
 The following VSCode functionality is enabled for files with extensions `.pdf` and `.fdf` (Forms Data Field) as both file formats use the same PDF COS ("_Carousel Object System_") syntax and file structure. 
 
+Toggling word wrapping may also be useful (menu: "View | Word Wrap", `ALT`+`Z`, or &#8997; `Z`)
+
 ## Syntax Highlighting
 Syntax highlighting of PDF COS syntax and PDF content streams including special handling of _most_ PDF rules for delimiters and whitespace:
 - PDF dictionary objects (start `<<` and end `>>`)
@@ -76,9 +78,9 @@ Syntax highlighting of PDF COS syntax and PDF content streams including special 
 - PDF integer and real number objects (including with leading `+`, `-`, `.` or multiple leading `0`s)
 - PDF comments (start with `%` to end-of-line)
 - all case-sensitive PDF keywords (`endobj`, `endstream`, `false`, `null`, `obj` (including associated object ID integers), `R` (including associated object ID integers), `startxref`, `stream`,  `trailer`, `true`, `xref`)
-- PDF content stream operators when occuring between `stream` and `endstream` keywords
+- PDF content stream operators occuring between `stream` and `endstream` keywords
 
-To inspect the tokens that the TextMate syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode Command Palette (`CTRL` + `SHIFT` + `P` or or &#8679; &#8984; `P`) via the View menu. For convenience, assign the command a new shortcut such as `CTRL` + `SHIFT` + `ALT` + `I` or &#8679; &#8984; `I`, for `I` = inspect. 
+To inspect the tokens that the TextMate syntax highlighter has recognized, select "Developer: Inspect Editor Tokens and Scopes" from the VSCode Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`) via the View menu. For convenience, assign the command a new shortcut such as `CTRL`+`SHIFT`+`ALT`+`I`, or &#8679; &#8984; `I`, for `I` = inspect. 
 
 | PDF construct | [TextMate token name](https://macromates.com/manual/en/language_grammars#naming_conventions) |
 | --- | --- |
@@ -100,27 +102,27 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 
 ### Known issues with [TextMate grammar](./pdf.tmLanguage.json)
 Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
-- PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)`.
+- PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)` or following PDF objects being highlighted as part of the literal string.
     - The easiest solution is to include a backslash (i.e. use `\)` and `\(`) for any brackets inside literal strings. e.g. write `(\(\))` instead of of `(())`.
     - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
 - UTF-16BE and UTF-8 byte order markers in PDF text strings are not specifically identified (_and they also do not display!_)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
 - `#` hex codes in literal strings are not specifically highlighted
 - the syntax highlighter can get confused between hex strings `<`/`>` and dictionary start tokens `<<`/`>>`, especially if a hex string spans multiple lines.
-    - one way to overcome this confusion is to always have hex strings on a single and  put the dictionary close token (`>>`) on a separate new line. 
+    - one way to overcome this confusion is to always have hex strings on a single and put the dictionary close token (`>>`) on a separate new line. 
 - other text-centric streams such as CMaps, XMP metadata (XML), and PostScript Type 4 functions are not explicitly highlighted.
 
 
 ## Folding
-Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`).
+Folding is enabled for PDF streams (`stream` to `endstream`) and multi-line PDF dictionary objects (`<<` and `>>`). The dictionary start `<<` needs to be on a line by itself or preceded by a PDF name (e.g. a key name from a containing dictionary for an inline dictionary: ` /Font <<`). The dictionary end token `<<` also needs to be a line by itself.
 
 ### Windows folding shortcuts
-- `CTRL` + `SHIFT` + `[` = fold region
-- `CTRL` + `SHIFT` + `]` = unfold region
-- `CTRL` + `K`, `CTRL` + `[` = fold all subregions
-- `CTRL` + `K`, `CTRL` + `]` = unfold all subregions
-- `CTRL` + `K`, `CTRL` + `0` = fold all regions
-- `CTRL` + `K`, `CTRL` + `J` = unfold all regions
+- `CTRL`+`SHIFT`+`[` = fold region
+- `CTRL`+`SHIFT`+`]` = unfold region
+- `CTRL`+`K`, `CTRL`+`[` = fold all subregions
+- `CTRL`+`K`, `CTRL`+`]` = unfold all subregions
+- `CTRL`+`K`, `CTRL`+`0` = fold all regions
+- `CTRL`+`K`, `CTRL`+`J` = unfold all regions
 ### Mac folding shortcuts
 - &#8984; `[` = fold region
 - &#8984; `]` = unfold region
@@ -128,6 +130,7 @@ Folding is enabled for PDF objects (`X Y obj` and `endobj`) and multi-line PDF d
 - &#8984; `K`, &#8984; `]` = unfold all subregions
 - &#8984; `K`, &#8984; `0` = fold all regions
 - &#8984; `K`, &#8984; `J` = unfold all regions
+
 
 ## Go To Functionality
 VSCode allows easy navigation and examination of definitions, declarations and references. For PDF the following programming language equivalences are used:
@@ -144,14 +147,14 @@ Placing the cursor anywhere in the object ID (the object number `X` or generatio
 
 ### Windows Go To shortcuts
 - `F12` = goto definition
-- `ALT` + `F12` = peek definition
-- `CTRL` + `K`, `F12` = open definition to the side
-- `SHIFT` + `F12` = show references
+- `ALT`+`F12` = peek definition
+- `CTRL`+`K`, `F12` = open definition to the side
+- `SHIFT`+`F12` = show references
 ### Mac Go To shortcuts
 - `F12` = goto definition
 - &#8997; `F12` = peek definition
 - &#8984; `K`, `F12` = open definition to the side
-- &#8679;  `F12` = show references
+- &#8679; `F12` = show references
 
 
 ## Bracket Matching
@@ -160,7 +163,6 @@ Many IDEs for programming languages support bracketing matching, where the curso
 
 - PDF dictionary objects (start `<<` and end `>>`)
 - PDF array objects (start `[` and end `]`)
-- PDF literal string objects (start `(` and end `)`)  - **NOT IMPLEMENTED YET** 
 - PDF hex string objects (start `<` and end `>`)
 - PDF content stream operator pairs - **NOT IMPLEMENTED YET** 
     - graphics state push and pop (`q` and `Q`)
@@ -169,9 +171,11 @@ Many IDEs for programming languages support bracketing matching, where the curso
     - marked content regions (start `BDC` or `BMC`, and end `EMC`)
 
 ### Windows shortcut
-- `CTRL` + `SHIFT` + `\` = jump to matching bracket
+- `CTRL`+`SHIFT`+`\` = jump to matching bracket
+- `ALT`+`LEFT-ARROW` = return to previous location
 ### Mac shortcut
 - &#8679; &#8984; `\` = jump to matching bracket
+- &#8997; `LEFT-ARROW` = return to previous location
 
 
 ## Commenting & uncommenting lines 
@@ -179,14 +183,14 @@ Many IDEs for programming languages support bracketing matching, where the curso
 Commenting and uncommenting one or more lines in a PDF enables features and capabilities to be switched on or off easily. Note that PDF only has line comments (`%`). Highlight one or more lines in a PDF/FDF file and use the "Toggle Line Comment" command.
 
 ### Windows shortcut
-- `CTRL` + `/` = toggle line comment
+- `CTRL`+`/` = toggle line comment
 ### Mac shortcut
 - &#8984; `/` = toggle line comment
 
 
 ## Basic PDF/FDF validation
 
-VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams introduced in PDF 1.5). Validation issues are output to the "Problems" window (`CTRL` + `SHIFT` + `M` or &#8679; &#8984; `M`).
+VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams introduced in PDF 1.5). Validation issues are output to the "Problems" window (`CTRL`+`SHIFT`+`M` or &#8679; &#8984; `M`).
 
 Validation checks include:
 
