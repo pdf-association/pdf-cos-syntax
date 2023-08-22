@@ -13,17 +13,17 @@
 
 This is **NOT** a debugger, renderer or text extractor for PDF.
 
-PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use _conventional_ cross-reference tables (i.e. not cross-reference streams introduced with PDF 1.5):
+PDF (**Portable Document Format**) is an open page description language standard for typeset and paginated electronic documents defined by ISO 32000-2:2020 ([available at no cost](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/)). This extension provides the following features for PDF files that use _conventional_ cross-reference tables (i.e. _not_ cross-reference streams introduced with PDF 1.5):
 
-- support for both `.pdf` and `.fdf` files
-- PDF COS [syntax highlighting](#syntax-highlighting) 
-- PDF content stream operator [syntax highlighting](#syntax-highlighting) 
-- [folding](#folding) for PDF objects and multi-line dictionaries
+- Support for both `.pdf` and `.fdf` files based on file extension
+- PDF COS and content stream operator [syntax highlighting](#syntax-highlighting) 
+- [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, and PostScript brackets
+- [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables and the various paired graphics operators
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
-- single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
-- basic PDF and FDF file validation
-- [snippets](#snippets) for new object, new stream, and empty PDF/FDF files
+- Single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
+- Basic PDF and FDF file validation
+- [Snippets](#snippets) for new object, new stream, and empty PDF/FDF files
 
 ## PDF files are _BINARY_!
 
@@ -102,10 +102,12 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 
 ### Known issues with [TextMate grammar](./pdf.tmLanguage.json)
 Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
-- PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)` or following PDF objects being highlighted as part of the literal string.
-    - The easiest solution is to include a backslash (i.e. use `\)` and `\(`) for any brackets inside literal strings. e.g. write `(\(\))` instead of of `(())`.
+- PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)` or following PDF objects being highlighted as part of the literal string: ![VSCode bad string](assets/VSCode-BadString.png) 
+
+    - The easiest solution is to include a backslash (i.e. use `\)` and `\(`) for any brackets inside literal strings. e.g. write "`(\(\))`" instead of "`(())`".
     - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
-- UTF-16BE and UTF-8 byte order markers in PDF text strings are not specifically identified (_and they also do not display!_)
+- UTF-16BE (_shown below_) and UTF-8 byte order markers in PDF text strings are not specifically identified (_and they also do not display!_)
+![VSCode Unicode byte order marker warning message](./assets/VSCode-UnicodeBOM.png)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
 - `#` hex codes in literal strings are not specifically highlighted
 - the syntax highlighter can get confused between hex strings `<`/`>` and dictionary start tokens `<<`/`>>`, especially if a hex string spans multiple lines.
