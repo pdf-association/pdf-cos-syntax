@@ -166,7 +166,7 @@ When ENTER is hit after certain PDF start tokens (_listed below_), the next line
 - PDF dictionary objects (start `<<` and end `>>`)
 - PDF array objects (start `[` and end `]`)
 - PDF hex string objects (start `<` and end `>`)
-- POstScript brackets (start `{` and end `}`)
+- PostScript brackets (start `{` and end `}`)
 
 
 ## "Go To" Functionality
