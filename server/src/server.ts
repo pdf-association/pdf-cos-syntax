@@ -58,7 +58,7 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-const tokenTypes = ["reference", "inUseObject", "xrefTableEntry"]; // ... add other token types as needed
+const tokenTypes = ["indirectReference", "indirectObject", "xrefTableEntry"]; // ... add other token types as needed
 const tokenModifiers = ["deprecated"]; // ... add other token modifiers as needed
 
 class SemanticTokensBuilder {
@@ -111,7 +111,7 @@ connection.onInitialize((params: InitializeParams) => {
       hoverProvider: true,
       semanticTokensProvider: {
         legend: {
-          tokenTypes: ["reference", "inUseObject", "xrefTableEntry"],
+          tokenTypes: ["indirectReference", "indirectObject", "xrefTableEntry"],
           tokenModifiers: ["deprecated"],
         },
         full: true,
@@ -165,7 +165,7 @@ function tokenizeDocument(document: TextDocument): any {
         line,
         startChar,
         length,
-        tokenTypes.indexOf("reference"),
+        tokenTypes.indexOf("indirectReference"),
         0
       ); // assuming no modifier
     }
@@ -643,8 +643,8 @@ connection.onReferences((params): Location[] | null => {
   let genNumber: number;
 
   switch (token.type) {
-    case "reference":
-    case "inUseObject": {
+    case "indirectReference": // X Y R
+    case "indirectObject": { // X Y obj
       const lineText = document.getText(token.range);
       const objMatch = lineText.match(/(\d+) (\d+)/);
       if (!objMatch) {

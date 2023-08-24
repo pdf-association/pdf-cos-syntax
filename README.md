@@ -17,6 +17,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 
 - Support for both `.pdf` and `.fdf` files (based on file extension)
 - PDF COS syntax and content stream operator [syntax highlighting](#syntax-highlighting) 
+- [Hover](#hover-hints) information for cross reference table entries
 - [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, and PostScript brackets
 - [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables, and all paired graphics operators
 - [Auto-indent and auto-outdent](#auto-indent-and-auto-outdent-on-enter) on ENTER 
@@ -114,6 +115,12 @@ Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
 - the syntax highlighter can get confused between hex strings `<`/`>` and dictionary start tokens `<<`/`>>`, especially if a hex string spans multiple lines.
     - one way to overcome this confusion is to always have hex strings on a single and put the dictionary close token (`>>`) on a separate new line. 
 - other text-centric streams such as CMaps, XMP metadata (XML), and PostScript Type 4 functions are not explicitly highlighted.
+
+
+## Hover hints
+If the cursor is placed over a conventional cross-reference table entry, then a hover hint will appear stating the object number. If it is an in-use entry (`n`) the byte offset is also displayed. This is very helpful for PDF files with many objects and long cross reference tables:
+
+![VSCode hover hint for an in-use object in a conventional cross referene table](./assets/VSCode-xrefHover.png)
 
 
 ## Auto-complete and auto-closing

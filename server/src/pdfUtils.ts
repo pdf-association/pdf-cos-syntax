@@ -213,7 +213,7 @@ export function getSemanticTokenAtPosition(
   });
   console.log("lineText: ", lineText);
 
-  // Check for reference pattern "X Y R"
+  // Check for an indirect reference pattern "X Y R"
   const regex = /(\d+) (\d+) R(?=[^G])/g;
   let match: RegExpExecArray | null;
 
@@ -223,7 +223,7 @@ export function getSemanticTokenAtPosition(
 
     if (matchStart <= position.character && position.character <= matchEnd) {
       return {
-        type: "reference",
+        type: "indirectReference",
         range: {
           start: { line: position.line, character: matchStart },
           end: { line: position.line, character: matchEnd },
@@ -232,12 +232,12 @@ export function getSemanticTokenAtPosition(
     }
   }
 
-  // Check for "X Y obj" pattern
+  // Check for "X Y obj" pattern - see clause 7.3.10 Indirect objects
   const objMatch = lineText.match(/(\d+) (\d+) obj/);
   if (objMatch) {
     const matchStart = objMatch.index!;
     return {
-      type: "inUseObject",
+      type: "indirectObject",
       range: {
         start: { line: position.line, character: matchStart },
         end: {
@@ -248,8 +248,8 @@ export function getSemanticTokenAtPosition(
     };
   }
 
-  // Check for xref table entry pattern
-  const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
+  // Check for conventional cross reference table entry pattern - both in-use and free objects
+  const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
   if (xrefMatch) {
     const matchStart = xrefMatch.index!;
     return {
@@ -327,7 +327,7 @@ export function computeDefinitionLocationForToken(
 
     case "xrefTableEntry": {
       const lineText = document.getText(tokenInfo.range);
-      const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
+      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
       if (!match) return null;
 
       const byteOffset = parseInt(match[1]);
@@ -340,7 +340,7 @@ export function computeDefinitionLocationForToken(
       };
     }
 
-    case "inUseObject":
+    case "indirectObject":
     default:
       return null;
   }
