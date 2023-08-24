@@ -18,6 +18,7 @@ import {
   Position,
   Definition,
   Location,
+  Hover,
   // Range,
 } from "vscode-languageserver/node";
 
@@ -32,6 +33,8 @@ import {
   isFilePDF,
   getSemanticTokenAtPosition,
   computeDefinitionLocationForToken,
+  calculateObjectNumber,
+  getXrefStartLine,
 } from "./pdfUtils";
 
 // for server debug.
@@ -105,6 +108,7 @@ connection.onInitialize((params: InitializeParams) => {
       },
       definitionProvider: true,
       referencesProvider: true,
+      hoverProvider: true,
       semanticTokensProvider: {
         legend: {
           tokenTypes: ["reference", "inUseObject", "xrefTableEntry"],
@@ -656,6 +660,55 @@ connection.onReferences((params): Location[] | null => {
 
   return findAllReferences(objectNumber, genNumber, document);
 });
+
+connection.onHover((params): Hover | null => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) {
+    return null;
+  }
+
+  const position = params.position;
+  const token = getSemanticTokenAtPosition(document, position);
+
+  if (!token) {
+    return null;
+  }
+
+  const lineText = document.getText(token.range);
+  const xrefTable = extractXrefTable(document);
+  const xrefStartLine = getXrefStartLine(document);
+
+  if (!xrefTable) {
+    return null;
+  }
+
+  switch (token.type) {
+    case 'xrefTableEntry': {
+      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
+      if (!match) return null;
+
+      const offset = parseInt(match[1].trim(), 10); 
+      const flag = match[3];
+      const objNum = calculateObjectNumber(xrefTable, position.line, xrefStartLine);
+
+      if (flag === 'n') {
+        return {
+          contents: `Object ${objNum} is at byte offset ${offset}`
+        };
+      } else if (flag === 'f') {
+        return {
+          contents: `Object ${objNum} is on the free list`
+        };
+      }
+
+      return null;
+    }
+
+    default:
+      return null;
+  }
+});
+
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

@@ -216,7 +216,7 @@ export function getSemanticTokenAtPosition(
   // Check for reference pattern "X Y R"
   const regex = /(\d+) (\d+) R(?=[^G])/g;
   let match: RegExpExecArray | null;
-  
+
   while ((match = regex.exec(lineText)) !== null) {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
@@ -305,7 +305,7 @@ export function computeDefinitionLocationForToken(
 ): Location | null {
   switch (tokenInfo.type) {
     case "reference": {
-			const lineText = document.getText(tokenInfo.range);
+      const lineText = document.getText(tokenInfo.range);
       // const match = lineText.match(/(\d+) (\d+) R(?=[^G])/);
       // if (!match) return null;
 
@@ -344,4 +344,37 @@ export function computeDefinitionLocationForToken(
     default:
       return null;
   }
+}
+
+export function calculateObjectNumber(
+  xrefTable: string,
+  lineIndex: number,
+  xrefStartLine: number | null
+): number | null {
+  if (xrefStartLine === null) {
+    return null;
+  }
+  const lines = xrefTable.split("\n");
+  let startObjNum = 1;
+
+  for (let i = 0; i < lineIndex - xrefStartLine && i < lines.length; i++) {
+    const parts = lines[i].split(" ");
+    if (!lines[i].includes(" f") && !lines[i].includes(" n")) {
+      startObjNum = parseInt(parts[0]);
+    } else {
+      startObjNum++;
+    }
+  }
+
+  return startObjNum;
+}
+
+export function getXrefStartLine(document: any): number | null {
+  const lines = document.getText().split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === "xref") {
+      return i + 1;
+    }
+  }
+  return null;
 }
