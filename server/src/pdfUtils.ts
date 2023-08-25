@@ -267,50 +267,14 @@ export function getSemanticTokenAtPosition(
   return null;
 }
 
-// const tokenCache: Map<string, SemanticTokenInfo[]> = new Map();
-// export function getSemanticTokenAtPosition(document: TextDocument, position: Position): SemanticTokenInfo | null {
-// 	// Get all tokens for the document
-// 	const tokens = getTokensForDocument(document);
-
-// 	// Find the token that matches the given position
-// 	for (const token of tokens) {
-// 		if (isPositionWithinRange(position, token.range)) {
-// 			return token;
-// 		}
-// 	}
-
-// 	return null;
-// }
-
-// function isPositionWithinRange(position: Position, range: Range): boolean {
-// 	return position.line > range.start.line || (position.line === range.start.line && position.character >= range.start.character)
-// 			&& position.line < range.end.line || (position.line === range.end.line && position.character <= range.end.character);
-// }
-
-// function getTokensForDocument(document: TextDocument): SemanticTokenInfo[] {
-// 	let tokens = tokenCache.get(document.uri);
-
-// 	if (!tokens) {
-// 			tokens = parseDocumentForTokens(document);
-// 			tokenCache.set(document.uri, tokens);
-// 	}
-
-// 	return tokens;
-// }
-
 export function computeDefinitionLocationForToken(
   tokenInfo: SemanticTokenInfo,
   document: TextDocument,
   xrefTable: any
 ): Location | null {
   switch (tokenInfo.type) {
-    case "reference": {
+    case "indirectReference": { // "X Y R"
       const lineText = document.getText(tokenInfo.range);
-      // const match = lineText.match(/(\d+) (\d+) R(?=[^G])/);
-      // if (!match) return null;
-
-      // const objNum = parseInt(match[1]);
-      // const genNum = parseInt(match[2]);
       const [objNumStr, genNumStr, _] = lineText.split(" ");
       const objNum = parseInt(objNumStr);
       const genNum = parseInt(genNumStr);
@@ -325,7 +289,7 @@ export function computeDefinitionLocationForToken(
       };
     }
 
-    case "xrefTableEntry": {
+    case "xrefTableEntry": { // 20 byte conventional cross reference table entry - free and in-use
       const lineText = document.getText(tokenInfo.range);
       const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
       if (!match) return null;
@@ -340,7 +304,7 @@ export function computeDefinitionLocationForToken(
       };
     }
 
-    case "indirectObject":
+    case "indirectObject": // "X Y obj"
     default:
       return null;
   }
