@@ -250,15 +250,16 @@ This section describes how real-world heavily binary PDFs that would otherwise b
 ## Using [QPDF](https://github.com/qpdf/qpdf) (_OSS_)
 
 ```bash
-qpdf -qdf file.pdf file-as-qdf.pdf
+qpdf --qdf --compress-streams=n --object-streams=disable --newline-before-endstream --decode-level=all --preserve-unreferenced --preserve-unreferenced-resources --normalize-content file.pdf file-as-qdf.pdf
 ```
 
 ## Using [Apache PDFBox-app](https://pdfbox.apache.org/2.0/commandline.html#writedecodeddoc) (_OSS_)
 
-Note that only PDFBox 2.x appears to have the `WriteDecodedDoc` functionality (_PDFBox 3.0.0 beta1 doesn't_):
+PDFBox 2.x and 3.x use different commands:
 
 ```bash
 java -jar pdfbox-app-2.0.29.jar WriteDecodedDoc file.pdf output.pdf
+java -jar pdfbox-app-3.0.0.jar decode file.pdf output.pdf
 ```
 
 ## Using Adobe Acrobat DC (_commercial tool_):
