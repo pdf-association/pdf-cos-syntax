@@ -249,13 +249,15 @@ This section describes how real-world heavily binary PDFs that would otherwise b
 
 ## Using [QPDF](https://github.com/qpdf/qpdf) (_OSS_)
 
+Note that this will _remove_ all incremental updates and consolidate as an _original PDF_.
+
 ```bash
 qpdf --qdf --compress-streams=n --object-streams=disable --newline-before-endstream --decode-level=all --preserve-unreferenced --preserve-unreferenced-resources --normalize-content file.pdf file-as-qdf.pdf
 ```
 
 ## Using [Apache PDFBox-app](https://pdfbox.apache.org/2.0/commandline.html#writedecodeddoc) (_OSS_)
 
-PDFBox 2.x and 3.x use different commands:
+Note that this will _remove_ all incremental updates and consolidate as an _original PDF_. PDFBox 2.x and 3.x also use different commands:
 
 ```bash
 java -jar pdfbox-app-2.0.29.jar WriteDecodedDoc file.pdf output.pdf
