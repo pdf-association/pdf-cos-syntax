@@ -1,8 +1,21 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
-
+/**
+ * @brief VSCode PDF COS syntax language client
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. 
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+*/
 import * as path from "path";
 import { workspace, ExtensionContext, languages } from "vscode";
 

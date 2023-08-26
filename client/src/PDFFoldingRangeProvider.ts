@@ -1,3 +1,18 @@
+/**
+ * @brief VSCode "pdf-cos-syntax" extension client-side folding support
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+ */
 import { FoldingRangeProvider, TextDocument, FoldingRange, ProviderResult } from 'vscode';
 
 export class PDFFoldingRangeProvider implements FoldingRangeProvider {
@@ -16,8 +31,10 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
 		for (let i = 0; i < document.lineCount; i++) {
 			const line = document.lineAt(i).text.trim();
 
-			/// @TODO Remove any comments to leave just content. Handle strings
-			/// Especially important if a comment or string contains any of the markers!
+			/** 
+			 * @todo Remove any comments to leave just content. Handle strings
+			 *  Especially important if a comment or string contains any of the markers!
+			 */
 
 			// cannot be nested 
 			if (line.match('\\d+ \\d+ obj')) {
