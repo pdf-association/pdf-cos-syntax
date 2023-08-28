@@ -27,7 +27,7 @@ import { Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
   getLineFromByteOffset,
   getByteOffsetForObj,
-  extractXrefTable,
+  extractAllXrefTables,
   findAllReferences,
   isFileFDF,
   isFilePDF,
@@ -372,7 +372,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     // 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f" allowing for PDFs variable EOLs
     // If that works, then know number of objects in cross-ref table and whether there are any free objects
     const firstXref = new RegExp(
-      `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`, 'm' // multi-line regex!
+      `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`,
+      "m" // multi-line regex!
     ).exec(text);
     if (!firstXref) {
       addDiagnostic(
@@ -382,50 +383,56 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       );
     } else {
       // @TODO - check the xref table entries - for free list, that numObj matches entries, etc.
-      const xrefLine = getLineFromByteOffset(textDocument, firstXref.index);
-      const numObj = parseInt(firstXref[1]);
-      const nextFree = parseInt(firstXref[2]);
-      const freeGen = parseInt(firstXref[3]);
-      if (numObj < 5) {
-        addDiagnostic(
-          Position.create(xrefLine, 0),
-          Position.create(xrefLine, 4),
-          `Original PDF cross reference table only has ${numObj} objects which is too few for a valid PDF`,
-          DiagnosticSeverity.Information
-        );
-      }
-      if (nextFree !== 0) {
-        addDiagnostic(
-          Position.create(xrefLine, 0),
-          Position.create(xrefLine, 4),
-          "Original PDF cross reference table had at least 1 object on the free list",
-          DiagnosticSeverity.Information
-        );
-      }
-      if (freeGen !== 65535) {
-        addDiagnostic(
-          Position.create(xrefLine, 0),
-          Position.create(xrefLine, 4),
-          `Object 0 at start of free list did not have a generation number of 65535 (was "${freeGen}")`
-        );
-      }
-      // check if cross-reference table contains any prohibited stuff such as
-      // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
-      // PDF whitespace or PDF EOLs). Note that extractXrefTable() will have normalized '\r'
-      // to '\n' too.
-      const xrefTable = extractXrefTable(textDocument);
-      if (xrefTable != null) {
-        const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(
-          xrefTable
-        );
-        if (badInXref != null) {
-          addDiagnostic(
-            Position.create(xrefLine, 0),
-            Position.create(xrefLine, 4),
-            `PDF cross reference table contains illegal characters: "${badInXref[1]}"`
+      const xrefTables = extractAllXrefTables(textDocument);
+      xrefTables.forEach((xrefTable) => {
+        const firstXref = new RegExp(
+          `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`,
+          "m"
+        ).exec(xrefTable);
+        if (firstXref) {
+          const xrefLine = getLineFromByteOffset(textDocument, firstXref.index);
+          const numObj = parseInt(firstXref[1]);
+          const nextFree = parseInt(firstXref[2]);
+          const freeGen = parseInt(firstXref[3]);
+          if (numObj < 5) {
+            addDiagnostic(
+              Position.create(xrefLine, 0),
+              Position.create(xrefLine, 4),
+              `Original PDF cross reference table only has ${numObj} objects which is too few for a valid PDF`,
+              DiagnosticSeverity.Information
+            );
+          }
+          if (nextFree !== 0) {
+            addDiagnostic(
+              Position.create(xrefLine, 0),
+              Position.create(xrefLine, 4),
+              "Original PDF cross reference table had at least 1 object on the free list",
+              DiagnosticSeverity.Information
+            );
+          }
+          if (freeGen !== 65535) {
+            addDiagnostic(
+              Position.create(xrefLine, 0),
+              Position.create(xrefLine, 4),
+              `Object 0 at start of free list did not have a generation number of 65535 (was "${freeGen}")`
+            );
+          }
+          // check if cross-reference table contains any prohibited stuff such as
+          // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
+          // PDF whitespace or PDF EOLs). Note that extractXrefTable() will have normalized '\r'
+          // to '\n' too.
+          const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(
+            xrefTable
           );
+          if (badInXref != null) {
+            addDiagnostic(
+              Position.create(xrefLine, 0),
+              Position.create(xrefLine, 4),
+              `PDF cross reference table contains illegal characters: "${badInXref[1]}"`
+            );
+          }
         }
-      }
+      });
     }
   }
 
@@ -474,99 +481,6 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 /**
  *  "Go to definition" for "X Y R" and in-use ("n") cross reference table entries
  */
-// connection.onDefinition((params): Definition | null => {
-//   const document = documents.get(params.textDocument.uri);
-//   if (!document) {
-//     return null;
-//   }
-
-//   if (!isFilePDF(document)) {
-//     return null;
-//   }
-
-//   // Get text either side of the cursor. Because finding object definitions is limited to "X Y R", "X Y obj"
-//   // and the 20-byte in-use cross reference table entries, first select VERY few bytes either side of
-//   // character position on line (to try and avoid lines with adjacent "X Y R" for example):
-//   // "[ 1 0 R 2 0 R 3 0 R ]" or "1 0 obj 2 0 R endobj"
-//   // If this fails then assume it is a 20-byte in-use cross reference table entry and grab more bytes
-//   const position = params.position;
-//   let lineText = document.getText({
-//     start: Position.create(position.line, Math.max(position.character - 5, 0)),
-//     end: Position.create(position.line, position.character + 8)
-//   });
-//   // console.log(`Go To Definition = ${lineText}`);
-
-//   // Get 1st conventional xref table (if one exists)
-//   const xrefTable = extractXrefTable(document);
-//   if (!xrefTable) {
-//     return null;
-//   }
-
-//   let byteOffset = -1;
-//   // find the object definition for an "X Y R" indirect reference. Avoid RG operator
-//   const indirectObjMatch = lineText.match(/(\d+) (\d+) R(?=[^G])/);
-//   if (indirectObjMatch) {
-//     const objNum = parseInt(indirectObjMatch[1]);
-//     const genNum = parseInt(indirectObjMatch[2]);
-//     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
-//     // console.log(`Go To Definition for ${objNum} ${genNum} R --> ${byteOffset}`);
-//     if (byteOffset === -1) {
-//       // No object matches indirect reference for <objNum, genNum>
-//       return null;
-//     }
-//   }
-
-//   // Add logic for "X Y obj" pattern --> assume at start of a line
-//   lineText = document.getText({
-//     start: Position.create(position.line, 0),
-//     end: Position.create(position.line, 12)
-//   });
-//   const objMatch = lineText.match(/(\d+) (\d+) obj/);
-//   if (objMatch && (byteOffset === -1)) {
-//     // Make sure it's not already found by "X Y R"
-//     const objNum = parseInt(objMatch[1]);
-//     const genNum = parseInt(objMatch[2]);
-//     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
-//     // console.log(`Go To Definition for ${objNum} ${genNum} obj --> ${byteOffset}`);
-//     if (byteOffset === -1) {
-//       return null;
-//     }
-//   }
-
-//   // find the object definition for a conventional xref table in-use ("n") entry --> get full entry
-//   lineText = document.getText({
-//     start: Position.create(position.line, 0),
-//     end: Position.create(position.line, 24),
-//   });
-//   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
-//   if (xrefMatch && (byteOffset === -1)) {
-//     byteOffset = parseInt(xrefMatch[1]);
-//     // console.log(`Go To Definition for in-use object --> ${byteOffset}`);
-//     if (byteOffset === -1) {
-//       // For some reason the byte offset "\d{10}" didn't parseInt!
-//       return null;
-//     }
-//   }
-
-//   // Nothing relevant was selected for finding a definition
-//   if (byteOffset === -1) {
-//     return null;
-//   }
-
-//   const line = getLineFromByteOffset(document, byteOffset);
-//   if (line === -1) {
-//     return null;
-//   }
-
-//   return {
-//     uri: params.textDocument.uri,
-//     range: {
-//       start: { line, character: 0 },
-//       end: { line, character: 0 },
-//     },
-//   };
-// });
-
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
     const { textDocument, position } = params;
@@ -574,9 +488,9 @@ connection.onDefinition(
     const document = documents.get(textDocument.uri);
     if (!document) return null;
 
-    // Get 1st conventional xref table (if one exists)
-    const xrefTable = extractXrefTable(document);
-    if (!xrefTable) {
+    // Get conventional xref tables
+    const xrefTables = extractAllXrefTables(document);
+    if (!xrefTables.length) {
       return null;
     }
     // Fetch the semantic token at the given position
@@ -586,45 +500,22 @@ connection.onDefinition(
 
     // Use the semantic token information to decide where the cursor should jump to.
     // This could be based on the token's type, range, or other properties.
-    const targetLocation: Location | null = computeDefinitionLocationForToken(
-      tokenInfo,
-      document,
-      xrefTable
-    );
+    let targetLocation: Location | null = null;
+    for (const xrefTable of xrefTables) {
+      targetLocation = computeDefinitionLocationForToken(
+        tokenInfo,
+        document,
+        xrefTable
+      );
+
+      if (targetLocation) {
+        break;
+      }
+    }
 
     return targetLocation;
   }
 );
-
-/**
- *  "Find all references" for "X Y R" and "X Y obj"
- */
-// connection.onReferences((params): Location[] | null => {
-//   const document = documents.get(params.textDocument.uri);
-//   if (!document) {
-//     return null;
-//   }
-
-//   // Get text either side of the cursor. Because finding all references is limited to "X Y R"
-//   // or "X Y obj", select _very_ few bytes prior to current char position on the line (to try and
-//   // avoid lists of indirect references confusing things: "1 0 R 2 0 R") but still allowing for
-//   // large object numbers.
-//   const position = params.position;
-//   const lineText = document.getText({
-//     start: Position.create(position.line, Math.max(position.character - 4, 0)),
-//     end: Position.create(position.line, position.character + 10),
-//   });
-
-//   // Object ID = object number and generation number (may not always be 0)
-//   const objMatch = lineText.match(/(\d+) (\d+) (obj|R)/);
-//   if (!objMatch) {
-//     return null;
-//   }
-
-//   const objectNumber = parseInt(objMatch[1]);
-//   const genNumber = parseInt(objMatch[2]);
-//   return findAllReferences(objectNumber, genNumber, document);
-// });
 
 connection.onReferences((params): Location[] | null => {
   const document = documents.get(params.textDocument.uri);
@@ -644,7 +535,8 @@ connection.onReferences((params): Location[] | null => {
 
   switch (token.type) {
     case "indirectReference": // X Y R
-    case "indirectObject": { // X Y obj
+    case "indirectObject": {
+      // X Y obj
       const lineText = document.getText(token.range);
       const objMatch = lineText.match(/(\d+) (\d+)/);
       if (!objMatch) {
@@ -675,40 +567,46 @@ connection.onHover((params): Hover | null => {
   }
 
   const lineText = document.getText(token.range);
-  const xrefTable = extractXrefTable(document);
-  const xrefStartLine = getXrefStartLine(document);
+  const xrefTables = extractAllXrefTables(document);
 
-  if (!xrefTable) {
+  if (!xrefTables || xrefTables.length === 0) {
     return null;
   }
+  console.log("length: ", xrefTables.length);
+  for (const xrefTable of xrefTables) {
+    const xrefStartLine = getXrefStartLine(document, xrefTable);
+console.log("xrefStartLine: ", xrefStartLine );
+    switch (token.type) {
+      case "xrefTableEntry": {
+        const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
+        if (!match) return null;
 
-  switch (token.type) {
-    case 'xrefTableEntry': {
-      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
-      if (!match) return null;
-
-      const offset = parseInt(match[1].trim(), 10); 
-      const flag = match[3];
-      const objNum = calculateObjectNumber(xrefTable, position.line, xrefStartLine);
-
-      if (flag === 'n') {
-        return {
-          contents: `Object ${objNum} is at byte offset ${offset}`
-        };
-      } else if (flag === 'f') {
-        return {
-          contents: `Object ${objNum} is on the free list`
-        };
+        const offset = parseInt(match[1].trim(), 10);
+        const flag = match[3];
+        const objNum = calculateObjectNumber(
+          xrefTable,
+          position.line,
+          xrefStartLine
+        );
+        console.log("objNum: ", objNum );
+        if (flag === "n") {
+          return {
+            contents: `Object ${objNum} is at byte offset ${offset}`,
+          };
+        } else if (flag === "f") {
+          return {
+            contents: `Object ${objNum} is on the free list`,
+          };
+        }
+        break;
       }
 
-      return null;
+      default:
+        break;
     }
-
-    default:
-      return null;
   }
+  return null;
 });
-
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

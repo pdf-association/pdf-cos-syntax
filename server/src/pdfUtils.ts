@@ -105,29 +105,64 @@ export function getLineFromByteOffset(
  *
  * @returns {string | null} the conventional cross reference table or null if one doesn't exist
  */
-export function extractXrefTable(document: TextDocument): string | null {
+// export function extractXrefTable(document: TextDocument): string | null {
+//   const documentText = document.getText();
+//   const xrefStart = documentText.indexOf("xref");
+//   const xrefEnd = documentText.indexOf("trailer");
+
+//   // Handle PDFs with cross-reference streams
+//   if (xrefStart === -1 || xrefEnd === -1 || xrefEnd < xrefStart) {
+//     return null;
+//   }
+//   let xrefTable = documentText.slice(xrefStart, xrefEnd);
+
+//   // Normalize for PDF end-of-line sequences to '\n'
+//   // Normalize line endings so split(), etc work as expected
+//   let xref = xrefTable.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
+//   xref = xrefTable.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
+//   xref = xrefTable.replace("\n\n", "\n"); // remove any blank lines
+//   let lines = xref.split("\n");
+
+//   // Remove the first line (the "xref" line)
+//   lines = lines.slice(1);
+//   xrefTable = lines.join("\n");
+//   return xrefTable;
+// }
+
+export function extractAllXrefTables(document: TextDocument): string[] {
   const documentText = document.getText();
-  const xrefStart = documentText.indexOf("xref");
-  const xrefEnd = documentText.indexOf("trailer");
+  const xrefTables: string[] = [];
+  let startIndex = 0;
 
-  // Handle PDFs with cross-reference streams
-  if (xrefStart === -1 || xrefEnd === -1 || xrefEnd < xrefStart) {
-    return null;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const xrefStart = documentText.indexOf("xref", startIndex);
+    const xrefEnd = documentText.indexOf("trailer", xrefStart);
+
+    // If there's no more xref section, or if a malformed section is found, break
+    if (xrefStart === -1 || xrefEnd === -1 || xrefEnd < xrefStart) {
+      break;
+    }
+
+    let xrefTable = documentText.slice(xrefStart, xrefEnd);
+
+    // Normalize for PDF end-of-line sequences to '\n'
+    xrefTable = xrefTable.replace(/\r\n/g, "\n"); // CR+LF --> LF 
+    xrefTable = xrefTable.replace(/\r/g, "\n"); // CR --> LF
+    xrefTable = xrefTable.replace(/\n\n/g, "\n"); // remove any blank lines
+
+    const lines = xrefTable.split("\n");
+
+    // Remove the first line (the "xref" line)
+    xrefTables.push(lines.slice(1).join("\n"));
+
+    // Update the start index for the next loop iteration
+    startIndex = xrefEnd;
   }
-  let xrefTable = documentText.slice(xrefStart, xrefEnd);
 
-  // Normalize for PDF end-of-line sequences to '\n'
-  // Normalize line endings so split(), etc work as expected
-  let xref = xrefTable.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
-  xref = xrefTable.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
-  xref = xrefTable.replace("\n\n", "\n"); // remove any blank lines
-  let lines = xref.split("\n");
-
-  // Remove the first line (the "xref" line)
-  lines = lines.slice(1);
-  xrefTable = lines.join("\n");
-  return xrefTable;
+  return xrefTables;
 }
+
 
 /**
  * Find all occurrences of "X Y R" in the text for a given object ID.
@@ -321,7 +356,7 @@ export function calculateObjectNumber(
   const lines = xrefTable.split("\n");
   let startObjNum = 1;
 
-  for (let i = 0; i < lineIndex - xrefStartLine && i < lines.length; i++) {
+  for (let i = 0; i < lineIndex - xrefStartLine + 1 && i < lines.length; i++) {
     const parts = lines[i].split(" ");
     if (!lines[i].includes(" f") && !lines[i].includes(" n")) {
       startObjNum = parseInt(parts[0]);
@@ -333,12 +368,34 @@ export function calculateObjectNumber(
   return startObjNum;
 }
 
-export function getXrefStartLine(document: any): number | null {
-  const lines = document.getText().split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() === "xref") {
-      return i + 1;
-    }
+export function getXrefStartLine(document: any, xrefTable: string): number | null {
+  const docText = document.getText();
+  // const tableIndex = docText.indexOf(xrefTable);
+  const linesOfXrefTable = xrefTable.split("\n");
+  if (linesOfXrefTable.length < 2) {
+    return null;
   }
-  return null;
+  console.log("linesOfXrefTable: ", linesOfXrefTable);
+  const tableStartIdentifier = linesOfXrefTable[0] + "\n" + linesOfXrefTable[1];
+  console.log("tableStartIdentifier: ", tableStartIdentifier);
+  const tableStartIndex = docText.indexOf(tableStartIdentifier);
+  console.log("tableStartIndex: ", tableStartIndex);
+  if (tableStartIndex === -1) {
+    return null;
+  }
+
+  const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
+  return linesBeforeTable.length;
+
+  // const tableStartIdentifier = xrefTable.split("\n")[0];
+  // const tableStartIndex = docText.indexOf(tableStartIdentifier);
+
+  // if (tableStartIndex === -1) {
+  //   return null;
+  // }
+
+  // const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
+
+  // return linesBeforeTable.length;
+  
 }
