@@ -345,47 +345,55 @@ export function computeDefinitionLocationForToken(
   }
 }
 
-export function calculateObjectNumber(
-  xrefTable: string,
-  lineIndex: number,
-  xrefStartLine: number | null
-): number | null {
-  if (xrefStartLine === null) {
-    return null;
-  }
-  const lines = xrefTable.split("\n");
-  let startObjNum = 1;
+// export function calculateObjectNumber(
+//   xrefTable: string,
+//   lineIndex: number,
+//   xrefStartLine: number | null
+// ): number | null {
+//   if (xrefStartLine === null) {
+//     return null;
+//   }
+//   const lines = xrefTable.split("\n");
+//   let startObjNum = 1;
 
-  for (let i = 0; i < lineIndex - xrefStartLine + 1 && i < lines.length; i++) {
-    const parts = lines[i].split(" ");
-    if (!lines[i].includes(" f") && !lines[i].includes(" n")) {
-      startObjNum = parseInt(parts[0]);
-    } else {
-      startObjNum++;
-    }
-  }
+//   for (let i = 0; i < lineIndex - xrefStartLine + 1 && i < lines.length; i++) {
+//     const parts = lines[i].split(" ");
+//     if (!lines[i].includes(" f") && !lines[i].includes(" n")) {
+//       startObjNum = parseInt(parts[0]);
+//     } else {
+//       startObjNum++;
+//     }
+//   }
 
-  return startObjNum;
+//   return startObjNum;
+// }
+export function calculateObjectNumber(xrefTable: string, hoverLine: number, xrefStartLine: number): EntryNode {
+  // Calculate the relative position of the hovered line in the xref table
+  const relativeLine = hoverLine - xrefStartLine;
+
+  // Use the XrefInfoMatrix to get the object number
+  const matrix = new XrefInfoMatrix();
+  return matrix.getObjectIDEntries(relativeLine);
 }
 
-export function getXrefStartLine(document: any, xrefTable: string): number | null {
-  const docText = document.getText();
-  // const tableIndex = docText.indexOf(xrefTable);
-  const linesOfXrefTable = xrefTable.split("\n");
-  if (linesOfXrefTable.length < 2) {
-    return null;
-  }
-  console.log("linesOfXrefTable: ", linesOfXrefTable);
-  const tableStartIdentifier = linesOfXrefTable[0] + "\n" + linesOfXrefTable[1];
-  console.log("tableStartIdentifier: ", tableStartIdentifier);
-  const tableStartIndex = docText.indexOf(tableStartIdentifier);
-  console.log("tableStartIndex: ", tableStartIndex);
-  if (tableStartIndex === -1) {
-    return null;
-  }
+export function getXrefStartLine(document: any, xrefTable: string): EntryNode | null {
+  // const docText = document.getText();
+  // // const tableIndex = docText.indexOf(xrefTable);
+  // const linesOfXrefTable = xrefTable.split("\n");
+  // if (linesOfXrefTable.length < 2) {
+  //   return null;
+  // }
+  // console.log("linesOfXrefTable: ", linesOfXrefTable);
+  // const tableStartIdentifier = linesOfXrefTable[0] + "\n" + linesOfXrefTable[1];
+  // console.log("tableStartIdentifier: ", tableStartIdentifier);
+  // const tableStartIndex = docText.indexOf(tableStartIdentifier);
+  // console.log("tableStartIndex: ", tableStartIndex);
+  // if (tableStartIndex === -1) {
+  //   return null;
+  // }
 
-  const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
-  return linesBeforeTable.length;
+  // const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
+  // return linesBeforeTable.length;
 
   // const tableStartIdentifier = xrefTable.split("\n")[0];
   // const tableStartIndex = docText.indexOf(tableStartIdentifier);
@@ -397,5 +405,108 @@ export function getXrefStartLine(document: any, xrefTable: string): number | nul
   // const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
 
   // return linesBeforeTable.length;
-  
+
+  const matrix = new XrefInfoMatrix();
+  const diagnostics = matrix.addXrefTable(0, 0, xrefTable);
+ return matrix.getObjectIDEntries(2) ;
 }
+
+type Diagnostic = {
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  line: number;
+};
+
+class EntryNode {
+  constructor(
+    public lineNbr: number,
+    public entry: string
+  ) {}
+}
+
+class XrefInfoMatrix {
+  matrix: EntryNode[][] = [];
+
+  isObjectIDValid(objectID: number): boolean {
+    return this.matrix[objectID] !== undefined;
+  }
+
+  getObjectIDEntries(objectID: number): EntryNode[] {
+    return this.isObjectIDValid(objectID) ? this.matrix[objectID] : [];
+  }
+
+  addXrefTable(startLineNbr: number, iterNum: number, xref: string): Diagnostic[] {
+    const diagnostics: Diagnostic[] = [];
+    let currentObjectNum: number | null = null;
+    let entryCount: number | null = null;
+
+    for (const entryStr of xref) {
+      // Skip blank or whitespace-only lines
+      if (!entryStr.trim()) {
+        startLineNbr++;
+        continue;
+      }
+
+      const entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
+
+      if (entryPatternMatch) {
+        if (currentObjectNum === null || entryCount === null || entryCount < 0) {
+          diagnostics.push({
+            type: 'error',
+            message: 'Unexpected xref entry without a preceding valid subsection marker',
+            line: startLineNbr
+          });
+          startLineNbr++;
+          continue;
+        }
+
+        if (entryCount === 0) {
+          diagnostics.push({
+            type: 'error',
+            message: `Number of entries in the subsection was declared as zero, but got an xref entry.`,
+            line: startLineNbr
+          });
+          startLineNbr++;
+          continue;
+        }
+
+        const entry = new EntryNode(startLineNbr, entryStr);
+        if (!this.matrix[currentObjectNum]) {
+          this.matrix[currentObjectNum] = [];
+        }
+        this.matrix[currentObjectNum][iterNum] = entry;
+
+        entryCount--;
+        currentObjectNum++;
+        startLineNbr++;
+        continue;
+      }
+
+      const subsectionMatch = entryStr.match(/\b(\d+) (\d+)\b/);
+
+      if (subsectionMatch) {
+        currentObjectNum = parseInt(subsectionMatch[1], 10);
+        entryCount = parseInt(subsectionMatch[2], 10);
+
+        // Special case for 0 0 subsection marker
+        if (currentObjectNum === 0 && entryCount === 0) {
+          startLineNbr++;
+          continue;
+        }
+
+        if (entryCount !== null && entryCount !== 0) {
+          diagnostics.push({
+            type: 'error',
+            message: `Expected ${entryCount} more entries before the next subsection marker.`,
+            line: startLineNbr
+          });
+        }
+      }
+
+      startLineNbr++;
+    }
+
+    return diagnostics;
+  }
+}
+

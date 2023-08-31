@@ -572,10 +572,10 @@ connection.onHover((params): Hover | null => {
   if (!xrefTables || xrefTables.length === 0) {
     return null;
   }
-  console.log("length: ", xrefTables.length);
+
   for (const xrefTable of xrefTables) {
     const xrefStartLine = getXrefStartLine(document, xrefTable);
-console.log("xrefStartLine: ", xrefStartLine );
+
     switch (token.type) {
       case "xrefTableEntry": {
         const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
@@ -588,7 +588,7 @@ console.log("xrefStartLine: ", xrefStartLine );
           position.line,
           xrefStartLine
         );
-        console.log("objNum: ", objNum );
+        console.log("objNum: ", objNum);
         if (flag === "n") {
           return {
             contents: `Object ${objNum} is at byte offset ${offset}`,
