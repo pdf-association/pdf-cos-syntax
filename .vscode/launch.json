@@ -7,8 +7,8 @@
 			"request": "launch",
 			"name": "Launch Client",
 			"runtimeExecutable": "${execPath}",
+			"sourceMaps": true,
 			"args": ["--extensionDevelopmentPath=${workspaceRoot}"],
-			"outFiles": ["${workspaceRoot}/client/out/**/*.js"],
 			"preLaunchTask": {
 				"type": "npm",
 				"script": "watch"
@@ -19,19 +19,18 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
+			"sourceMaps": true,
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"--extensionTestsPath=${workspaceRoot}/client/out/test/index",
 				"${workspaceRoot}/client/testFixture"
-			],
-			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
+			]
 		},
 		{
 			"name": "Attach to Server",
 			"type": "node",
 			"request": "attach",
 			"port": 6009,
-			"outFiles": ["${workspaceFolder}/server/out/**/*.js"],
 			"restart": true,
 			"sourceMaps": true,
 			"preLaunchTask": "npm: watch"
