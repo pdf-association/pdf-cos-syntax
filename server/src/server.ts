@@ -26,15 +26,13 @@ import { Range, TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   getLineFromByteOffset,
-  getByteOffsetForObj,
   extractAllXrefTables,
   findAllReferences,
   isFileFDF,
   isFilePDF,
   getSemanticTokenAtPosition,
   computeDefinitionLocationForToken,
-  calculateObjectNumber,
-  getXrefStartLine,
+  XrefInfoMatrix
 } from "./pdfUtils";
 
 // for server debug.
@@ -519,31 +517,37 @@ connection.onDefinition(
 
 connection.onReferences((params): Location[] | null => {
   const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return null;
-  }
+  if (!document) return null;
 
   const position = params.position;
   const token = getSemanticTokenAtPosition(document, position);
 
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   let objectNumber: number;
   let genNumber: number;
+  const lineText = document.getText(token.range);
 
   switch (token.type) {
     case "indirectReference": // X Y R
-    case "indirectObject": {
-      // X Y obj
-      const lineText = document.getText(token.range);
+    case "indirectObject": {  // X Y obj
       const objMatch = lineText.match(/(\d+) (\d+)/);
-      if (!objMatch) {
-        return null;
-      }
+      if (!objMatch) return null;
+
       objectNumber = parseInt(objMatch[1]);
       genNumber = parseInt(objMatch[2]);
+      break;
+    }
+    case "xrefTableEntry": { // only for in-use entries! 
+      const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
+      if (!match) return null;
+
+      const offset = parseInt(match[1]);
+      genNumber = parseInt(match[2]);
+      const xRefinfo = new XrefInfoMatrix;
+      xRefinfo.mergeAllXrefTables(document);
+      objectNumber = xRefinfo.getObjectNumberBasedOnByteOffset(offset, genNumber, "n");
+      if (objectNumber === -1) return null;
       break;
     }
     default:
@@ -555,56 +559,40 @@ connection.onReferences((params): Location[] | null => {
 
 connection.onHover((params): Hover | null => {
   const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return null;
-  }
+  if (!document) return null;
 
   const position = params.position;
   const token = getSemanticTokenAtPosition(document, position);
 
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   const lineText = document.getText(token.range);
-  const xrefTables = extractAllXrefTables(document);
+  const xRefinfo = new XrefInfoMatrix;
+  console.log(xRefinfo);
+  xRefinfo.mergeAllXrefTables(document);
 
-  if (!xrefTables || xrefTables.length === 0) {
-    return null;
-  }
+  switch (token.type) {
+    case "xrefTableEntry": {
+      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
+      if (!match) return null;
 
-  for (const xrefTable of xrefTables) {
-    const xrefStartLine = getXrefStartLine(document, xrefTable);
-
-    switch (token.type) {
-      case "xrefTableEntry": {
-        const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
-        if (!match) return null;
-
-        const offset = parseInt(match[1].trim(), 10);
-        const flag = match[3];
-        const objNum = calculateObjectNumber(
-          xrefTable,
-          position.line,
-          xrefStartLine
-        );
-        console.log("objNum: ", objNum);
-        if (flag === "n") {
-          return {
-            contents: `Object ${objNum} is at byte offset ${offset}`,
-          };
-        } else if (flag === "f") {
-          return {
-            contents: `Object ${objNum} is on the free list`,
-          };
-        }
-        break;
+      const offset = parseInt(match[1]);
+      const genNum = parseInt(match[2]);
+      const flag = match[3];
+      const objNum = xRefinfo.getObjectNumberBasedOnByteOffset(offset, genNum, flag);
+      if (flag === "n") {
+        return { contents: `Object ${objNum} is at byte offset ${offset}` };
+      } else {
+        return { contents: `Object ${objNum} is a free object` };
       }
-
-      default:
-        break;
+      break;
     }
+    case "indirectReference": // X Y R
+    case "indirectObject": // X Y obj
+    default:
+      break;
   }
+
   return null;
 });
 

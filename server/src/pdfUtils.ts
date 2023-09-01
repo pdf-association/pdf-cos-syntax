@@ -1,4 +1,23 @@
+/**
+ * @brief VSCode PDF COS syntax LSP server 
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. 
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+*/
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
+import { Diagnostic, DiagnosticSeverity } from 'vscode-languageserver/node';
 import { Location, Position } from "vscode-languageserver";
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
@@ -246,7 +265,7 @@ export function getSemanticTokenAtPosition(
     start: { line: position.line, character: 0 },
     end: { line: position.line, character: Number.MAX_VALUE },
   });
-  console.log("lineText: ", lineText);
+  console.log(`lineText: ${lineText}`);
 
   // Check for an indirect reference pattern "X Y R"
   const regex = /(\d+) (\d+) R(?=[^G])/g;
@@ -345,116 +364,237 @@ export function computeDefinitionLocationForToken(
   }
 }
 
-// export function calculateObjectNumber(
-//   xrefTable: string,
-//   lineIndex: number,
-//   xrefStartLine: number | null
-// ): number | null {
-//   if (xrefStartLine === null) {
-//     return null;
-//   }
-//   const lines = xrefTable.split("\n");
-//   let startObjNum = 1;
 
-//   for (let i = 0; i < lineIndex - xrefStartLine + 1 && i < lines.length; i++) {
-//     const parts = lines[i].split(" ");
-//     if (!lines[i].includes(" f") && !lines[i].includes(" n")) {
-//       startObjNum = parseInt(parts[0]);
-//     } else {
-//       startObjNum++;
-//     }
-//   }
-
-//   return startObjNum;
-// }
-export function calculateObjectNumber(xrefTable: string, hoverLine: number, xrefStartLine: number): EntryNode {
-  // Calculate the relative position of the hovered line in the xref table
-  const relativeLine = hoverLine - xrefStartLine;
-
-  // Use the XrefInfoMatrix to get the object number
-  const matrix = new XrefInfoMatrix();
-  return matrix.getObjectIDEntries(relativeLine);
-}
-
-export function getXrefStartLine(document: any, xrefTable: string): EntryNode | null {
-  // const docText = document.getText();
-  // // const tableIndex = docText.indexOf(xrefTable);
-  // const linesOfXrefTable = xrefTable.split("\n");
-  // if (linesOfXrefTable.length < 2) {
-  //   return null;
-  // }
-  // console.log("linesOfXrefTable: ", linesOfXrefTable);
-  // const tableStartIdentifier = linesOfXrefTable[0] + "\n" + linesOfXrefTable[1];
-  // console.log("tableStartIdentifier: ", tableStartIdentifier);
-  // const tableStartIndex = docText.indexOf(tableStartIdentifier);
-  // console.log("tableStartIndex: ", tableStartIndex);
-  // if (tableStartIndex === -1) {
-  //   return null;
-  // }
-
-  // const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
-  // return linesBeforeTable.length;
-
-  // const tableStartIdentifier = xrefTable.split("\n")[0];
-  // const tableStartIndex = docText.indexOf(tableStartIdentifier);
-
-  // if (tableStartIndex === -1) {
-  //   return null;
-  // }
-
-  // const linesBeforeTable = docText.slice(0, tableStartIndex).split("\n");
-
-  // return linesBeforeTable.length;
-
-  const matrix = new XrefInfoMatrix();
-  const diagnostics = matrix.addXrefTable(0, 0, xrefTable);
- return matrix.getObjectIDEntries(2) ;
-}
-
-type Diagnostic = {
-  type: 'error' | 'warning' | 'info';
-  message: string;
-  line: number;
-};
-
-class EntryNode {
+export class EntryNode {
   constructor(
-    public lineNbr: number,
-    public entry: string
+    public lineNbr: number, // ABSOLUTE line number in VSCode's PDF TextDocument
+    public objectNum: number, // Object number (determined by cross reference subsection lines)
+    public first: number, // \d{10}: in-use = byte offset, free = next object number in free list
+    public generationNumber: number, // \d{5}: generation number
+    public inUse: boolean // (f|n): true iff "n", false if "f"
   ) {}
 }
 
-class XrefInfoMatrix {
-  matrix: EntryNode[][] = [];
+export class XrefInfoMatrix {
+  /** 
+   * 1st index = object number
+   * 2nd index = file revision 
+   *    0 = original PDF
+   *    1 = oldest (1st) incremental update, etc.
+   */
+  private matrix: EntryNode[][] = [];
 
-  isObjectIDValid(objectID: number): boolean {
-    return this.matrix[objectID] !== undefined;
+  /** 
+   * Has this Object Number been defined as free or in-use (with any generation number)?
+   */
+  public isObjectNumberValid(objectNumber: number): boolean {
+    return this.matrix[objectNumber] !== undefined;
   }
 
-  getObjectIDEntries(objectID: number): EntryNode[] {
-    return this.isObjectIDValid(objectID) ? this.matrix[objectID] : [];
+  /** 
+   * Was this object ID (object number and generation number pair) ever defined as in-use?
+   * This means a "X Y obj" should exist in PDF.
+   */
+  public isObjectIDInUse(objectNumber: number, generationNumber: number): boolean {
+    if (this.matrix[objectNumber] !== undefined) {
+      let e: EntryNode;
+      for (e of this.matrix[objectNumber]) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
+            return true;
+        }
+      }
+    }
+    return false;
   }
 
-  addXrefTable(startLineNbr: number, iterNum: number, xref: string): Diagnostic[] {
+  /** 
+   * Find the Object Number of the cross reference table entry at lineNumber, which should have
+   * the same generation number. Returns the object number or -1 if not found.
+   */
+  public getObjectNumberBasedOnByteOffset(byteOffset: number, generationNumber: number, flag: string): number {
+    let o: EntryNode[];
+    let e: EntryNode;
+    for (o of this.matrix) {
+      if (o) {
+        for (e of o) {
+          if (e) {
+            if ((byteOffset === e.first) && (generationNumber === e.generationNumber) && (e.inUse == (flag === "n"))) {
+                return e.objectNum;
+            }
+        }
+        }
+      }
+    }
+    return -1;
+  }
+
+  /** 
+   * Was this object ID (object number and generation number pair) ever defined as in-use?
+   * This means a "X Y obj" should exist in PDF. Returns the byte offset in the PDF or -1 if not found.
+   *
+   * This PDF byte offset then needs to be converted to a VSCode line number to estimate where 
+   * the PDF object "X Y obj" ... "endobj" is approximately located.
+   */
+  public getByteOffsetOfInuseObjectID(objectNumber: number, generationNumber: number): number {
+    if (this.matrix[objectNumber] !== undefined) {
+      let e: EntryNode;
+      for (e of this.matrix[objectNumber]) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
+            return e.first;
+        }
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Returns the _first_ cross reference table entry line number for a given Object ID (object number and 
+   * generation number pair, such as from "X Y R" or "X Y obj"). Returns -1 if no match.
+   */
+  public getFirstLineNumberForObjectID(objectNumber: number, generationNumber: number): number {
+    if (this.matrix[objectNumber] !== undefined) {
+      let e: EntryNode;
+      for (e of this.matrix[objectNumber]) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
+            return e.lineNbr;
+        }
+      }
+    }
+    return -1;
+  }
+
+  /** 
+   * Get the complete revision list of an object's changes across all incremental updates. 
+   * Might be empty array [] if the object number was not in any cross reference table. 
+   */
+  public getObjectNumberEntries(objectNumber: number): EntryNode[]  {
+    return this.isObjectNumberValid(objectNumber) ? this.matrix[objectNumber] : [];
+  }
+
+  /**
+   * Finds ALL conventional cross reference tables and merges them into a single mega-matrix.
+   * Conventional cross reference table start with "xref" and end with "trailer" or "startxref"
+   * keyword (for hybrid reference PDFs). Starts from TOP of the PDF for revision numbers.
+   */
+  public mergeAllXrefTables(pdfFile: TextDocument) : Diagnostic[] {
+    let revision = 0;
+    const diags: Diagnostic[] = [];
+    const pdf = pdfFile.getText();
+
+    let xrefStart = 0;
+    let startXref = 0;
+    do {
+      // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
+      xrefStart = pdf.indexOf("xref", startXref + "startxref".length);
+      startXref = pdf.indexOf("startxref", startXref + "startxref".length);
+    }
+    while (startXref === xrefStart + 5);
+
+    // Did we find the "xref" start to a conventional cross reference table?
+    if (xrefStart === -1) {
+      diags.push({
+        severity: DiagnosticSeverity.Error,
+        message: `No conventional cross reference tables were found - "xref" keyword missing`,
+        range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
+        source: "pdf-cos-syntax"
+      });
+      console.log(`DIAG: ${diags[0].message}`);
+      return diags;
+    }
+
+    // Did we find the "startxref" start that is near the end of a file revision?
+    if (startXref === -1) {
+      diags.push({
+        severity: DiagnosticSeverity.Error,
+        message: `"startxref" keyword missing`,
+        range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
+        source: "pdf-cos-syntax"
+      });
+      console.log(`DIAG: ${diags[0].message}`);
+      return diags;
+    }
+    
+    // Locate end of conventional cross reference table: "trailer" or "startxref" keywords
+    let xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
+    if (xrefEnd < 0) {
+      // Hybrid PDFs may not have "trailer" keyword, so rely on "startxref"
+      xrefEnd = startXref;
+    }
+    let xrefTable: string;
+
+    while ((xrefEnd > 0) && (startXref > 0)) {
+      if (xrefEnd < 0) {
+        xrefTable = pdf.slice(xrefStart);
+      }
+      else {
+        xrefTable = pdf.slice(xrefStart, xrefEnd);
+      }
+      console.log(`Revision ${revision}: found conventional cross reference table at ${xrefStart} to ${xrefEnd}`);
+      diags.concat(this.addXrefTable(xrefStart, revision, xrefTable));
+      revision++;
+      do {
+        // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
+        xrefStart = pdf.indexOf("xref", startXref + "startxref".length);
+        startXref = pdf.indexOf("startxref", startXref + "startxref".length);
+      }
+      while (startXref === xrefStart + 5); // will also stop on -1
+      if (xrefStart > 0) {
+        xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
+        if (xrefEnd < 0) {
+          xrefEnd = startXref;
+        }
+      }
+      else {
+        xrefEnd = -1;
+      }
+    }
+
+    console.log(`Found ${revision} conventional cross reference tables`);
+    let d: Diagnostic;
+    for (d of diags) {
+      console.log(`DIAG: ${d.message}`);
+    }
+
+    return diags;
+  }
+
+  /**
+   * Merges a _single_ conventional cross reference table into the matrix. "xref"
+   * keyword can be the first line. Stops if "trailer", "startxref" or "%%EOF" is found.
+   * startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
+   */
+  private addXrefTable(startLineNbr: number, revision: number, xref: string): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     let currentObjectNum: number | null = null;
     let entryCount: number | null = null;
 
-    for (const entryStr of xref) {
-      // Skip blank or whitespace-only lines
-      if (!entryStr.trim()) {
+    // Normalize line endings to "\n" so split(), etc work as expected.
+    // KEEP blank lines so line numbering is not impacted!
+    xref = xref.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
+    xref = xref.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
+    const xrefLines = xref.split('\n');
+    
+    for (const entryStr of xrefLines) {
+      // Skip blank or whitespace-only lines, and any "xref" lines
+      if (!entryStr.trim() || entryStr.startsWith("xref")) {
         startLineNbr++;
         continue;
       }
 
+      if (entryStr.startsWith("trailer") || entryStr.startsWith("startxref") || entryStr.startsWith("%%EOF")) {
+        // came to the end of this xref!
+        break;
+      }
+
       const entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
 
-      if (entryPatternMatch) {
-        if (currentObjectNum === null || entryCount === null || entryCount < 0) {
+      if (entryPatternMatch && (entryPatternMatch.length === 4)) {
+        if (currentObjectNum === null || entryCount === null || entryCount < 0 || currentObjectNum < 0) {
           diagnostics.push({
-            type: 'error',
-            message: 'Unexpected xref entry without a preceding valid subsection marker',
-            line: startLineNbr
+            severity: DiagnosticSeverity.Error,
+            message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+            source: "pdf-cos-syntax"
           });
           startLineNbr++;
           continue;
@@ -462,19 +602,27 @@ class XrefInfoMatrix {
 
         if (entryCount === 0) {
           diagnostics.push({
-            type: 'error',
-            message: `Number of entries in the subsection was declared as zero, but got an xref entry.`,
-            line: startLineNbr
+            severity: DiagnosticSeverity.Error,
+            message: `Number of objects in the subsection was zero, but got an entry: ${entryStr}`,
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+            source: "pdf-cos-syntax"
           });
           startLineNbr++;
           continue;
         }
 
-        const entry = new EntryNode(startLineNbr, entryStr);
+        console.log(`Revision ${revision}: adding object ${currentObjectNum} at line ${startLineNbr}`);
+        const entry = new EntryNode(
+            startLineNbr,                   // line number in VSCode's PDF TextDocument
+            currentObjectNum,               // object number
+            parseInt(entryPatternMatch[1]), // \d{10} in-use = offset, free = next object number in free list
+            parseInt(entryPatternMatch[2]), // \d{5} generation number
+            (entryPatternMatch[3] === 'n')  // true iff in-use object ("n"). false if "f"
+        );
         if (!this.matrix[currentObjectNum]) {
           this.matrix[currentObjectNum] = [];
         }
-        this.matrix[currentObjectNum][iterNum] = entry;
+        this.matrix[currentObjectNum][revision] = entry;
 
         entryCount--;
         currentObjectNum++;
@@ -488,17 +636,18 @@ class XrefInfoMatrix {
         currentObjectNum = parseInt(subsectionMatch[1], 10);
         entryCount = parseInt(subsectionMatch[2], 10);
 
-        // Special case for 0 0 subsection marker
-        if (currentObjectNum === 0 && entryCount === 0) {
+        // Special case for "X 0" subsection marker
+        if (entryCount === 0) {
           startLineNbr++;
           continue;
         }
 
         if (entryCount !== null && entryCount !== 0) {
           diagnostics.push({
-            type: 'error',
-            message: `Expected ${entryCount} more entries before the next subsection marker.`,
-            line: startLineNbr
+            severity: DiagnosticSeverity.Error,
+            message: `Expected ${entryCount} more entries before this next subsection marker: ${entryStr}`,
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+            source: "pdf-cos-syntax"
           });
         }
       }
@@ -509,4 +658,6 @@ class XrefInfoMatrix {
     return diagnostics;
   }
 }
+
+
 
