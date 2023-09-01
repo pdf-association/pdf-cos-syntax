@@ -1,7 +1,21 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/**
+ * @brief VSCode PDF COS syntax LSP server 
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. 
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+*/
 import {
   createConnection,
   TextDocuments,
@@ -19,22 +33,17 @@ import {
   Definition,
   Location,
   Hover,
-  // Range,
 } from "vscode-languageserver/node";
 
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
 
 import {
-  getLineFromByteOffset,
-  getByteOffsetForObj,
-  extractXrefTable,
-  findAllReferences,
   isFileFDF,
   isFilePDF,
   getSemanticTokenAtPosition,
-  computeDefinitionLocationForToken,
-  calculateObjectNumber,
-  getXrefStartLine,
+  findAllDefinitions,
+  findAllReferences,
+  XrefInfoMatrix,
 } from "./pdfUtils";
 
 // for server debug.
@@ -46,13 +55,12 @@ if (process.env.NODE_ENV === "development") {
   // require("source-map-support").install();
 }
 
-// console.log('server debugging');
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
 
 // Create a simple text document manager.
-const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+const documents = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
@@ -61,25 +69,43 @@ let hasDiagnosticRelatedInformationCapability = false;
 const tokenTypes = ["indirectReference", "indirectObject", "xrefTableEntry"]; // ... add other token types as needed
 const tokenModifiers = ["deprecated"]; // ... add other token modifiers as needed
 
-class SemanticTokensBuilder {
-  private _data: number[] = [];
-
-  public push(
-    line: number,
-    char: number,
-    length: number,
-    tokenType: number,
-    tokenModifier: number
-  ) {
-    this._data.push(line, char, length, tokenType, tokenModifier);
-  }
-
-  public build(): any {
-    return {
-      data: this._data,
-    };
-  }
+// The example settings
+interface PDSCOSSyntaxSettings {
+  maxNumberOfProblems: number;
 }
+
+interface SimpleTextDocument {
+  getText(): string;
+}
+
+// The global settings, used when the `workspace/configuration` request is not supported by the client.
+// Please note that this is not the case when using this server with the client provided in this example
+// but could happen with other clients.
+const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
+let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
+
+// Cache the settings for all open documents!
+type PDFDocumentData = {
+  settings: PDSCOSSyntaxSettings;
+  xrefMatrix?: XrefInfoMatrix;
+};
+
+
+const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
+
+documents.onDidChangeContent((change) => {
+  const document = change.document;
+  if (document) {
+    updateXrefMatrixForDocument(document.uri, document.getText());
+  }
+});
+
+connection.onDidOpenTextDocument((params) => {
+  const document = documents.get(params.textDocument.uri);
+  if (document) {
+    updateXrefMatrixForDocument(document.uri, document.getText());
+  }
+});
 
 connection.onInitialize((params: InitializeParams) => {
   const capabilities = params.capabilities;
@@ -111,8 +137,8 @@ connection.onInitialize((params: InitializeParams) => {
       hoverProvider: true,
       semanticTokensProvider: {
         legend: {
-          tokenTypes: ["indirectReference", "indirectObject", "xrefTableEntry"],
-          tokenModifiers: ["deprecated"],
+          tokenTypes: tokenTypes,
+          tokenModifiers: tokenModifiers,
         },
         full: true,
       },
@@ -151,51 +177,12 @@ connection.onRequest("textDocument/semanticTokens/full", (params) => {
   return tokenizeDocument(document);
 });
 
-function tokenizeDocument(document: TextDocument): any {
-  const tokensBuilder = new SemanticTokensBuilder();
-  const lines = document.getText().split(/\r?\n/);
-
-  for (let line = 0; line < lines.length; line++) {
-    const currentLine = lines[line];
-    const referenceMatch = currentLine.match(/(\d+) (\d+) R/);
-    if (referenceMatch) {
-      const startChar = referenceMatch.index!;
-      const length = referenceMatch[0].length;
-      tokensBuilder.push(
-        line,
-        startChar,
-        length,
-        tokenTypes.indexOf("indirectReference"),
-        0
-      ); // assuming no modifier
-    }
-
-    // ... other token matchers ...
-  }
-
-  return tokensBuilder.build();
-}
-
-// The example settings
-interface ExampleSettings {
-  maxNumberOfProblems: number;
-}
-
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 100 };
-let globalSettings: ExampleSettings = defaultSettings;
-
-// Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
-
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
-    documentSettings.clear();
+    pdfDocumentData.clear();
   } else {
-    globalSettings = <ExampleSettings>(
+    globalSettings = <PDSCOSSyntaxSettings>(
       (change.settings.languageServerExample || defaultSettings)
     );
   }
@@ -204,24 +191,9 @@ connection.onDidChangeConfiguration((change) => {
   documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
-  if (!hasConfigurationCapability) {
-    return Promise.resolve(globalSettings);
-  }
-  let result = documentSettings.get(resource);
-  if (!result) {
-    result = connection.workspace.getConfiguration({
-      scopeUri: resource,
-      section: "pdf-cos-syntax",
-    });
-    documentSettings.set(resource, result);
-  }
-  return result;
-}
-
 // Only keep settings for open documents
 documents.onDidClose((e) => {
-  documentSettings.delete(e.document.uri);
+  pdfDocumentData.delete(e.document.uri);
 });
 // const tokenCache: Map<string, SemanticTokenInfo[]> = new Map();
 // documents.onDidChangeContent(change => {
@@ -237,6 +209,294 @@ documents.onDidChangeContent((change) => {
   validateTextDocument(change.document);
 });
 
+connection.onDidChangeWatchedFiles((_change) => {
+  // Monitored files have change in VSCode
+  connection.console.log("We received an file change event");
+});
+
+// This handler provides the initial list of the completion items.
+connection.onCompletion(
+  (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+    // The pass parameter contains the position of the text document in
+    // which code complete got requested. For the example we ignore this
+    // info and always provide the same completion items.
+    return [
+      {
+        label: "TypeScript",
+        kind: CompletionItemKind.Text,
+        data: 1,
+      },
+      {
+        label: "JavaScript",
+        kind: CompletionItemKind.Text,
+        data: 2,
+      },
+    ];
+  }
+);
+
+// This handler resolves additional information for the item selected in
+// the completion list.
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  if (item.data === 1) {
+    item.detail = "TypeScript details";
+    item.documentation = "TypeScript documentation";
+  } else if (item.data === 2) {
+    item.detail = "JavaScript details";
+    item.documentation = "JavaScript documentation";
+  }
+  return item;
+});
+
+
+/**
+ *  "Go to definition" capability:
+ *    - on "X Y R" --> find all "X Y obj"
+ *    - on "X Y obj" --> find all "X Y obj" (incl. current position)
+ *    - on in-use ("n") cross reference table entries --> find all "X Y obj"
+ * 
+ *  Because of file revisions, there may be MULTIPLE locations for any given "X Y obj"!!
+ */
+connection.onDefinition(
+  (params: TextDocumentPositionParams): Definition | null => {
+    console.log(`onDefinition for ${params.textDocument.uri}`);
+
+    const docData = pdfDocumentData.get(params.textDocument.uri);
+    const document = documents.get(params.textDocument.uri);
+    if (!docData || !docData.xrefMatrix || !document) return null;
+
+    // Fetch the semantic token at the given position
+    const token = getSemanticTokenAtPosition(document, params.position);
+    if (!token) return null;
+
+    let objectNumber: number;
+    let genNumber: number;
+    const lineText = document.getText(token.range);
+
+    switch (token.type) {
+      case "indirectObject": // X Y obj --> may have MULTIPLE objects with this definition!
+      case "indirectReference": { // X Y R
+        const objMatch = lineText.match(/(\d+) (\d+)/);
+        if (!objMatch) return null;
+  
+        objectNumber = parseInt(objMatch[1]);
+        genNumber = parseInt(objMatch[2]);
+        break;
+      }
+      case "xrefTableEntry": { // only for in-use entries!
+        const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
+        if (!match) return null;
+  
+        const offset = parseInt(match[1]);
+        genNumber = parseInt(match[2]);
+        const xRefInfo = docData.xrefMatrix;
+        objectNumber = xRefInfo.getObjectNumberBasedOnByteOffset(
+          offset,
+          genNumber,
+          "n"
+        );
+        break;
+      }
+      default:
+        return null;
+    }
+
+    // Sanity check object ID values
+    if ((objectNumber <= 0) || (genNumber < 0)) {
+      console.warn(`Invalid object ID for indirect object "${objectNumber} ${genNumber} obj"!`);
+      return null;
+    }
+
+    // Find all "X Y obj"
+    console.log(`Finding all indirect objects "${objectNumber} ${genNumber} obj"`);
+    const targetLocations: Location[] = findAllDefinitions(objectNumber, genNumber, document);
+    
+    // Handle degenerate condition (no locations)
+    if (targetLocations.length == 0) {
+      console.warn(`No indirect objects "${objectNumber} ${genNumber} obj" where found!`);
+      return null;
+    }
+    return targetLocations;
+  }
+);
+
+/**
+ *  Find all references capability
+ *   - on "X Y R" --> find all other "X Y R"
+ *   - on "X Y obj" --> find all "X Y R"
+ *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
+ */
+connection.onReferences((params): Location[] | null => {
+  console.log(`onReferences for ${params.textDocument.uri}`);
+
+  const docData = pdfDocumentData.get(params.textDocument.uri);
+  const document = documents.get(params.textDocument.uri);
+  if (!docData || !docData.xrefMatrix || !document) return null;
+
+  const position = params.position;
+  const token = getSemanticTokenAtPosition(document, position);
+  if (!token) return null;
+
+  let objectNumber: number;
+  let genNumber: number;
+  const lineText = document.getText(token.range);
+
+  switch (token.type) {
+    case "indirectReference": // X Y R
+    case "indirectObject": {  // X Y obj
+      const objMatch = lineText.match(/(\d+) (\d+)/);
+      if (!objMatch) return null;
+
+      objectNumber = parseInt(objMatch[1]);
+      genNumber = parseInt(objMatch[2]);
+      break;
+    }
+    case "xrefTableEntry": { // only for in-use entries!
+      const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
+      if (!match) return null;
+
+      const offset = parseInt(match[1]);
+      genNumber = parseInt(match[2]);
+      const xRefInfo = docData.xrefMatrix;
+      objectNumber = xRefInfo.getObjectNumberBasedOnByteOffset(
+        offset,
+        genNumber,
+        "n"
+      );
+      break;
+    }
+    default:
+      return null;
+  }
+
+  // Sanity check object ID values
+  if ((objectNumber <= 0) || (genNumber < 0)) {
+    console.warn(`Invalid object ID for indirect reference "${objectNumber} ${genNumber} R"!`);
+    return null;
+  }
+
+  // Find all "X Y R"
+  console.log(`Finding all indirect references "${objectNumber} ${genNumber} R"`);
+  const references = findAllReferences(objectNumber, genNumber, document);
+
+  // Handle degenerate condition (no references found)
+  if (references.length == 0) {
+    console.warn(`No indirect references "${objectNumber} ${genNumber} R" where found!`);
+    return null;
+  }
+  return references;
+});
+
+
+/**
+ * Hover capabilities:
+ *   - on "X Y obj" --> hover says how many references, etc. 
+ *   - on "X Y R" --> hover says how many objects, etc. 
+ *   - on conventional cross reference table entries --> hover says object number, etc.
+ */
+connection.onHover((params): Hover | null => {
+  console.log(`onHover for ${params.textDocument.uri}`);
+
+  const docData = pdfDocumentData.get(params.textDocument.uri);
+  const document = documents.get(params.textDocument.uri);
+  if (!docData || !docData.xrefMatrix || !document) return null;
+
+  const position = params.position;
+  const token = getSemanticTokenAtPosition(document, position);
+  if (!token) return null;
+
+  const lineText = document.getText(token.range);
+  const xRefInfo = docData.xrefMatrix;
+
+  switch (token.type) {
+    case "xrefTableEntry": { // both in-use and free
+      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
+      if (!match) return null;
+
+      const offset = parseInt(match[1]);
+      const genNum = parseInt(match[2]);
+      const flag = match[3];
+      const objNum = xRefInfo.getObjectNumberBasedOnByteOffset(
+        offset,
+        genNum,
+        flag
+      );
+      console.log(`onHover: xref entry for object ${objNum}`);
+      if (flag === "n") {
+        return { contents: `Object ${objNum} is at byte offset ${offset}` };
+      } else {
+        return { contents: `Object ${objNum} is a free object` };
+      }
+      break;
+    }
+
+    case "indirectReference": { // X Y R
+      const match = lineText.match(/\b(\d+) (\d+)\b/);
+      if (!match) return null;
+
+      const objectNumber = parseInt(match[1]);
+      const genNumber = parseInt(match[2]);
+      console.log(`Finding all objects "${objectNumber} ${genNumber} obj"`);
+      const objects = findAllDefinitions(objectNumber, genNumber, document);
+      if (objects.length == 0)
+        return { contents: `No object found for indirect reference "${objectNumber} ${genNumber} R"`};
+      else if (objects.length == 1)
+        return { contents: `One object found for "${objectNumber} ${genNumber} R"`};
+      else
+        return { contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`};
+      break;
+    }
+
+    case "indirectObject": { // X Y obj
+      const match = lineText.match(/\b(\d+) (\d+)\b/);
+      if (!match) return null;
+
+      const objectNumber = parseInt(match[1]);
+      const genNumber = parseInt(match[2]);
+      console.log(`Finding all indirect references "${objectNumber} ${genNumber} R"`);
+      const references = findAllReferences(objectNumber, genNumber, document);
+      if (references.length == 0)
+        return { contents: `No indirect references to object ${objectNumber} ${genNumber} found.`};
+      else if (references.length == 1)
+        return { contents: `One indirect reference to object ${objectNumber} ${genNumber}`};
+      else
+        return { contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`};
+      break;
+    }
+    default:
+      break;
+  }
+
+  return null;
+});
+
+// Make the text document manager listen on the connection
+// for open, change and close text document events
+documents.listen(connection);
+
+// Listen on the connection
+connection.listen();
+
+class SemanticTokensBuilder {
+  private _data: number[] = [];
+
+  public push(
+    line: number,
+    char: number,
+    length: number,
+    tokenType: number,
+    tokenModifier: number
+  ) {
+    this._data.push(line, char, length, tokenType, tokenModifier);
+  }
+
+  public build(): any {
+    return {
+      data: this._data,
+    };
+  }
+}
+
 /**
  * Perform basic validation of a conventional PDF:
  * 1. check 1st line for valid "%PDF-x.y" header, including known PDF version
@@ -246,9 +506,12 @@ documents.onDidChangeContent((change) => {
  * 5. check that a conventional cross-reference table is correct for an original PDF
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  const settings = await getDocumentSettings(textDocument.uri);
-  const diagnostics: Diagnostic[] = [];
+  console.log(`validateTextDocument for ${textDocument.uri}`);
+  let diagnostics: Diagnostic[] = [];
+
   const text = textDocument.getText();
+  // Rebuild cross-reference table information in case anything changed.
+  updateXrefMatrixForDocument(textDocument.uri, text);
 
   const addDiagnostic = (
     start: Position,
@@ -372,7 +635,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     // 3 lines, in order: "xref", "0 \d+", "\d{10} 65535 f" allowing for PDFs variable EOLs
     // If that works, then know number of objects in cross-ref table and whether there are any free objects
     const firstXref = new RegExp(
-      `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`, 'm' // multi-line regex!
+      `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`,
+      "m" // multi-line regex!
     ).exec(text);
     if (!firstXref) {
       addDiagnostic(
@@ -380,339 +644,94 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
         Position.create(0, 8),
         "PDF does not contain a conventional cross reference table starting with object 0 (beginning of the free list)"
       );
-    } else {
-      // @TODO - check the xref table entries - for free list, that numObj matches entries, etc.
-      const xrefLine = getLineFromByteOffset(textDocument, firstXref.index);
-      const numObj = parseInt(firstXref[1]);
-      const nextFree = parseInt(firstXref[2]);
-      const freeGen = parseInt(firstXref[3]);
-      if (numObj < 5) {
-        addDiagnostic(
-          Position.create(xrefLine, 0),
-          Position.create(xrefLine, 4),
-          `Original PDF cross reference table only has ${numObj} objects which is too few for a valid PDF`,
-          DiagnosticSeverity.Information
-        );
-      }
-      if (nextFree !== 0) {
-        addDiagnostic(
-          Position.create(xrefLine, 0),
-          Position.create(xrefLine, 4),
-          "Original PDF cross reference table had at least 1 object on the free list",
-          DiagnosticSeverity.Information
-        );
-      }
-      if (freeGen !== 65535) {
-        addDiagnostic(
-          Position.create(xrefLine, 0),
-          Position.create(xrefLine, 4),
-          `Object 0 at start of free list did not have a generation number of 65535 (was "${freeGen}")`
-        );
-      }
-      // check if cross-reference table contains any prohibited stuff such as
-      // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
-      // PDF whitespace or PDF EOLs). Note that extractXrefTable() will have normalized '\r'
-      // to '\n' too.
-      const xrefTable = extractXrefTable(textDocument);
-      if (xrefTable != null) {
-        const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(
-          xrefTable
-        );
-        if (badInXref != null) {
-          addDiagnostic(
-            Position.create(xrefLine, 0),
-            Position.create(xrefLine, 4),
-            `PDF cross reference table contains illegal characters: "${badInXref[1]}"`
-          );
-        }
-      }
+    }
+
+    // Get the list of diagnostics generated by the XRefMatrix building process
+    const docData = pdfDocumentData.get(textDocument.uri);
+    if (docData && docData.xrefMatrix && (docData.xrefMatrix.diagnostics.length > 0)) {
+      console.log(`Appending xref diagnostics`);
+      diagnostics = diagnostics.concat(docData.xrefMatrix.diagnostics);
     }
   }
 
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
-connection.onDidChangeWatchedFiles((_change) => {
-  // Monitored files have change in VSCode
-  connection.console.log("We received an file change event");
-});
+function tokenizeDocument(document: TextDocument): any {
+  console.log(`tokenizeDocument`);
+  const tokensBuilder = new SemanticTokensBuilder();
+  const lines = document.getText().split(/\r?\n/);
 
-// This handler provides the initial list of the completion items.
-connection.onCompletion(
-  (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    // The pass parameter contains the position of the text document in
-    // which code complete got requested. For the example we ignore this
-    // info and always provide the same completion items.
-    return [
-      {
-        label: "TypeScript",
-        kind: CompletionItemKind.Text,
-        data: 1,
-      },
-      {
-        label: "JavaScript",
-        kind: CompletionItemKind.Text,
-        data: 2,
-      },
-    ];
-  }
-);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  if (item.data === 1) {
-    item.detail = "TypeScript details";
-    item.documentation = "TypeScript documentation";
-  } else if (item.data === 2) {
-    item.detail = "JavaScript details";
-    item.documentation = "JavaScript documentation";
-  }
-  return item;
-});
-
-/**
- *  "Go to definition" for "X Y R" and in-use ("n") cross reference table entries
- */
-// connection.onDefinition((params): Definition | null => {
-//   const document = documents.get(params.textDocument.uri);
-//   if (!document) {
-//     return null;
-//   }
-
-//   if (!isFilePDF(document)) {
-//     return null;
-//   }
-
-//   // Get text either side of the cursor. Because finding object definitions is limited to "X Y R", "X Y obj"
-//   // and the 20-byte in-use cross reference table entries, first select VERY few bytes either side of
-//   // character position on line (to try and avoid lines with adjacent "X Y R" for example):
-//   // "[ 1 0 R 2 0 R 3 0 R ]" or "1 0 obj 2 0 R endobj"
-//   // If this fails then assume it is a 20-byte in-use cross reference table entry and grab more bytes
-//   const position = params.position;
-//   let lineText = document.getText({
-//     start: Position.create(position.line, Math.max(position.character - 5, 0)),
-//     end: Position.create(position.line, position.character + 8)
-//   });
-//   // console.log(`Go To Definition = ${lineText}`);
-
-//   // Get 1st conventional xref table (if one exists)
-//   const xrefTable = extractXrefTable(document);
-//   if (!xrefTable) {
-//     return null;
-//   }
-
-//   let byteOffset = -1;
-//   // find the object definition for an "X Y R" indirect reference. Avoid RG operator
-//   const indirectObjMatch = lineText.match(/(\d+) (\d+) R(?=[^G])/);
-//   if (indirectObjMatch) {
-//     const objNum = parseInt(indirectObjMatch[1]);
-//     const genNum = parseInt(indirectObjMatch[2]);
-//     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
-//     // console.log(`Go To Definition for ${objNum} ${genNum} R --> ${byteOffset}`);
-//     if (byteOffset === -1) {
-//       // No object matches indirect reference for <objNum, genNum>
-//       return null;
-//     }
-//   }
-
-//   // Add logic for "X Y obj" pattern --> assume at start of a line
-//   lineText = document.getText({
-//     start: Position.create(position.line, 0),
-//     end: Position.create(position.line, 12)
-//   });
-//   const objMatch = lineText.match(/(\d+) (\d+) obj/);
-//   if (objMatch && (byteOffset === -1)) {
-//     // Make sure it's not already found by "X Y R"
-//     const objNum = parseInt(objMatch[1]);
-//     const genNum = parseInt(objMatch[2]);
-//     byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
-//     // console.log(`Go To Definition for ${objNum} ${genNum} obj --> ${byteOffset}`);
-//     if (byteOffset === -1) {
-//       return null;
-//     }
-//   }
-
-//   // find the object definition for a conventional xref table in-use ("n") entry --> get full entry
-//   lineText = document.getText({
-//     start: Position.create(position.line, 0),
-//     end: Position.create(position.line, 24),
-//   });
-//   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
-//   if (xrefMatch && (byteOffset === -1)) {
-//     byteOffset = parseInt(xrefMatch[1]);
-//     // console.log(`Go To Definition for in-use object --> ${byteOffset}`);
-//     if (byteOffset === -1) {
-//       // For some reason the byte offset "\d{10}" didn't parseInt!
-//       return null;
-//     }
-//   }
-
-//   // Nothing relevant was selected for finding a definition
-//   if (byteOffset === -1) {
-//     return null;
-//   }
-
-//   const line = getLineFromByteOffset(document, byteOffset);
-//   if (line === -1) {
-//     return null;
-//   }
-
-//   return {
-//     uri: params.textDocument.uri,
-//     range: {
-//       start: { line, character: 0 },
-//       end: { line, character: 0 },
-//     },
-//   };
-// });
-
-connection.onDefinition(
-  (params: TextDocumentPositionParams): Definition | null => {
-    const { textDocument, position } = params;
-    // Get the document corresponding to the URI
-    const document = documents.get(textDocument.uri);
-    if (!document) return null;
-
-    // Get 1st conventional xref table (if one exists)
-    const xrefTable = extractXrefTable(document);
-    if (!xrefTable) {
-      return null;
-    }
-    // Fetch the semantic token at the given position
-    const tokenInfo = getSemanticTokenAtPosition(document, position);
-    // If no semantic token is found, return null
-    if (!tokenInfo) return null;
-
-    // Use the semantic token information to decide where the cursor should jump to.
-    // This could be based on the token's type, range, or other properties.
-    const targetLocation: Location | null = computeDefinitionLocationForToken(
-      tokenInfo,
-      document,
-      xrefTable
-    );
-
-    return targetLocation;
-  }
-);
-
-/**
- *  "Find all references" for "X Y R" and "X Y obj"
- */
-// connection.onReferences((params): Location[] | null => {
-//   const document = documents.get(params.textDocument.uri);
-//   if (!document) {
-//     return null;
-//   }
-
-//   // Get text either side of the cursor. Because finding all references is limited to "X Y R"
-//   // or "X Y obj", select _very_ few bytes prior to current char position on the line (to try and
-//   // avoid lists of indirect references confusing things: "1 0 R 2 0 R") but still allowing for
-//   // large object numbers.
-//   const position = params.position;
-//   const lineText = document.getText({
-//     start: Position.create(position.line, Math.max(position.character - 4, 0)),
-//     end: Position.create(position.line, position.character + 10),
-//   });
-
-//   // Object ID = object number and generation number (may not always be 0)
-//   const objMatch = lineText.match(/(\d+) (\d+) (obj|R)/);
-//   if (!objMatch) {
-//     return null;
-//   }
-
-//   const objectNumber = parseInt(objMatch[1]);
-//   const genNumber = parseInt(objMatch[2]);
-//   return findAllReferences(objectNumber, genNumber, document);
-// });
-
-connection.onReferences((params): Location[] | null => {
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return null;
-  }
-
-  const position = params.position;
-  const token = getSemanticTokenAtPosition(document, position);
-
-  if (!token) {
-    return null;
-  }
-
-  let objectNumber: number;
-  let genNumber: number;
-
-  switch (token.type) {
-    case "indirectReference": // X Y R
-    case "indirectObject": { // X Y obj
-      const lineText = document.getText(token.range);
-      const objMatch = lineText.match(/(\d+) (\d+)/);
-      if (!objMatch) {
-        return null;
-      }
-      objectNumber = parseInt(objMatch[1]);
-      genNumber = parseInt(objMatch[2]);
-      break;
-    }
-    default:
-      return null;
-  }
-
-  return findAllReferences(objectNumber, genNumber, document);
-});
-
-connection.onHover((params): Hover | null => {
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return null;
-  }
-
-  const position = params.position;
-  const token = getSemanticTokenAtPosition(document, position);
-
-  if (!token) {
-    return null;
-  }
-
-  const lineText = document.getText(token.range);
-  const xrefTable = extractXrefTable(document);
-  const xrefStartLine = getXrefStartLine(document);
-
-  if (!xrefTable) {
-    return null;
-  }
-
-  switch (token.type) {
-    case 'xrefTableEntry': {
-      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
-      if (!match) return null;
-
-      const offset = parseInt(match[1].trim(), 10); 
-      const flag = match[3];
-      const objNum = calculateObjectNumber(xrefTable, position.line, xrefStartLine);
-
-      if (flag === 'n') {
-        return {
-          contents: `Object ${objNum} is at byte offset ${offset}`
-        };
-      } else if (flag === 'f') {
-        return {
-          contents: `Object ${objNum} is on the free list`
-        };
-      }
-
-      return null;
+  for (let line = 0; line < lines.length; line++) {
+    const currentLine = lines[line];
+    const referenceMatch = currentLine.match(/(\d+) (\d+) R/);
+    if (referenceMatch) {
+      const startChar = referenceMatch.index!;
+      const length = referenceMatch[0].length;
+      tokensBuilder.push(
+        line,
+        startChar,
+        length,
+        tokenTypes.indexOf("indirectReference"),
+        0
+      ); // assuming no modifier
     }
 
-    default:
-      return null;
+    // ... other token matchers ...
   }
-});
 
+  return tokensBuilder.build();
+}
 
-// Make the text document manager listen on the connection
-// for open, change and close text document events
-documents.listen(connection);
+async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
+  console.log(`getDocumentSettings for ${resource}`);
+  const currentData = pdfDocumentData.get(resource) || {
+    settings: globalSettings,
+  };
+  const newSettings = await connection.workspace.getConfiguration({
+    scopeUri: resource,
+    section: "pdf-cos-syntax",
+  });
+  pdfDocumentData.set(resource, { ...currentData, settings: newSettings });
+  return { ...currentData, settings: newSettings };
+}
 
-// Listen on the connection
-connection.listen();
+function updateXrefMatrixForDocument(uri: string, content: string) {
+  console.log(`updateXrefMatrixForDocument for ${uri}`);
+  let docData = pdfDocumentData.get(uri);
+  if (!docData) {
+    docData = { settings: globalSettings }; // or fetch default settings
+    pdfDocumentData.set(uri, docData);
+  }
+
+  // Create or update the XrefInfoMatrix for the document content
+  docData.xrefMatrix = buildXrefMatrix(content);
+}
+
+function buildXrefMatrix(content: string) : XrefInfoMatrix {
+  console.log(`buildXrefMatrix`);
+  // Create a new instance of the XrefInfoMatrix
+  const xrefMatrix = new XrefInfoMatrix();
+
+  const mockPDFDocument: TextDocument = {
+    getText: () => content,
+    uri: "mockURI", // mock URI
+    languageId: "plaintext", // or any language ID you want to mock
+    version: 1, // mock version
+    positionAt: (offset: number) => {
+      // Mock implementation; adjust if necessary
+      return { line: 0, character: offset };
+    },
+    offsetAt: (position: Position) => {
+      // Mock implementation; adjust if necessary
+      return position.character;
+    },
+    lineCount: content.split("\n").length,
+    // Any other properties or methods from TextDocument should be added here in a similar fashion.
+  };
+
+  // Merge all xref tables found in the document into the matrix
+  xrefMatrix.mergeAllXrefTables(mockPDFDocument);
+
+  return xrefMatrix;
+}
