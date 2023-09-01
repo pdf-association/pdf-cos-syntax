@@ -320,6 +320,7 @@ export class XrefInfoMatrix {
    *    1 = oldest (1st) incremental update, etc.
    */
   private matrix: EntryNode[][] = [];
+  public diagnostics: Diagnostic[] = [];
 
   /** 
    * Dumps out the matrix to console.log(), sorted by Object Number, then file revision
@@ -450,9 +451,8 @@ export class XrefInfoMatrix {
    * Conventional cross reference table start with "xref" and end with "trailer" or "startxref"
    * keyword (for hybrid reference PDFs). Starts from TOP of the PDF for revision numbers.
    */
-  public mergeAllXrefTables(pdfFile: TextDocument) : Diagnostic[] {
+  public mergeAllXrefTables(pdfFile: TextDocument) {
     let revision = 0;
-    const diags: Diagnostic[] = [];
     const pdf = pdfFile.getText();
 
     let xrefStart = 0;
@@ -466,28 +466,27 @@ export class XrefInfoMatrix {
 
     // Did we find the "xref" start to a conventional cross reference table?
     if (xrefStart === -1) {
-      diags.push({
+      this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
         message: `No conventional cross reference tables were found - "xref" keyword missing`,
         range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
         source: "pdf-cos-syntax"
       });
-      console.log(`DIAG: ${diags[0].message}`);
-      return diags;
     }
 
     // Did we find the "startxref" start that is near the end of a file revision?
     if (startXref === -1) {
-      diags.push({
+      this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
         message: `"startxref" keyword missing`,
         range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
         source: "pdf-cos-syntax"
       });
-      console.log(`DIAG: ${diags[0].message}`);
-      return diags;
     }
-    
+
+    // Basic requirements not met
+    if (this.diagnostics.length > 0) return;
+
     // Locate end of conventional cross reference table: "trailer" or "startxref" keywords
     let xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
     if (xrefEnd < 0) {
@@ -504,7 +503,7 @@ export class XrefInfoMatrix {
         xrefTable = pdf.slice(xrefStart, xrefEnd);
       }
       // console.log(`Revision ${revision}: found conventional cross reference table at ${xrefStart} to ${xrefEnd}`);
-      diags.concat(this.addXrefTable(xrefStart, revision, xrefTable));
+      this.diagnostics.concat(this.addXrefTable(xrefStart, revision, xrefTable));
       revision++;
       do {
         // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
@@ -524,12 +523,7 @@ export class XrefInfoMatrix {
     }
 
     console.log(`Found ${revision} conventional cross reference tables`);
-    let d: Diagnostic;
-    for (d of diags) {
-      console.log(`DIAG: ${d.message}`);
-    }
-
-    return diags;
+    return;
   }
 
   /**
@@ -655,6 +649,3 @@ export class XrefInfoMatrix {
     return diagnostics;
   }
 }
-
-
-
