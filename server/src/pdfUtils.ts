@@ -320,6 +320,8 @@ export class XrefInfoMatrix {
    *    1 = oldest (1st) incremental update, etc.
    */
   private matrix: EntryNode[][] = [];
+
+  /** Set of diagnostics generated when building cross-reference information */
   public diagnostics: Diagnostic[] = [];
 
   /** 
@@ -484,9 +486,6 @@ export class XrefInfoMatrix {
       });
     }
 
-    // Basic requirements not met
-    if (this.diagnostics.length > 0) return;
-
     // Locate end of conventional cross reference table: "trailer" or "startxref" keywords
     let xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
     if (xrefEnd < 0) {
@@ -503,7 +502,7 @@ export class XrefInfoMatrix {
         xrefTable = pdf.slice(xrefStart, xrefEnd);
       }
       // console.log(`Revision ${revision}: found conventional cross reference table at ${xrefStart} to ${xrefEnd}`);
-      this.diagnostics.concat(this.addXrefTable(xrefStart, revision, xrefTable));
+      this.addXrefTable(xrefStart, revision, xrefTable);
       revision++;
       do {
         // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
@@ -532,8 +531,7 @@ export class XrefInfoMatrix {
    * startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
    * Also captures basic sanity check/validation issues.
    */
-  private addXrefTable(startLineNbr: number, revision: number, xref: string): Diagnostic[] {
-    const diagnostics: Diagnostic[] = [];
+  private addXrefTable(startLineNbr: number, revision: number, xref: string) {
     let currentObjectNum: number | null = null;
     let entryCount: number | null = null;
 
@@ -541,18 +539,6 @@ export class XrefInfoMatrix {
     // KEEP blank lines so line numbering is not impacted!
     xref = xref.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
     xref = xref.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
-    // check if cross-reference table contains any prohibited stuff such as
-    // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
-    // PDF whitespace or PDF EOLs).
-    const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(xref);
-    if (badInXref != null) {
-      diagnostics.push({
-        severity: DiagnosticSeverity.Warning,
-        range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-        message: `PDF cross reference table contains illegal characters: "${badInXref[1]}"`,
-        source: "pdf-cos-syntax"
-      });
-    }
     const xrefLines = xref.split('\n');
     
     for (const entryStr of xrefLines) {
@@ -567,25 +553,26 @@ export class XrefInfoMatrix {
         break;
       }
 
-      const entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
+      // Check if cross-reference table contains any prohibited stuff such as
+      // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
+      // PDF whitespace or PDF EOLs).
+      let entryPatternMatch = entryStr.match(/([^0-9 fn\t\r\n\0\f]+)/);
+      if (entryPatternMatch) {
+        this.diagnostics.push({
+          severity: DiagnosticSeverity.Warning,
+          range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+          message: `PDF cross reference table contains illegal characters: "${entryPatternMatch[1]}"`,
+          source: "pdf-cos-syntax"
+        });
+      }
+      entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
 
       if (entryPatternMatch && (entryPatternMatch.length === 4)) {
         const genNum = parseInt(entryPatternMatch[2]);
         if (currentObjectNum === null || entryCount === null || entryCount < 0 || currentObjectNum < 0) {
-          diagnostics.push({
+          this.diagnostics.push({
             severity: DiagnosticSeverity.Error,
             message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
-            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdf-cos-syntax"
-          });
-          startLineNbr++;
-          continue;
-        }
-
-        if (entryCount === 0) {
-          diagnostics.push({
-            severity: DiagnosticSeverity.Error,
-            message: `Number of objects in the subsection was zero, but got an entry: ${entryStr}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
             source: "pdf-cos-syntax"
           });
@@ -601,11 +588,12 @@ export class XrefInfoMatrix {
             genNum,                         // \d{5} generation number
             (entryPatternMatch[3] === 'n')  // true iff in-use object ("n"). false if "f"
         );
+
         if (!this.matrix[currentObjectNum]) {
           this.matrix[currentObjectNum] = [];
           // Check if very first object 0 in revision 0 of original PDF had correct free list 
           if ((currentObjectNum == 0) && (genNum !== 65535)) {
-            diagnostics.push({
+            this.diagnostics.push({
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 4) },
               message: `Object 0 at start of free list did not have a generation number of 65535 (was "${genNum}")`,
@@ -616,6 +604,7 @@ export class XrefInfoMatrix {
         this.matrix[currentObjectNum][revision] = entry;
 
         entryCount--;
+        if (entryCount < 0) entryCount = null;
         currentObjectNum++;
         startLineNbr++;
         continue;
@@ -623,29 +612,67 @@ export class XrefInfoMatrix {
 
       const subsectionMatch = entryStr.match(/\b(\d+) (\d+)\b/);
 
-      if (subsectionMatch) {
-        currentObjectNum = parseInt(subsectionMatch[1], 10);
-        entryCount = parseInt(subsectionMatch[2], 10);
+      if (subsectionMatch && (subsectionMatch.length == 3)) {
+        const newCurrentObjectNum = parseInt(subsectionMatch[1], 10);
+        const newEntryCount = parseInt(subsectionMatch[2], 10);
 
         // Special case for "X 0" subsection marker (no objects)
-        if (entryCount === 0) {
+        if (newEntryCount === 0) {
+          entryCount = null;
+          currentObjectNum = null;
           startLineNbr++;
           continue;
         }
 
-        if (entryCount !== null && entryCount !== 0) {
-          diagnostics.push({
+        if (newEntryCount < 0) {
+          this.diagnostics.push({
             severity: DiagnosticSeverity.Error,
-            message: `Expected ${entryCount} more entries before this next subsection marker: ${entryStr}`,
+            message: `Subsection object count was negative: ${newEntryCount}`,
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+            source: "pdf-cos-syntax"
+          });
+          entryCount = null;
+          currentObjectNum = null;
+          startLineNbr++;
+          continue;
+        }
+
+        if (newCurrentObjectNum < 0) {
+          this.diagnostics.push({
+            severity: DiagnosticSeverity.Error,
+            message: `Subsection object number was negative: ${newCurrentObjectNum}`,
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+            source: "pdf-cos-syntax"
+          });
+          entryCount = null;
+          currentObjectNum = null;
+          startLineNbr++;
+          continue;
+        }
+
+        if ((entryCount !== null) && (entryCount > 0)) {
+          this.diagnostics.push({
+            severity: DiagnosticSeverity.Error,
+            message: `Expected ${entryCount} more entries before this subsection marker: ${entryStr}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
             source: "pdf-cos-syntax"
           });
         }
+        entryCount = newEntryCount;
+        currentObjectNum = newCurrentObjectNum;
       }
 
       startLineNbr++;
     }
 
-    return diagnostics;
+    if ((entryCount !== null) && (entryCount > 0)) {
+      this.diagnostics.push({
+        severity: DiagnosticSeverity.Error,
+        message: `Expected ${entryCount} more entries before end of cross reference table`,
+        range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+        source: "pdf-cos-syntax"
+      });
+    }
+
   }
 }
