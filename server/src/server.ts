@@ -390,8 +390,8 @@ connection.onReferences((params): Location[] | null => {
 
 /**
  * Hover capabilities:
- *   - on "X Y obj" --> hover says how many references, etc. @TODO
- *   - on "X Y R" --> hover says how many objects, etc. @TODO
+ *   - on "X Y obj" --> hover says how many references, etc. 
+ *   - on "X Y R" --> hover says how many objects, etc. 
  *   - on conventional cross reference table entries --> hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
@@ -429,8 +429,40 @@ connection.onHover((params): Hover | null => {
       }
       break;
     }
-    case "indirectReference": // X Y R
-    case "indirectObject": // X Y obj
+
+    case "indirectReference": { // X Y R
+      const match = lineText.match(/\b(\d+) (\d+)\b/);
+      if (!match) return null;
+
+      const objectNumber = parseInt(match[1]);
+      const genNumber = parseInt(match[2]);
+      console.log(`Finding all objects "${objectNumber} ${genNumber} obj"`);
+      const objects = findAllDefinitions(objectNumber, genNumber, document);
+      if (objects.length == 0)
+        return { contents: `No object found for indirect reference "${objectNumber} ${genNumber} R"`};
+      else if (objects.length == 1)
+        return { contents: `One object found for "${objectNumber} ${genNumber} R"`};
+      else
+        return { contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`};
+      break;
+    }
+
+    case "indirectObject": { // X Y obj
+      const match = lineText.match(/\b(\d+) (\d+)\b/);
+      if (!match) return null;
+
+      const objectNumber = parseInt(match[1]);
+      const genNumber = parseInt(match[2]);
+      console.log(`Finding all indirect references "${objectNumber} ${genNumber} R"`);
+      const references = findAllReferences(objectNumber, genNumber, document);
+      if (references.length == 0)
+        return { contents: `No indirect references to object ${objectNumber} ${genNumber} found.`};
+      else if (references.length == 1)
+        return { contents: `One indirect reference to object ${objectNumber} ${genNumber}`};
+      else
+        return { contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`};
+      break;
+    }
     default:
       break;
   }
