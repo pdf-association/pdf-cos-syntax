@@ -1,7 +1,21 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/**
+ * @brief VSCode PDF COS syntax LSP server 
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. 
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+*/
 import {
   createConnection,
   TextDocuments,
@@ -19,19 +33,16 @@ import {
   Definition,
   Location,
   Hover,
-  // Range,
 } from "vscode-languageserver/node";
 
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
 
 import {
-  getLineFromByteOffset,
-  extractAllXrefTables,
-  findAllReferences,
   isFileFDF,
   isFilePDF,
   getSemanticTokenAtPosition,
-  computeDefinitionLocationForToken,
+  findAllDefinitions,
+  findAllReferences,
   XrefInfoMatrix,
 } from "./pdfUtils";
 
@@ -56,29 +67,32 @@ let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
 const tokenTypes = ["indirectReference", "indirectObject", "xrefTableEntry"]; // ... add other token types as needed
-// const tokenModifiers = ["deprecated"]; // ... add other token modifiers as needed
+const tokenModifiers = ["deprecated"]; // ... add other token modifiers as needed
 
 // The example settings
-interface ExampleSettings {
+interface PDSCOSSyntaxSettings {
   maxNumberOfProblems: number;
 }
 
 interface SimpleTextDocument {
   getText(): string;
 }
+
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 100 };
-let globalSettings: ExampleSettings = defaultSettings;
+const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
+let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
-// Cache the settings of all open documents
-type DocumentData = {
-  settings: ExampleSettings;
+// Cache the settings for all open documents!
+type PDFDocumentData = {
+  settings: PDSCOSSyntaxSettings;
   xrefMatrix?: XrefInfoMatrix;
+  xrefDiagnostics?: Diagnostic[];
 };
-// const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
-const documentSettings: Map<string, DocumentData> = new Map();
+
+
+const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
 documents.onDidChangeContent((change) => {
   const document = change.document;
@@ -124,8 +138,8 @@ connection.onInitialize((params: InitializeParams) => {
       hoverProvider: true,
       semanticTokensProvider: {
         legend: {
-          tokenTypes: ["indirectReference", "indirectObject", "xrefTableEntry"],
-          tokenModifiers: ["deprecated"],
+          tokenTypes: tokenTypes,
+          tokenModifiers: tokenModifiers,
         },
         full: true,
       },
@@ -167,9 +181,9 @@ connection.onRequest("textDocument/semanticTokens/full", (params) => {
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
-    documentSettings.clear();
+    pdfDocumentData.clear();
   } else {
-    globalSettings = <ExampleSettings>(
+    globalSettings = <PDSCOSSyntaxSettings>(
       (change.settings.languageServerExample || defaultSettings)
     );
   }
@@ -180,7 +194,7 @@ connection.onDidChangeConfiguration((change) => {
 
 // Only keep settings for open documents
 documents.onDidClose((e) => {
-  documentSettings.delete(e.document.uri);
+  pdfDocumentData.delete(e.document.uri);
 });
 // const tokenCache: Map<string, SemanticTokenInfo[]> = new Map();
 // documents.onDidChangeContent(change => {
@@ -235,52 +249,93 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   return item;
 });
 
+
 /**
- *  "Go to definition" for "X Y R" and in-use ("n") cross reference table entries
+ *  "Go to definition" capability:
+ *    - on "X Y R" --> find all "X Y obj"
+ *    - on "X Y obj" --> find all "X Y obj" (incl. current position)
+ *    - on in-use ("n") cross reference table entries --> find all "X Y obj"
+ * 
+ *  Because of file revisions, there may be MULTIPLE locations for any given "X Y obj"!!
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
-    const { textDocument, position } = params;
-    // Get the document corresponding to the URI
-    const document = documents.get(textDocument.uri);
-    if (!document) return null;
+    console.log(`onDefinition for ${params.textDocument.uri}`);
 
-    // Get conventional xref tables
-    const xrefTables = extractAllXrefTables(document);
-    if (!xrefTables.length) {
-      return null;
-    }
+    const docData = pdfDocumentData.get(params.textDocument.uri);
+    const document = documents.get(params.textDocument.uri);
+    if (!docData || !docData.xrefMatrix || !document) return null;
+
     // Fetch the semantic token at the given position
-    const tokenInfo = getSemanticTokenAtPosition(document, position);
-    // If no semantic token is found, return null
-    if (!tokenInfo) return null;
+    const token = getSemanticTokenAtPosition(document, params.position);
+    if (!token) return null;
 
-    // Use the semantic token information to decide where the cursor should jump to.
-    // This could be based on the token's type, range, or other properties.
-    let targetLocation: Location | null = null;
-    for (const xrefTable of xrefTables) {
-      targetLocation = computeDefinitionLocationForToken(
-        tokenInfo,
-        document,
-        xrefTable
-      );
+    let objectNumber: number;
+    let genNumber: number;
+    const lineText = document.getText(token.range);
 
-      if (targetLocation) {
+    switch (token.type) {
+      case "indirectObject": // X Y obj --> may have MULTIPLE objects with this definition!
+      case "indirectReference": { // X Y R
+        const objMatch = lineText.match(/(\d+) (\d+)/);
+        if (!objMatch) return null;
+  
+        objectNumber = parseInt(objMatch[1]);
+        genNumber = parseInt(objMatch[2]);
         break;
       }
+      case "xrefTableEntry": { // only for in-use entries!
+        const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
+        if (!match) return null;
+  
+        const offset = parseInt(match[1]);
+        genNumber = parseInt(match[2]);
+        const xRefInfo = docData.xrefMatrix;
+        objectNumber = xRefInfo.getObjectNumberBasedOnByteOffset(
+          offset,
+          genNumber,
+          "n"
+        );
+        break;
+      }
+      default:
+        return null;
     }
 
-    return targetLocation;
+    // Sanity check object ID values
+    if ((objectNumber <= 0) || (genNumber < 0)) {
+      console.warn(`Invalid object ID for indirect object "${objectNumber} ${genNumber} obj"!`);
+      return null;
+    }
+
+    // Find all "X Y obj"
+    console.log(`Finding all indirect objects "${objectNumber} ${genNumber} obj"`);
+    const targetLocations: Location[] = findAllDefinitions(objectNumber, genNumber, document);
+    
+    // Handle degenerate condition (no locations)
+    if (targetLocations.length == 0) {
+      console.warn(`No indirect objects "${objectNumber} ${genNumber} obj" where found!`);
+      return null;
+    }
+    return targetLocations;
   }
 );
 
+/**
+ *  Find all references capability
+ *   - on "X Y R" --> find all other "X Y R"
+ *   - on "X Y obj" --> find all "X Y R"
+ *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
+ */
 connection.onReferences((params): Location[] | null => {
+  console.log(`onReferences for ${params.textDocument.uri}`);
+
+  const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
-  if (!document) return null;
+  if (!docData || !docData.xrefMatrix || !document) return null;
 
   const position = params.position;
   const token = getSemanticTokenAtPosition(document, position);
-
   if (!token) return null;
 
   let objectNumber: number;
@@ -289,8 +344,7 @@ connection.onReferences((params): Location[] | null => {
 
   switch (token.type) {
     case "indirectReference": // X Y R
-    case "indirectObject": {
-      // X Y obj
+    case "indirectObject": {  // X Y obj
       const objMatch = lineText.match(/(\d+) (\d+)/);
       if (!objMatch) return null;
 
@@ -298,47 +352,65 @@ connection.onReferences((params): Location[] | null => {
       genNumber = parseInt(objMatch[2]);
       break;
     }
-    case "xrefTableEntry": {
-      // only for in-use entries!
+    case "xrefTableEntry": { // only for in-use entries!
       const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
       if (!match) return null;
 
       const offset = parseInt(match[1]);
       genNumber = parseInt(match[2]);
-      const xRefinfo = new XrefInfoMatrix();
-      xRefinfo.mergeAllXrefTables(document);
-      objectNumber = xRefinfo.getObjectNumberBasedOnByteOffset(
+      const xRefInfo = docData.xrefMatrix;
+      objectNumber = xRefInfo.getObjectNumberBasedOnByteOffset(
         offset,
         genNumber,
         "n"
       );
-      if (objectNumber === -1) return null;
       break;
     }
     default:
       return null;
   }
 
-  return findAllReferences(objectNumber, genNumber, document);
+  // Sanity check object ID values
+  if ((objectNumber <= 0) || (genNumber < 0)) {
+    console.warn(`Invalid object ID for indirect reference "${objectNumber} ${genNumber} R"!`);
+    return null;
+  }
+
+  // Find all "X Y R"
+  console.log(`Finding all indirect references "${objectNumber} ${genNumber} R"`);
+  const references = findAllReferences(objectNumber, genNumber, document);
+
+  // Handle degenerate condition (no references found)
+  if (references.length == 0) {
+    console.warn(`No indirect references "${objectNumber} ${genNumber} R" where found!`);
+    return null;
+  }
+  return references;
 });
 
+
+/**
+ * Hover capabilities:
+ *   - on "X Y obj" --> hover says how many references, etc. @TODO
+ *   - on "X Y R" --> hover says how many objects, etc. @TODO
+ *   - on conventional cross reference table entries --> hover says object number, etc.
+ */
 connection.onHover((params): Hover | null => {
-  const docData = documentSettings.get(params.textDocument.uri);
+  console.log(`onHover for ${params.textDocument.uri}`);
+
+  const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
   if (!docData || !docData.xrefMatrix || !document) return null;
 
   const position = params.position;
   const token = getSemanticTokenAtPosition(document, position);
-
   if (!token) return null;
 
   const lineText = document.getText(token.range);
   const xRefInfo = docData.xrefMatrix;
 
-  // xRefInfo.mergeAllXrefTables(docData);
-
   switch (token.type) {
-    case "xrefTableEntry": {
+    case "xrefTableEntry": { // both in-use and free
       const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
       if (!match) return null;
 
@@ -402,6 +474,7 @@ class SemanticTokensBuilder {
  * 5. check that a conventional cross-reference table is correct for an original PDF
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+  console.log(`validateTextDocument for ${textDocument.uri}`);
   const settings = await getDocumentSettings(textDocument.uri);
   const diagnostics: Diagnostic[] = [];
   const text = textDocument.getText();
@@ -537,58 +610,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
         Position.create(0, 8),
         "PDF does not contain a conventional cross reference table starting with object 0 (beginning of the free list)"
       );
-    } else {
-      // @TODO - check the xref table entries - for free list, that numObj matches entries, etc.
-      const xrefTables = extractAllXrefTables(textDocument);
-      xrefTables.forEach((xrefTable) => {
-        const firstXref = new RegExp(
-          `xref\\s+0 (\\d+)\\s+(\\d{10}) (\\d{5}) f\\b`,
-          "m"
-        ).exec(xrefTable);
-        if (firstXref) {
-          const xrefLine = getLineFromByteOffset(textDocument, firstXref.index);
-          const numObj = parseInt(firstXref[1]);
-          const nextFree = parseInt(firstXref[2]);
-          const freeGen = parseInt(firstXref[3]);
-          if (numObj < 5) {
-            addDiagnostic(
-              Position.create(xrefLine, 0),
-              Position.create(xrefLine, 4),
-              `Original PDF cross reference table only has ${numObj} objects which is too few for a valid PDF`,
-              DiagnosticSeverity.Information
-            );
-          }
-          if (nextFree !== 0) {
-            addDiagnostic(
-              Position.create(xrefLine, 0),
-              Position.create(xrefLine, 4),
-              "Original PDF cross reference table had at least 1 object on the free list",
-              DiagnosticSeverity.Information
-            );
-          }
-          if (freeGen !== 65535) {
-            addDiagnostic(
-              Position.create(xrefLine, 0),
-              Position.create(xrefLine, 4),
-              `Object 0 at start of free list did not have a generation number of 65535 (was "${freeGen}")`
-            );
-          }
-          // check if cross-reference table contains any prohibited stuff such as
-          // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
-          // PDF whitespace or PDF EOLs). Note that extractXrefTable() will have normalized '\r'
-          // to '\n' too.
-          const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(
-            xrefTable
-          );
-          if (badInXref != null) {
-            addDiagnostic(
-              Position.create(xrefLine, 0),
-              Position.create(xrefLine, 4),
-              `PDF cross reference table contains illegal characters: "${badInXref[1]}"`
-            );
-          }
-        }
-      });
+    }
+
+    // Get the list of diagnostics generated by the XRefMatrix building process
+    const docData = pdfDocumentData.get(textDocument.uri);
+    if (docData && docData.xrefDiagnostics) {
+      diagnostics.concat(docData.xrefDiagnostics);
     }
   }
 
@@ -596,6 +623,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 function tokenizeDocument(document: TextDocument): any {
+  console.log(`tokenizeDocument`);
   const tokensBuilder = new SemanticTokensBuilder();
   const lines = document.getText().split(/\r?\n/);
 
@@ -620,46 +648,38 @@ function tokenizeDocument(document: TextDocument): any {
   return tokensBuilder.build();
 }
 
-async function getDocumentSettings(resource: string): Promise<DocumentData> {
-  // if (!hasConfigurationCapability) {
-  //   return Promise.resolve(globalSettings);
-  // }
-  // let result = documentSettings.get(resource);
-  // if (!result) {
-  //   result = connection.workspace.getConfiguration({
-  //     scopeUri: resource,
-  //     section: "pdf-cos-syntax",
-  //   });
-  //   documentSettings.set(resource, result);
-  // }
-  // return result;
-  const currentData = documentSettings.get(resource) || {
+async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
+  console.log(`getDocumentSettings for ${resource}`);
+  const currentData = pdfDocumentData.get(resource) || {
     settings: globalSettings,
   };
   const newSettings = await connection.workspace.getConfiguration({
     scopeUri: resource,
     section: "pdf-cos-syntax",
   });
-  documentSettings.set(resource, { ...currentData, settings: newSettings });
+  pdfDocumentData.set(resource, { ...currentData, settings: newSettings });
   return { ...currentData, settings: newSettings };
 }
 
 function updateXrefMatrixForDocument(uri: string, content: string) {
-  let docData = documentSettings.get(uri);
+  console.log(`updateXrefMatrixForDocument for ${uri}`);
+  let docData = pdfDocumentData.get(uri);
   if (!docData) {
     docData = { settings: globalSettings }; // or fetch default settings
-    documentSettings.set(uri, docData);
+    pdfDocumentData.set(uri, docData);
   }
 
   // Create or update the XrefInfoMatrix for the document content
+  // @TODO Also cache the Diagnostics[]
   docData.xrefMatrix = buildXrefMatrix(content);
 }
 
 function buildXrefMatrix(content: string): XrefInfoMatrix {
+  console.log(`buildXrefMatrix`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
 
-  const mockTextDocument: TextDocument = {
+  const mockPDFDocument: TextDocument = {
     getText: () => content,
     uri: "mockURI", // mock URI
     languageId: "plaintext", // or any language ID you want to mock
@@ -677,11 +697,15 @@ function buildXrefMatrix(content: string): XrefInfoMatrix {
   };
 
   // Merge all xref tables found in the document into the matrix
-  const diagnostics = xrefMatrix.mergeAllXrefTables(mockTextDocument);
+  const diagnostics = xrefMatrix.mergeAllXrefTables(mockPDFDocument);
 
-  // In real-world use, you might want to handle diagnostics, e.g., log them or display them to users.
   for (const diag of diagnostics) {
-    console.error(`[PDF Diagnostics] ${diag.message}`);
+    switch (diag.severity) {
+      case DiagnosticSeverity.Error:        console.error(`[PDF Diagnostics] ${diag.message}`); break;
+      case DiagnosticSeverity.Warning:      console.warn(`[PDF Diagnostics] ${diag.message}`); break;
+      case DiagnosticSeverity.Information:  console.info(`[PDF Diagnostics] ${diag.message}`); break;
+      default:                              console.log(`[PDF Diagnostics] ${diag.message}`); break;
+    }
   }
 
   return xrefMatrix;

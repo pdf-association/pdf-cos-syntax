@@ -37,7 +37,7 @@ const pdfDelimitersRegex = new RegExp(
  *
  * @returns {number} a byte offset for the object or -1 if no such in-use object.
  */
-export function getByteOffsetForObj(
+function getByteOffsetForObj(
   objNum: number,
   genNum: number,
   xrefTable: string
@@ -89,7 +89,7 @@ export function getByteOffsetForObj(
  *
  * @returns {number} VSCode line number or -1 on error
  */
-export function getLineFromByteOffset(
+function getLineFromByteOffset(
   document: TextDocument,
   byteOffset: number
 ): number {
@@ -116,72 +116,6 @@ export function getLineFromByteOffset(
 
   return -1;
 }
-
-/**
- * Extracts the 1st conventional cross reference table from a PDF.
- *
- * @param {TextDocument} document - the PDF (as text) document
- *
- * @returns {string | null} the conventional cross reference table or null if one doesn't exist
- */
-// export function extractXrefTable(document: TextDocument): string | null {
-//   const documentText = document.getText();
-//   const xrefStart = documentText.indexOf("xref");
-//   const xrefEnd = documentText.indexOf("trailer");
-
-//   // Handle PDFs with cross-reference streams
-//   if (xrefStart === -1 || xrefEnd === -1 || xrefEnd < xrefStart) {
-//     return null;
-//   }
-//   let xrefTable = documentText.slice(xrefStart, xrefEnd);
-
-//   // Normalize for PDF end-of-line sequences to '\n'
-//   // Normalize line endings so split(), etc work as expected
-//   let xref = xrefTable.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
-//   xref = xrefTable.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
-//   xref = xrefTable.replace("\n\n", "\n"); // remove any blank lines
-//   let lines = xref.split("\n");
-
-//   // Remove the first line (the "xref" line)
-//   lines = lines.slice(1);
-//   xrefTable = lines.join("\n");
-//   return xrefTable;
-// }
-
-export function extractAllXrefTables(document: TextDocument): string[] {
-  const documentText = document.getText();
-  const xrefTables: string[] = [];
-  let startIndex = 0;
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const xrefStart = documentText.indexOf("xref", startIndex);
-    const xrefEnd = documentText.indexOf("trailer", xrefStart);
-
-    // If there's no more xref section, or if a malformed section is found, break
-    if (xrefStart === -1 || xrefEnd === -1 || xrefEnd < xrefStart) {
-      break;
-    }
-
-    let xrefTable = documentText.slice(xrefStart, xrefEnd);
-
-    // Normalize for PDF end-of-line sequences to '\n'
-    xrefTable = xrefTable.replace(/\r\n/g, "\n"); // CR+LF --> LF 
-    xrefTable = xrefTable.replace(/\r/g, "\n"); // CR --> LF
-    xrefTable = xrefTable.replace(/\n\n/g, "\n"); // remove any blank lines
-
-    const lines = xrefTable.split("\n");
-
-    // Remove the first line (the "xref" line)
-    xrefTables.push(lines.slice(1).join("\n"));
-
-    // Update the start index for the next loop iteration
-    startIndex = xrefEnd;
-  }
-
-  return xrefTables;
-}
-
 
 /**
  * Find all occurrences of "X Y R" in the text for a given object ID.
@@ -231,6 +165,49 @@ export function findAllReferences(
 }
 
 /**
+ * Find all occurrences of "X Y obj" in the text for a given object ID.
+ *
+ * @param {number} objNum - object number. Should be > 0.
+ * @param {number} genNum - object generation number. Should be >= 0.
+ * @param {TextDocument} document - the PDF (as text) document
+ *
+ * @returns {Location[]} an array of definition locations. Might be empty.
+ */
+export function findAllDefinitions(
+  objNum: number,
+  genNum: number,
+  document: TextDocument
+): Location[] {
+  if (objNum <= 0 || genNum < 0) return [];
+
+  const definitions: Location[] = [];
+
+  const objDefinitionPattern = new RegExp(
+    `(?<!\\d)${objNum} ${genNum} obj`,
+    "g"
+  );
+
+  const text = document.getText();
+  let match;
+
+  // Find all occurrences of "X Y obj" in the text
+  while ((match = objDefinitionPattern.exec(text)) !== null) {
+    const position = document.positionAt(match.index);
+    definitions.push({
+      uri: document.uri,
+      range: {
+        start: position,
+        end: Position.create(
+          position.line,
+          position.character + match[0].length
+        ),
+      },
+    });
+  }
+  return definitions;
+}
+
+/**
  * Determine if the given document is an FDF file based on its URI extension.
  *
  * @param document - the document object containing information about the file
@@ -265,7 +242,6 @@ export function getSemanticTokenAtPosition(
     start: { line: position.line, character: 0 },
     end: { line: position.line, character: Number.MAX_VALUE },
   });
-  console.log(`lineText: ${lineText}`);
 
   // Check for an indirect reference pattern "X Y R"
   const regex = /(\d+) (\d+) R(?=[^G])/g;
@@ -276,6 +252,7 @@ export function getSemanticTokenAtPosition(
     const matchEnd = matchStart + match[0].length;
 
     if (matchStart <= position.character && position.character <= matchEnd) {
+      console.log(`Sematic Token: "${lineText}" --> indirectReference`);
       return {
         type: "indirectReference",
         range: {
@@ -290,6 +267,7 @@ export function getSemanticTokenAtPosition(
   const objMatch = lineText.match(/(\d+) (\d+) obj/);
   if (objMatch) {
     const matchStart = objMatch.index!;
+    console.log(`Sematic Token: "${lineText}" --> indirectObject`);
     return {
       type: "indirectObject",
       range: {
@@ -306,6 +284,7 @@ export function getSemanticTokenAtPosition(
   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
   if (xrefMatch) {
     const matchStart = xrefMatch.index!;
+    console.log(`Sematic Token: "${lineText}" --> xrefTableEntry`);
     return {
       type: "xrefTableEntry",
       range: {
@@ -318,50 +297,8 @@ export function getSemanticTokenAtPosition(
     };
   }
 
+  console.log(`Sematic Token: "${lineText}" --> ???`);
   return null;
-}
-
-export function computeDefinitionLocationForToken(
-  tokenInfo: SemanticTokenInfo,
-  document: TextDocument,
-  xrefTable: any
-): Location | null {
-  switch (tokenInfo.type) {
-    case "indirectReference": { // "X Y R"
-      const lineText = document.getText(tokenInfo.range);
-      const [objNumStr, genNumStr, _] = lineText.split(" ");
-      const objNum = parseInt(objNumStr);
-      const genNum = parseInt(genNumStr);
-      const byteOffset = getByteOffsetForObj(objNum, genNum, xrefTable);
-
-      const line = getLineFromByteOffset(document, byteOffset);
-      if (line === -1) return null;
-
-      return {
-        uri: document.uri,
-        range: { start: { line, character: 0 }, end: { line, character: 0 } },
-      };
-    }
-
-    case "xrefTableEntry": { // 20 byte conventional cross reference table entry - free and in-use
-      const lineText = document.getText(tokenInfo.range);
-      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
-      if (!match) return null;
-
-      const byteOffset = parseInt(match[1]);
-      const line = getLineFromByteOffset(document, byteOffset);
-      if (line === -1) return null;
-
-      return {
-        uri: document.uri,
-        range: { start: { line, character: 0 }, end: { line, character: 0 } },
-      };
-    }
-
-    case "indirectObject": // "X Y obj"
-    default:
-      return null;
-  }
 }
 
 
@@ -385,6 +322,26 @@ export class XrefInfoMatrix {
   private matrix: EntryNode[][] = [];
 
   /** 
+   * Dumps out the matrix to console.log(), sorted by Object Number, then file revision
+   */
+  public dumpMatrix(): void {
+    let i;
+    let j;
+    let use: string;
+    for (i = 0; i < this.matrix.length; i++) {
+      if (this.matrix[i]) {
+        for (j =0; j < this.matrix[i].length; j++) {
+          if (this.matrix[i][j]) {
+            use = (this.matrix[i][j].inUse ? "in-use" : "free  ");
+            console.log(`${i.toString().padStart(5)} ${this.matrix[i][j].generationNumber.toString().padStart(5)} obj: ` +
+                        `rev. ${j} was ${use} @ line ${this.matrix[i][j].lineNbr}`);
+          }
+        }
+      }
+    }
+  }
+
+  /** 
    * Has this Object Number been defined as free or in-use (with any generation number)?
    */
   public isObjectNumberValid(objectNumber: number): boolean {
@@ -399,7 +356,7 @@ export class XrefInfoMatrix {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if ((generationNumber === e.generationNumber) && e.inUse) {
+          if (e && (generationNumber === e.generationNumber) && e.inUse) {
             return true;
         }
       }
@@ -421,7 +378,7 @@ export class XrefInfoMatrix {
             if ((byteOffset === e.first) && (generationNumber === e.generationNumber) && (e.inUse == (flag === "n"))) {
                 return e.objectNum;
             }
-        }
+          }
         }
       }
     }
@@ -439,7 +396,7 @@ export class XrefInfoMatrix {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if ((generationNumber === e.generationNumber) && e.inUse) {
+          if (e && (generationNumber === e.generationNumber) && e.inUse) {
             return e.first;
         }
       }
@@ -455,12 +412,29 @@ export class XrefInfoMatrix {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if ((generationNumber === e.generationNumber) && e.inUse) {
+          if (e && (generationNumber === e.generationNumber) && e.inUse) {
             return e.lineNbr;
         }
       }
     }
     return -1;
+  }
+
+  /** 
+   * Get the complete list of in-use object ID's across all incremental updates. 
+   * Might be empty array [] if the object ID was not in any cross reference table. 
+   */
+  public getInUseEntriesForObjectID(objectNumber: number, generationNumber: number): EntryNode[] {
+    const entries: EntryNode[] = [];
+    if (this.matrix[objectNumber] !== undefined) {
+      let e: EntryNode;
+      for (e of this.matrix[objectNumber]) {
+          if (e && (generationNumber === e.generationNumber) && e.inUse) {
+            entries.push(e);
+        }
+      }
+    }
+    return entries;
   }
 
   /** 
@@ -529,7 +503,7 @@ export class XrefInfoMatrix {
       else {
         xrefTable = pdf.slice(xrefStart, xrefEnd);
       }
-      console.log(`Revision ${revision}: found conventional cross reference table at ${xrefStart} to ${xrefEnd}`);
+      // console.log(`Revision ${revision}: found conventional cross reference table at ${xrefStart} to ${xrefEnd}`);
       diags.concat(this.addXrefTable(xrefStart, revision, xrefTable));
       revision++;
       do {
@@ -562,6 +536,7 @@ export class XrefInfoMatrix {
    * Merges a _single_ conventional cross reference table into the matrix. "xref"
    * keyword can be the first line. Stops if "trailer", "startxref" or "%%EOF" is found.
    * startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
+   * Also captures basic sanity check/validation issues.
    */
   private addXrefTable(startLineNbr: number, revision: number, xref: string): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
@@ -572,6 +547,18 @@ export class XrefInfoMatrix {
     // KEEP blank lines so line numbering is not impacted!
     xref = xref.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
     xref = xref.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
+    // check if cross-reference table contains any prohibited stuff such as
+    // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
+    // PDF whitespace or PDF EOLs).
+    const badInXref = new RegExp(`([^0-9fn \t\r\n\0\x0C]+)`).exec(xref);
+    if (badInXref != null) {
+      diagnostics.push({
+        severity: DiagnosticSeverity.Warning,
+        range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+        message: `PDF cross reference table contains illegal characters: "${badInXref[1]}"`,
+        source: "pdf-cos-syntax"
+      });
+    }
     const xrefLines = xref.split('\n');
     
     for (const entryStr of xrefLines) {
@@ -589,6 +576,7 @@ export class XrefInfoMatrix {
       const entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
 
       if (entryPatternMatch && (entryPatternMatch.length === 4)) {
+        const genNum = parseInt(entryPatternMatch[2]);
         if (currentObjectNum === null || entryCount === null || entryCount < 0 || currentObjectNum < 0) {
           diagnostics.push({
             severity: DiagnosticSeverity.Error,
@@ -611,16 +599,25 @@ export class XrefInfoMatrix {
           continue;
         }
 
-        console.log(`Revision ${revision}: adding object ${currentObjectNum} at line ${startLineNbr}`);
+        // console.log(`Revision ${revision}: adding object ${currentObjectNum} at line ${startLineNbr}`);
         const entry = new EntryNode(
             startLineNbr,                   // line number in VSCode's PDF TextDocument
             currentObjectNum,               // object number
             parseInt(entryPatternMatch[1]), // \d{10} in-use = offset, free = next object number in free list
-            parseInt(entryPatternMatch[2]), // \d{5} generation number
+            genNum,                         // \d{5} generation number
             (entryPatternMatch[3] === 'n')  // true iff in-use object ("n"). false if "f"
         );
         if (!this.matrix[currentObjectNum]) {
           this.matrix[currentObjectNum] = [];
+          // Check if very first object 0 in revision 0 of original PDF had correct free list 
+          if ((currentObjectNum == 0) && (genNum !== 65535)) {
+            diagnostics.push({
+              severity: DiagnosticSeverity.Warning,
+              range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 4) },
+              message: `Object 0 at start of free list did not have a generation number of 65535 (was "${genNum}")`,
+              source: "pdf-cos-syntax"
+            });
+          }
         }
         this.matrix[currentObjectNum][revision] = entry;
 
@@ -636,7 +633,7 @@ export class XrefInfoMatrix {
         currentObjectNum = parseInt(subsectionMatch[1], 10);
         entryCount = parseInt(subsectionMatch[2], 10);
 
-        // Special case for "X 0" subsection marker
+        // Special case for "X 0" subsection marker (no objects)
         if (entryCount === 0) {
           startLineNbr++;
           continue;
