@@ -455,7 +455,12 @@ export class XrefInfoMatrix {
    */
   public mergeAllXrefTables(pdfFile: TextDocument) {
     let revision = 0;
-    const pdf = pdfFile.getText();
+    let pdf = pdfFile.getText();
+
+    /////////////////////////////////////////
+    // Normalize line endings to \n so Position <--> Offsets work. BUT DON'T ALTER BYTE COUNTS!
+    pdf = pdf.replace('\\r\\n', ' \\n');
+    pdf = pdf.replace('\\r', '\\n');
 
     let xrefStart = 0;
     let startXref = 0;
@@ -501,8 +506,13 @@ export class XrefInfoMatrix {
       else {
         xrefTable = pdf.slice(xrefStart, xrefEnd);
       }
-      // console.log(`Revision ${revision}: found conventional cross reference table at ${xrefStart} to ${xrefEnd}`);
-      this.addXrefTable(xrefStart, revision, xrefTable);
+      ///////////////////////////////
+      /// WHY IS  positionAt(offset).line always 0 for any offset???
+      console.log(`Revision ${revision}: found cross reference table at offset ${xrefStart} to ${xrefEnd}`);
+      console.log(pdfFile.positionAt(xrefStart));
+      console.log(pdfFile.positionAt(xrefEnd));
+      this.addXrefTable(pdfFile.positionAt(xrefStart).line, revision, xrefTable);
+      ///////////////////////////////
       revision++;
       do {
         // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
@@ -534,22 +544,26 @@ export class XrefInfoMatrix {
   private addXrefTable(startLineNbr: number, revision: number, xref: string) {
     let currentObjectNum: number | null = null;
     let entryCount: number | null = null;
+    let nextFreeObj: number = 0; // Free list always starts with object 0
 
-    // Normalize line endings to "\n" so split(), etc work as expected.
-    // KEEP blank lines so line numbering is not impacted!
-    xref = xref.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
-    xref = xref.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
     const xrefLines = xref.split('\n');
+
+    // Skip first line that is "xref" keyword
+    if (xrefLines[0].startsWith("xref")) startLineNbr++;
     
     for (const entryStr of xrefLines) {
-      // Skip blank or whitespace-only lines, and any "xref" lines
-      if (!entryStr.trim() || entryStr.startsWith("xref")) {
+      const trueLen = entryStr.length; // before trim!
+
+      console.log(`${startLineNbr}: "${entryStr}"`);
+
+      // Skip blank or whitespace-only lines
+      if (!entryStr.trim()) {
         startLineNbr++;
         continue;
       }
 
       if (entryStr.startsWith("trailer") || entryStr.startsWith("startxref") || entryStr.startsWith("%%EOF")) {
-        // came to the end of this xref!
+        // came to the end of this cross reference table
         break;
       }
 
@@ -569,15 +583,30 @@ export class XrefInfoMatrix {
 
       if (entryPatternMatch && (entryPatternMatch.length === 4)) {
         const genNum = parseInt(entryPatternMatch[2]);
+        const letter = entryPatternMatch[3];
         if (currentObjectNum === null || entryCount === null || entryCount < 0 || currentObjectNum < 0) {
           this.diagnostics.push({
             severity: DiagnosticSeverity.Error,
             message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
-            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
             source: "pdf-cos-syntax"
           });
           startLineNbr++;
           continue;
+        }
+
+        // Check chaining of free list (singly linked list by \d{10} object numbers)
+        if (letter === "f") {
+          const freeObjNumber = parseInt(entryPatternMatch[1]);
+          if (nextFreeObj != currentObjectNum) {
+            this.diagnostics.push({
+              severity: DiagnosticSeverity.Warning,
+              range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
+              message: `Expected next free object to be object ${nextFreeObj}, not object ${currentObjectNum}. Free list of objects not chained correctly`,
+              source: "pdf-cos-syntax"
+            });
+          }
+          nextFreeObj = freeObjNumber;
         }
 
         // console.log(`Revision ${revision}: adding object ${currentObjectNum} at line ${startLineNbr}`);
@@ -586,7 +615,7 @@ export class XrefInfoMatrix {
             currentObjectNum,               // object number
             parseInt(entryPatternMatch[1]), // \d{10} in-use = offset, free = next object number in free list
             genNum,                         // \d{5} generation number
-            (entryPatternMatch[3] === 'n')  // true iff in-use object ("n"). false if "f"
+            (letter === 'n')                // true iff in-use object ("n"). false if "f"
         );
 
         if (!this.matrix[currentObjectNum]) {
@@ -595,12 +624,24 @@ export class XrefInfoMatrix {
           if ((currentObjectNum == 0) && (genNum !== 65535)) {
             this.diagnostics.push({
               severity: DiagnosticSeverity.Warning,
-              range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 4) },
+              range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
               message: `Object 0 at start of free list did not have a generation number of 65535 (was "${genNum}")`,
               source: "pdf-cos-syntax"
             });
           }
         }
+
+        // Because of split("\n") above, the "\n" is removed so -1!!
+        if (trueLen != 19) {
+          this.diagnostics.push({
+            severity: DiagnosticSeverity.Warning,
+            range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
+            message: `Cross reference table entries should always be 20 bytes (was ${entryStr.length + 1})`,
+            source: "pdf-cos-syntax"
+          });
+        }
+        
+        // add entry to our matrix
         this.matrix[currentObjectNum][revision] = entry;
 
         entryCount--;
@@ -608,7 +649,7 @@ export class XrefInfoMatrix {
         currentObjectNum++;
         startLineNbr++;
         continue;
-      }
+      } // \d{10} \d{5} (f|n) = entry
 
       const subsectionMatch = entryStr.match(/\b(\d+) (\d+)\b/);
 
@@ -660,11 +701,22 @@ export class XrefInfoMatrix {
         }
         entryCount = newEntryCount;
         currentObjectNum = newCurrentObjectNum;
-      }
+      } // \d+ \d+ = subsection marker
 
       startLineNbr++;
+    } // for-each line in this cross reference table
+
+    // Was free list terminated with an object number of 0?
+    if (nextFreeObj != 0) {
+      this.diagnostics.push({
+        severity: DiagnosticSeverity.Warning,
+        range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
+        message: `Expected next free object to be object ${nextFreeObj}, but cross reference table ended. Free list of objects not chained correctly`,
+        source: "pdf-cos-syntax"
+      });
     }
 
+    // Were there too few entries according to last subsection marker?
     if ((entryCount !== null) && (entryCount > 0)) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
@@ -673,6 +725,5 @@ export class XrefInfoMatrix {
         source: "pdf-cos-syntax"
       });
     }
-
   }
 }
