@@ -207,6 +207,34 @@ export function findAllDefinitions(
   return definitions;
 }
 
+
+/**
+ * Looks from given cursor position BACK up the file to locate
+ * the first preceding "X Y obj" 
+ * 
+ * @returns a line number of nearest "X Y obj" or -1 if not found 
+ */
+export function findPreviousObjectLineNumber(
+  cusor: Position,
+  document: TextDocument
+): number {
+  const topOfFile = document.getText({
+    start: { line: 0, character: 0 },
+    end: cusor
+  });
+  let topLines = topOfFile.split('\n');
+  topLines = topLines.reverse();
+
+  // Find 1st occurence of "X Y obj" in the REVERSED lines
+  for (let i: number = 0; i < topLines.length; i++) {
+    const m = topLines[i].search(/\b\d+ \d+ obj\b/g);
+    if (m != -1)
+      return (topLines.length - i - 1); 
+  }
+  
+  return -1;
+}
+
 /**
  * Determine if the given document is an FDF file based on its URI extension.
  *
@@ -234,6 +262,12 @@ interface SemanticTokenInfo {
   range: Range;
 }
 
+/**
+ * Works out the kind of semantic token at the given cursor position.
+ * Only looks at the current line, but checks to ensure position is on
+ * the token in case of multiple potential tokens on one line:
+ * e.g. [ 1 0 R 2 0 R 3 0 R ] - which indirect reference is being queried?
+ */
 export function getSemanticTokenAtPosition(
   document: TextDocument,
   position: Position
@@ -292,6 +326,40 @@ export function getSemanticTokenAtPosition(
         end: {
           line: position.line,
           character: matchStart + xrefMatch[0].length,
+        },
+      },
+    };
+  }
+
+  // "endobj" keyword
+  const endobjMatch = lineText.match(/\b(endobj)\b/);
+  if (endobjMatch) {
+    const matchStart = endobjMatch.index!;
+    console.log(`Sematic Token: "${lineText}" --> endobjKeyword`);
+    return {
+      type: "endobjKeyword",
+      range: {
+        start: { line: position.line, character: matchStart },
+        end: {
+          line: position.line,
+          character: matchStart + endobjMatch[0].length,
+        },
+      },
+    };
+  }
+
+  // "endstream" keyword
+  const endstreamMatch = lineText.match(/\b(endstream)\b/);
+  if (endstreamMatch) {
+    const matchStart = endstreamMatch.index!;
+    console.log(`Sematic Token: "${lineText}" --> endstreamKeyword`);
+    return {
+      type: "endstreamKeyword",
+      range: {
+        start: { line: position.line, character: matchStart },
+        end: {
+          line: position.line,
+          character: matchStart + endstreamMatch[0].length,
         },
       },
     };
@@ -546,13 +614,16 @@ export class XrefInfoMatrix {
     let entryCount: number | null = null;
     let nextFreeObj: number = 0; // Free list always starts with object 0
 
-    const xrefLines = xref.split('\n');
+    let xrefLines = xref.split('\n');
 
-    // Skip first line that is "xref" keyword
-    if (xrefLines[0].startsWith("xref")) startLineNbr++;
+    // Remove any first line that is "xref" keyword
+     if (xrefLines[0].startsWith("xref")) {
+      startLineNbr++;
+      xrefLines = xrefLines.slice(1);
+    }
     
     for (const entryStr of xrefLines) {
-      const trueLen = entryStr.length; // before trim!
+      const trueLen = entryStr.length; // before any trim!
 
       console.log(`${startLineNbr}: "${entryStr}"`);
 
@@ -562,7 +633,7 @@ export class XrefInfoMatrix {
         continue;
       }
 
-      if (entryStr.startsWith("trailer") || entryStr.startsWith("startxref") || entryStr.startsWith("%%EOF")) {
+      if (entryStr.trim().startsWith("trailer") || entryStr.trim().startsWith("startxref") || entryStr.trim().startsWith("%%EOF")) {
         // came to the end of this cross reference table
         break;
       }

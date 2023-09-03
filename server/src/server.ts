@@ -43,6 +43,7 @@ import {
   getSemanticTokenAtPosition,
   findAllDefinitions,
   findAllReferences,
+  findPreviousObjectLineNumber,
   XrefInfoMatrix,
 } from "./pdfUtils";
 
@@ -66,8 +67,9 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-const tokenTypes = ["indirectReference", "indirectObject", "xrefTableEntry"]; // ... add other token types as needed
-const tokenModifiers = ["deprecated"]; // ... add other token modifiers as needed
+// Needs to match package.json
+const tokenTypes = ["indirectReference", "indirectObject", "xrefTableEntry", "endobjKeyword", "endstreamKeyword"]; 
+const tokenModifiers = ["deprecated"]; 
 
 // The example settings
 interface PDSCOSSyntaxSettings {
@@ -463,6 +465,22 @@ connection.onHover((params): Hover | null => {
         return { contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`};
       break;
     }
+
+    case "endobjKeyword": // "endobj"
+    case "endstreamKeyword": // "endstream"
+    {
+      // Look back up the file to find closest matching "\d+ \d+ obj"
+      const lineNbr = findPreviousObjectLineNumber(position, document);
+      if (lineNbr !== -1) {
+        const lineStr = document.getText({ 
+          start: {line: lineNbr, character: 0},
+          end: {line: lineNbr, character: Number.MAX_VALUE}
+        });
+        return { contents: `Line ${lineNbr + 1}: "${lineStr}"`};
+      }
+      break;
+    }
+
     default:
       break;
   }
