@@ -104,12 +104,12 @@
       {
         "language": "pdf",
         "scopeName": "source.pdf",
-        "path": "./pdf.tmLanguage.json"
+        "path": "./syntaxes/pdf.tmLanguage.json"
       },
       {
         "language": "fdf",
-        "scopeName": "source.pdf",
-        "path": "./pdf.tmLanguage.json"
+        "scopeName": "source.fdf",
+        "path": "./syntaxes/fdf.tmLanguage.json"
       }
     ],
     "snippets": [
@@ -142,6 +142,14 @@
       {
         "id": "endstreamKeyword",
         "description": "Represents 'endstream' keyword"
+      },
+      {
+        "id": "hexString",
+        "description": "A PDF hexadecimal string between '<' / '>'"
+      },
+      {
+        "id": "bitMask",
+        "description": "A PDF key that is a bitmask"
       }
     ],
     "semanticTokenModifiers": [
