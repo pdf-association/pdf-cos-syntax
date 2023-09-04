@@ -103,14 +103,14 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 | Conventional cross-reference table (_between `xref` and `trailer` keywords_) | `keyword.section.xref-trailer.pdf`</br> `keyword.control.xref-subsection.pdf`</br> `keyword.control.free-object.pdf`</br> `keyword.control.inuse-object.pdf` |
 | | |
 
-### Known issues with [TextMate grammar](./syntaxes/pdf.tmLanguage.json)
+### Known issues with [TextMate grammar](syntaxes/pdf.tmLanguage.json)
 Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
 - PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)` or following PDF objects being highlighted as part of the literal string: ![VSCode bad string](assets/VSCode-BadString.png) 
 
     - The easiest solution is to include a backslash (i.e. use `\)` and `\(`) for any brackets inside literal strings. e.g. write "`(\(\))`" instead of "`(())`".
     - PDF literal string `\)` and `\(` escape sequences are not explicitly identified (all other literal string escape sequences from Table 3 in ISO 32000-2:2020 are supported)
 - UTF-16BE (_shown below_) and UTF-8 byte order markers in PDF text strings are not specifically identified (_and they also do not display!_)
-![VSCode Unicode byte order marker warning message](./assets/VSCode-UnicodeBOM.png)
+![VSCode Unicode byte order marker warning message](assets/VSCode-UnicodeBOM.png)
 - the PDF content stream text operator `"` is not explicitly supported in `keyword.operator.content-stream.pdf`
 - `#` hex codes in literal strings are not specifically highlighted
 - the syntax highlighter can get confused between hex strings `<`/`>` and dictionary start tokens `<<`/`>>`, especially if a hex string spans multiple lines.
@@ -121,7 +121,7 @@ Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
 ## Hover hints
 If the cursor is placed over a conventional cross-reference table entry, then a hover hint will appear stating the object number. If it is an in-use entry (`n`) the byte offset is also displayed. This is very helpful for PDF files with many objects and long cross reference tables:
 
-![VSCode hover hint for an in-use object in a conventional cross referene table](./assets/VSCode-xrefHover.png)
+![VSCode hover hint for an in-use object in a conventional cross referene table](assets/VSCode-xrefHover.png)
 
 If the cursor is over the keywords `endstream` or `endobj` then the corresponding object number and line is displayed.
 
