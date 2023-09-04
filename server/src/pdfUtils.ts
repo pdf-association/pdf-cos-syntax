@@ -28,6 +28,28 @@ const pdfDelimitersRegex = new RegExp(
   pdfWhitespaceRegex.source + /%\\(\\)<>\\[\\]\//
 );
 
+
+/**
+ * Takes a number, assumed to be a 32 bit signed integer and
+ * converts to groups of 8 bits for display as a PDF bitmask.
+ */
+export function flags32_to_binary(num: number): string {
+  const flag = Math.abs(num) & 0xFFFFFFFF;
+
+  let s = (flag & 0x000000FF).toString(2).padStart(8, "0");
+  s = ((flag & 0x0000FF00) >>  8).toString(2).padStart(8, "0") + ' ' + s;
+  s = ((flag & 0x00FF0000) >> 16).toString(2).padStart(8, "0") + ' ' + s;
+  s = ((flag & 0x8F000000) >> 24).toString(2).padStart(7, "0") + ' ' + s;
+  if (num < 0) {
+    s = "1" + s;
+  }
+  else {
+    s = "0" + s;
+  }
+  return "Bitmask: " + s;
+}
+
+
 /**
  * Process a conventional cross-reference table looking for an in-use entry for object ID.
  *
@@ -278,7 +300,7 @@ export function getSemanticTokenAtPosition(
   });
 
   // Check for an indirect reference pattern "X Y R"
-  const regex = /(\d+) (\d+) R(?=[^G])/g;
+  let regex = /(\d+) (\d+) R(?=[^G])/g;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(lineText)) !== null) {
@@ -286,7 +308,6 @@ export function getSemanticTokenAtPosition(
     const matchEnd = matchStart + match[0].length;
 
     if (matchStart <= position.character && position.character <= matchEnd) {
-      console.log(`Sematic Token: "${lineText}" --> indirectReference`);
       return {
         type: "indirectReference",
         range: {
@@ -301,7 +322,6 @@ export function getSemanticTokenAtPosition(
   const objMatch = lineText.match(/(\d+) (\d+) obj/);
   if (objMatch) {
     const matchStart = objMatch.index!;
-    console.log(`Sematic Token: "${lineText}" --> indirectObject`);
     return {
       type: "indirectObject",
       range: {
@@ -318,7 +338,6 @@ export function getSemanticTokenAtPosition(
   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
   if (xrefMatch) {
     const matchStart = xrefMatch.index!;
-    console.log(`Sematic Token: "${lineText}" --> xrefTableEntry`);
     return {
       type: "xrefTableEntry",
       range: {
@@ -335,7 +354,6 @@ export function getSemanticTokenAtPosition(
   const endobjMatch = lineText.match(/\b(endobj)\b/);
   if (endobjMatch) {
     const matchStart = endobjMatch.index!;
-    console.log(`Sematic Token: "${lineText}" --> endobjKeyword`);
     return {
       type: "endobjKeyword",
       range: {
@@ -352,7 +370,6 @@ export function getSemanticTokenAtPosition(
   const endstreamMatch = lineText.match(/\b(endstream)\b/);
   if (endstreamMatch) {
     const matchStart = endstreamMatch.index!;
-    console.log(`Sematic Token: "${lineText}" --> endstreamKeyword`);
     return {
       type: "endstreamKeyword",
       range: {
@@ -365,7 +382,40 @@ export function getSemanticTokenAtPosition(
     };
   }
 
-  console.log(`Sematic Token: "${lineText}" --> ???`);
+  // Check for a bitmask name: /F, /Ff, /Flags followed by a signed integer
+  regex = /(\/(F|Ff|Flags))[ \t\r\n\f\0]([+-]?\d+)/g;
+  while ((match = regex.exec(lineText)) !== null) {
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    if (matchStart <= position.character && position.character <= matchEnd) {
+      return {
+        type: "bitMask",
+        range: {
+          start: { line: position.line, character: matchStart },
+          end: { line: position.line, character: matchEnd },
+        },
+      };
+    }
+  }
+
+  // Check for a hex string
+  regex = /<[0-9a-fA-F \t\n\r\f\0]+>/g;
+  while ((match = regex.exec(lineText)) !== null) {
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    if (matchStart <= position.character && position.character <= matchEnd) {
+      return {
+        type: "hexString",
+        range: {
+          start: { line: position.line, character: matchStart },
+          end: { line: position.line, character: matchEnd },
+        },
+      };
+    }
+  }
+  
   return null;
 }
 
@@ -618,8 +668,6 @@ export class XrefInfoMatrix {
     
     for (const entryStr of xrefLines) {
       const trueLen = entryStr.length; // before any trim!
-
-      console.log(`${startLineNbr}: "${entryStr}"`);
 
       // Skip blank or whitespace-only lines
       if (!entryStr.trim()) {

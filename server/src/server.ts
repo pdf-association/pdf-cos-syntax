@@ -40,6 +40,7 @@ import { Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
   isFileFDF,
   isFilePDF,
+  flags32_to_binary,
   getSemanticTokenAtPosition,
   findAllDefinitions,
   findAllReferences,
@@ -74,6 +75,8 @@ const tokenTypes = [
   "xrefTableEntry",
   "endobjKeyword",
   "endstreamKeyword",
+  "hexString",
+  "bitMask"
 ];
 const tokenModifiers = ["deprecated"];
 
@@ -265,7 +268,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
-    console.log(`onDefinition for ${params.textDocument.uri}`);
+    // console.log(`onDefinition for ${params.textDocument.uri}`);
 
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
@@ -318,9 +321,6 @@ connection.onDefinition(
     }
 
     // Find all "X Y obj"
-    console.log(
-      `Finding all indirect objects "${objectNumber} ${genNumber} obj"`
-    );
     const targetLocations: Location[] = findAllDefinitions(
       objectNumber,
       genNumber,
@@ -345,7 +345,7 @@ connection.onDefinition(
  *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
  */
 connection.onReferences((params): Location[] | null => {
-  console.log(`onReferences for ${params.textDocument.uri}`);
+  // console.log(`onReferences for ${params.textDocument.uri}`);
 
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
@@ -398,9 +398,6 @@ connection.onReferences((params): Location[] | null => {
   }
 
   // Find all "X Y R"
-  console.log(
-    `Finding all indirect references "${objectNumber} ${genNumber} R"`
-  );
   const references = findAllReferences(objectNumber, genNumber, document);
 
   // Handle degenerate condition (no references found)
@@ -420,7 +417,7 @@ connection.onReferences((params): Location[] | null => {
  *   - on conventional cross reference table entries --> hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
-  console.log(`onHover for ${params.textDocument.uri}`);
+  // console.log(`onHover for ${params.textDocument.uri}`);
 
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
@@ -430,13 +427,13 @@ connection.onHover((params): Hover | null => {
   const token = getSemanticTokenAtPosition(document, position);
   if (!token) return null;
 
-  const lineText = document.getText(token.range);
+  const semanticTokenText = document.getText(token.range);
   const xRefInfo = docData.xrefMatrix;
 
   switch (token.type) {
     case "xrefTableEntry": {
       // both in-use and free
-      const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
+      const match = semanticTokenText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
       if (!match) return null;
 
       const offset = parseInt(match[1]);
@@ -447,7 +444,6 @@ connection.onHover((params): Hover | null => {
         genNum,
         flag
       );
-      console.log(`onHover: xref entry for object ${objNum}`);
       if (flag === "n") {
         return { contents: `Object ${objNum} is at byte offset ${offset}` };
       } else {
@@ -458,12 +454,11 @@ connection.onHover((params): Hover | null => {
 
     case "indirectReference": {
       // X Y R
-      const match = lineText.match(/\b(\d+) (\d+)\b/);
+      const match = semanticTokenText.match(/\b(\d+) (\d+)\b/);
       if (!match) return null;
 
       const objectNumber = parseInt(match[1]);
       const genNumber = parseInt(match[2]);
-      console.log(`Finding all objects "${objectNumber} ${genNumber} obj"`);
       const objects = findAllDefinitions(objectNumber, genNumber, document);
       if (objects.length == 0)
         return {
@@ -482,14 +477,11 @@ connection.onHover((params): Hover | null => {
 
     case "indirectObject": {
       // X Y obj
-      const match = lineText.match(/\b(\d+) (\d+)\b/);
+      const match = semanticTokenText.match(/\b(\d+) (\d+)\b/);
       if (!match) return null;
 
       const objectNumber = parseInt(match[1]);
       const genNumber = parseInt(match[2]);
-      console.log(
-        `Finding all indirect references "${objectNumber} ${genNumber} R"`
-      );
       const references = findAllReferences(objectNumber, genNumber, document);
       if (references.length == 0)
         return {
@@ -516,6 +508,36 @@ connection.onHover((params): Hover | null => {
           end: { line: lineNbr, character: Number.MAX_VALUE },
         });
         return { contents: `Line ${lineNbr + 1}: "${lineStr}"` };
+      }
+      break;
+    }
+
+    case "bitMask": // a bitmask entry
+    {
+      const match = semanticTokenText.match(/\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/);
+      if ((!match) || (match.length != 3)) return null;
+      const bm = parseInt(match[2]);
+      return { contents: flags32_to_binary(bm) };
+      break;
+    }
+
+    case "hexString": // a hex string
+    {
+      const match = semanticTokenText.match(/<([0-9a-fA-F \t\n\r\f\0]+)>/);
+      if ((!match) || (match.length != 2)) return null;
+      let hexString = match[1].trim().replace(/ \t\n\r\f\0/g, ""); // remove all whitespace
+      if (hexString.length > 0) {
+        if ((hexString.length % 2) == 1) hexString = hexString + '0'; // append silent '0' if an odd length
+        let asUTF8: string = "'";
+        for (let i = 0; i < hexString.length; i = i + 2) {
+          const s = String.fromCharCode(parseInt(hexString.slice(i, i + 2), 16));
+          asUTF8 = asUTF8 + s;
+        }
+        asUTF8 = asUTF8 + "'";
+        return { contents: asUTF8 };
+      }
+      else {
+        return { contents: `Empty hex string` };
       }
       break;
     }
@@ -563,7 +585,7 @@ class SemanticTokensBuilder {
  * 5. check that a conventional cross-reference table is correct for an original PDF
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  console.log(`validateTextDocument for ${textDocument.uri}`);
+  // console.log(`validateTextDocument for ${textDocument.uri}`);
   let diagnostics: Diagnostic[] = [];
 
   const text = textDocument.getText();
@@ -710,7 +732,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       docData.xrefMatrix &&
       docData.xrefMatrix.diagnostics.length > 0
     ) {
-      console.log(`Appending xref diagnostics`);
       diagnostics = diagnostics.concat(docData.xrefMatrix.diagnostics);
     }
   }
@@ -719,7 +740,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 function tokenizeDocument(document: TextDocument): any {
-  console.log(`tokenizeDocument`);
+  // console.log(`tokenizeDocument`);
   const tokensBuilder = new SemanticTokensBuilder();
   const lines = document.getText().split(/\r?\n/);
 
@@ -745,7 +766,7 @@ function tokenizeDocument(document: TextDocument): any {
 }
 
 async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
-  console.log(`getDocumentSettings for ${resource}`);
+  // console.log(`getDocumentSettings for ${resource}`);
   const currentData = pdfDocumentData.get(resource) || {
     settings: globalSettings,
   };
@@ -758,7 +779,6 @@ async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
 }
 
 function updateXrefMatrixForDocument(uri: string, content: string) {
-  console.log(`updateXrefMatrixForDocument for ${uri}`);
   let docData = pdfDocumentData.get(uri);
   if (!docData) {
     docData = { settings: globalSettings }; // or fetch default settings
@@ -770,7 +790,6 @@ function updateXrefMatrixForDocument(uri: string, content: string) {
 }
 
 function buildXrefMatrix(content: string): XrefInfoMatrix {
-  console.log(`buildXrefMatrix`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
   const lines = content.split('\n');

@@ -17,15 +17,16 @@ PDF (**Portable Document Format**) is an open page description language standard
 
 - Support for both `.pdf` and `.fdf` files (based on file extension)
 - PDF COS syntax and content stream operator [syntax highlighting](#syntax-highlighting) 
-- [Hover](#hover-hints) information for cross reference table entries
+- [Hover](#hover-hints) information for cross reference table entries, `endstream` and `endobj`, bitmask keys and hex strings
 - [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, and PostScript brackets
 - [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables, and all paired graphics operators
 - [Auto-indent and auto-outdent](#auto-indent-and-auto-outdent-on-enter) on ENTER 
-- "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects 
+- "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects, including in PDFs with incremental updates and multiple objects with the same ID 
 - "[Bracket matching](#bracket-matching)" for special PDF tokens  
 - Single- and multi-line [comment toggling](#commenting--uncommenting-lines) 
-- Basic PDF and FDF file validation
+- Basic PDF and FDF file validation, including comprehensive cross reference table checks
 - [Snippets](#snippets) for new object, new stream, and empty PDF/FDF files
+
 
 ## PDF files are _BINARY_!
 
@@ -102,7 +103,7 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 | Conventional cross-reference table (_between `xref` and `trailer` keywords_) | `keyword.section.xref-trailer.pdf`</br> `keyword.control.xref-subsection.pdf`</br> `keyword.control.free-object.pdf`</br> `keyword.control.inuse-object.pdf` |
 | | |
 
-### Known issues with [TextMate grammar](./pdf.tmLanguage.json)
+### Known issues with [TextMate grammar](./syntaxes/pdf.tmLanguage.json)
 Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
 - PDF literal strings with nested brackets `(` and `)` will confuse the syntax highlighting as to the end of the literal string object. This is most often seen as a red closing bracket `)` or following PDF objects being highlighted as part of the literal string: ![VSCode bad string](assets/VSCode-BadString.png) 
 
@@ -121,6 +122,12 @@ Binary data will confuse syntax highlighting!! **AVOID SUCH FILES!!**
 If the cursor is placed over a conventional cross-reference table entry, then a hover hint will appear stating the object number. If it is an in-use entry (`n`) the byte offset is also displayed. This is very helpful for PDF files with many objects and long cross reference tables:
 
 ![VSCode hover hint for an in-use object in a conventional cross referene table](./assets/VSCode-xrefHover.png)
+
+If the cursor is over the keywords `endstream` or `endobj` then the corresponding object number and line is displayed.
+
+If the cursor is over a key name which is a bitmask (`/F`, `/Ff`, `/Flags`), then a 32 bit binary bit mask is displayed.
+
+If the cursor is over a hexadecimal string (between `<` and `>`), then the ASCII of that string is displayed.
 
 
 ## Auto-complete and auto-closing
@@ -159,7 +166,7 @@ Many IDEs for programming languages support bracketing matching, where the curso
 - PDF hex string objects (start `<` and end `>`)
 - POstScript brackets (start `{` and end `}`)
 
-This is visualized in VSCode with an box around the paired brackets, and with the same color.
+This is visualized in VSCode with a outlined box around the paired brackets, with each bracket having the same text color.
 
 ### Windows bracket matching shortcut
 - `CTRL`+`SHIFT`+`\` = jump to matching bracket
@@ -180,14 +187,15 @@ When ENTER is hit after certain PDF start tokens (_listed below_), the next line
 VSCode allows easy navigation and examination of definitions, declarations and references. For PDF the following programming language equivalences are used:
 - **definition**: a PDF object (`X Y obj`)
 - **declaration**: the in-use cross-reference table entry for a PDF object (e.g., `0000003342 00000 n`)
-- **reference**: an indirect references (`X Y R`) to a PDF object
+- **reference**: an indirect reference (`X Y R`) to a PDF object
+
+Note that for PDFs with incremental updates there _might_ be multiple objects with the same object ID (i.e., the same object number `X` and generation number `Y`). In this case all matches are displayed in a side panel and can easily be navigated.
 
 Placing the cursor anywhere in the object ID (the object number `X` or generation number `Y`) of an indirect reference (`X Y R`) or on the line of a conventional cross-reference table entry for an in-use object (e.g., `0000003342 00000 n`), and then selecting "Go to definition" will jump the cursor to the associated object (`X Y obj`). 
 
 Placing the cursor anywhere in the object ID (the object number `X` or generation number `Y`) of an object definition (`X Y obj`) or indirect reference (`X Y R`), and then selecting "Find all references" will find all indirect references (`X Y R`) to that object. The references will be listed in the "References" sidebar panel.
 
-**NOT IMPLEMENTED YET** - goto declaration... from `X Y R` or `X Y obj` to the xref table in-use entry
-
+**NOT IMPLEMENTED YET** - "Go To declaration" from `X Y R` or `X Y obj` to the appropriate cross reference table in-use entry
 
 ### Windows Go To shortcuts
 - `F12` = goto definition
@@ -214,7 +222,7 @@ Commenting and uncommenting one or more lines in a PDF enables features and capa
 
 ## Basic PDF/FDF validation
 
-VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams introduced in PDF 1.5). Validation issues are output to the "Problems" window (`CTRL`+`SHIFT`+`M` or &#8679; &#8984; `M`).
+VSCode can perform basic validation on _conventional_ PDF and FDF files (i.e. those **not** using cross-reference table streams introduced in PDF 1.5). Validation issues are output to the "Problems" window (`CTRL`+`SHIFT`+`M` or &#8679; &#8984; `M`) and by clicking on a problem, the cursor will move to the appropriate line in the editor panel.
 
 Validation checks include:
 
@@ -222,10 +230,11 @@ Validation checks include:
 - checking validity of the PDF/FDF binary file comment marker (2nd line)
 - checking that the PDF contains the necessary keywords to be a conventional PDF file (i.e. `xref`, `trailer` and `startxref` keywords are all present). 
     - _Note that this may falsely validate a hybrid-reference PDF that should not be used with VSCode!_
-- checking that there is a conventional cross-reference table that starts with object 0 (as the start of the free list) = **NOT IMPLEMENTED YET**
-- checking that there are no comments in conventional cross-reference tables = **NOT IMPLEMENTED YET**
-- checking that cross-reference subsections are valid = **NOT IMPLEMENTED YET**
-- checking that the cross-reference table free list of objects is valid = **NOT IMPLEMENTED YET**
+- checking that there is a conventional cross-reference table that starts with object 0 (as the start of the free list) 
+- checking that there are no comments or other illegal data in conventional cross-reference tables 
+- checking that cross-reference subsections are valid 
+- checking that cross-reference entries are 20 bytes in length (note: VSCode does not display line endings)
+- checking that the cross-reference table free list of objects is valid 
 - checking that the last non-blank line of the PDF/FDF starts with `%%EOF`
 
 
