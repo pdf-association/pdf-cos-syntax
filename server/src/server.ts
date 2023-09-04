@@ -740,25 +740,38 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 function tokenizeDocument(document: TextDocument): any {
-  // console.log(`tokenizeDocument`);
+  console.log(`tokenizeDocument`);
   const tokensBuilder = new SemanticTokensBuilder();
-  const lines = document.getText().split(/\r?\n/);
 
-  for (let line = 0; line < lines.length; line++) {
-    const currentLine = lines[line];
-    const referenceMatch = currentLine.match(/(\d+) (\d+) R/);
-    if (referenceMatch) {
-      const startChar = referenceMatch.index!;
-      const length = referenceMatch[0].length;
+  for (let line = 0; line < document.lineCount; line++) {
+    const currentLine = document.getText({
+      start: { line: line, character: 0 },
+      end: { line: line, character: Number.MAX_VALUE }
+    });
+
+    const pattern = new RegExp(/(\d+ \d+ R)/, "g");
+    let match;
+    while ((match = pattern.exec(currentLine)) !== null) {
       tokensBuilder.push(
         line,
-        startChar,
-        length,
+        match.index,
+        match[0].length,
         tokenTypes.indexOf("indirectReference"),
-        0
-      ); // assuming no modifier
+        0  // assuming no modifier
+      );
     }
-
+  
+    // pattern = new RegExp(/(\d+ \d+ obj)/, "g");
+    // while ((match = pattern.exec(currentLine)) !== null) {
+    //   tokensBuilder.push(
+    //     line,
+    //     match.index,
+    //     match[0].length,
+    //     tokenTypes.indexOf("indirectObject"),
+    //     0  // assuming no modifier
+    //   );
+    // }
+  
     // ... other token matchers ...
   }
 
