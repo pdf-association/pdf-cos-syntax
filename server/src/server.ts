@@ -26,11 +26,13 @@ import {
   DidChangeConfigurationNotification,
   CompletionItem,
   CompletionItemKind,
+  CompletionItemTag,
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
   Position,
   Definition,
+  MarkupKind,
   Location,
   Hover,
 } from "vscode-languageserver/node";
@@ -138,9 +140,10 @@ connection.onInitialize((params: InitializeParams) => {
     capabilities: {
       // textDocumentSync: TextDocumentSyncKind.Incremental,
       textDocumentSync: TextDocumentSyncKind.Full,
-      // Tell the client that this server supports code completion.
+      // Tell the client that this server supports code completion for PDF names
       completionProvider: {
         resolveProvider: true,
+        triggerCharacters: [ "/" ]
       },
       definitionProvider: true,
       referencesProvider: true,
@@ -224,37 +227,70 @@ connection.onDidChangeWatchedFiles((_change) => {
   connection.console.log("We received an file change event");
 });
 
-// This handler provides the initial list of the completion items.
+/** 
+ * Intellisense code completion on "/" for PDF names.  Items are automatically 
+ * sorted alphabetically and will auto-filter as the user types more.
+ */ 
 connection.onCompletion(
   (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
     // The pass parameter contains the position of the text document in
-    // which code complete got requested. For the example we ignore this
-    // info and always provide the same completion items.
+    // which code-complete got requested. 
+    const cursor = _textDocumentPosition.position;
+    const doc = documents.get(_textDocumentPosition.textDocument.uri);
+    if (!doc) return [];
     return [
       {
-        label: "TypeScript",
-        kind: CompletionItemKind.Text,
+        label: "Type",
+        kind: CompletionItemKind.Variable,
         data: 1,
+        detail: "the type of a dictionary",
+        documentation: "name"
       },
       {
-        label: "JavaScript",
-        kind: CompletionItemKind.Text,
+        label: "Subtype",
+        kind: CompletionItemKind.Variable,
         data: 2,
+        detail: "the subtype of a dictionary",
+        documentation: "name"
+      },
+      {
+        label: "Length",
+        kind: CompletionItemKind.Variable,
+        data: 2,
+        detail: "the Length of a stream",
+        documentation: "integer",
+      },
+      {
+        label: "ProcSets",
+        kind: CompletionItemKind.Variable,
+        data: 3,
+        detail: "PostScript procedure sets",
+        documentation: { kind: MarkupKind.Markdown, value: "`array` _(Deprecated in 1.4)_" },
+        tags: [ CompletionItemTag.Deprecated ]
       },
     ];
   }
 );
 
-// This handler resolves additional information for the item selected in
-// the completion list.
+/**
+ * This handler resolves additional information for the item selected in
+ * the completion list. 
+ */ 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  if (item.data === 1) {
-    item.detail = "TypeScript details";
-    item.documentation = "TypeScript documentation";
-  } else if (item.data === 2) {
-    item.detail = "JavaScript details";
-    item.documentation = "JavaScript documentation";
-  }
+  // switch (item.data) {
+  //   case 1: { 
+  //     item.detail = "the type of a dictionary";
+  //     break;
+  //   }
+  //   case 2: {
+  //     item.detail = "the subtype of a dictionary";
+  //     break;
+  //   }
+  //   case 3: {
+  //     item.detail = "the Length of a stream";
+  //     break;
+  //   }
+  // }
   return item;
 });
 
