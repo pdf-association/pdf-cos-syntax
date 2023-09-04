@@ -76,7 +76,7 @@ const tokenTypes = [
   "endobjKeyword",
   "endstreamKeyword",
   "hexString",
-  "bitMask"
+  "bitMask",
 ];
 const tokenModifiers = ["deprecated"];
 
@@ -499,7 +499,8 @@ connection.onHover((params): Hover | null => {
     }
 
     case "endobjKeyword": // "endobj"
-    case "endstreamKeyword": { // "endstream"
+    case "endstreamKeyword": {
+      // "endstream"
       // Look back up the file to find closest matching "\d+ \d+ obj"
       const lineNbr = findPreviousObjectLineNumber(position, document);
       if (lineNbr !== -1) {
@@ -512,34 +513,33 @@ connection.onHover((params): Hover | null => {
       break;
     }
 
-    case "bitMask": // a bitmask entry
-    {
-      const match = semanticTokenText.match(/\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/);
-      if ((!match) || (match.length != 3)) return null;
+    case "bitMask": {
+      // a bitmask entry
+      const match = semanticTokenText.match(
+        /\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/
+      );
+      if (!match || match.length != 3) return null;
       const bm = parseInt(match[2]);
       return { contents: flags32_to_binary(bm) };
-      break;
     }
 
-    case "hexString": // a hex string
-    {
+    case "hexString": {
+      // a hex string
       const match = semanticTokenText.match(/<([0-9a-fA-F \t\n\r\f\0]+)>/);
-      if ((!match) || (match.length != 2)) return null;
+      if (!match || match.length != 2) return null;
+
       let hexString = match[1].trim().replace(/ \t\n\r\f\0/g, ""); // remove all whitespace
-      if (hexString.length > 0) {
-        if ((hexString.length % 2) == 1) hexString = hexString + '0'; // append silent '0' if an odd length
-        let asUTF8: string = "'";
-        for (let i = 0; i < hexString.length; i = i + 2) {
-          const s = String.fromCharCode(parseInt(hexString.slice(i, i + 2), 16));
-          asUTF8 = asUTF8 + s;
-        }
-        asUTF8 = asUTF8 + "'";
-        return { contents: asUTF8 };
+      if (hexString.length === 0) return { contents: `Empty hex string` };
+
+      hexString = hexString.length % 2 ? hexString + "0" : hexString;
+
+      let asUTF8 = "'";
+      for (let i = 0; i < hexString.length; i += 2) {
+        const s = String.fromCharCode(parseInt(hexString.slice(i, i + 2), 16));
+        asUTF8 += s;
       }
-      else {
-        return { contents: `Empty hex string` };
-      }
-      break;
+      asUTF8 += "'";
+      return { contents: asUTF8 };
     }
 
     default:
@@ -746,7 +746,7 @@ function tokenizeDocument(document: TextDocument): any {
   for (let line = 0; line < document.lineCount; line++) {
     const currentLine = document.getText({
       start: { line: line, character: 0 },
-      end: { line: line, character: Number.MAX_VALUE }
+      end: { line: line, character: Number.MAX_VALUE },
     });
 
     const pattern = new RegExp(/(\d+ \d+ R)/, "g");
@@ -757,10 +757,10 @@ function tokenizeDocument(document: TextDocument): any {
         match.index,
         match[0].length,
         tokenTypes.indexOf("indirectReference"),
-        0  // assuming no modifier
+        0 // assuming no modifier
       );
     }
-  
+
     // pattern = new RegExp(/(\d+ \d+ obj)/, "g");
     // while ((match = pattern.exec(currentLine)) !== null) {
     //   tokensBuilder.push(
@@ -771,7 +771,7 @@ function tokenizeDocument(document: TextDocument): any {
     //     0  // assuming no modifier
     //   );
     // }
-  
+
     // ... other token matchers ...
   }
 
@@ -805,7 +805,7 @@ function updateXrefMatrixForDocument(uri: string, content: string) {
 function buildXrefMatrix(content: string): XrefInfoMatrix {
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
-  const lines = content.split('\n');
+  const lines = content.split("\n");
 
   const mockPDFDocument: TextDocument = {
     getText: () => content,
