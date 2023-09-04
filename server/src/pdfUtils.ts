@@ -226,7 +226,7 @@ export function findPreviousObjectLineNumber(
   topLines = topLines.reverse();
 
   // Find 1st occurence of "X Y obj" in the REVERSED lines
-  for (let i: number = 0; i < topLines.length; i++) {
+  for (let i = 0; i < topLines.length; i++) {
     const m = topLines[i].search(/\b\d+ \d+ obj\b/g);
     if (m != -1)
       return (topLines.length - i - 1); 
@@ -612,7 +612,7 @@ export class XrefInfoMatrix {
   private addXrefTable(startLineNbr: number, revision: number, xref: string) {
     let currentObjectNum: number | null = null;
     let entryCount: number | null = null;
-    let nextFreeObj: number = 0; // Free list always starts with object 0
+    let nextFreeObj: number | null = null; // Free list always starts with object 0
 
     let xrefLines = xref.split('\n');
 

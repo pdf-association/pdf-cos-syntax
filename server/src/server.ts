@@ -1,12 +1,12 @@
 /**
- * @brief VSCode PDF COS syntax LSP server 
+ * @brief VSCode PDF COS syntax LSP server
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
  * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. 
+ * Licensed under the MIT License.
  *
  * @remark
  * This material is based upon work supported by the Defense Advanced
@@ -15,7 +15,7 @@
  * in this material are those of the author(s) and do not necessarily
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
-*/
+ */
 import {
   createConnection,
   TextDocuments,
@@ -68,8 +68,14 @@ let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
 // Needs to match package.json
-const tokenTypes = ["indirectReference", "indirectObject", "xrefTableEntry", "endobjKeyword", "endstreamKeyword"]; 
-const tokenModifiers = ["deprecated"]; 
+const tokenTypes = [
+  "indirectReference",
+  "indirectObject",
+  "xrefTableEntry",
+  "endobjKeyword",
+  "endstreamKeyword",
+];
+const tokenModifiers = ["deprecated"];
 
 // The example settings
 interface PDSCOSSyntaxSettings {
@@ -91,7 +97,6 @@ type PDFDocumentData = {
   settings: PDSCOSSyntaxSettings;
   xrefMatrix?: XrefInfoMatrix;
 };
-
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
@@ -250,13 +255,12 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   return item;
 });
 
-
 /**
  *  "Go to definition" capability:
  *    - on "X Y R" --> find all "X Y obj"
  *    - on "X Y obj" --> find all "X Y obj" (incl. current position)
  *    - on in-use ("n") cross reference table entries --> find all "X Y obj"
- * 
+ *
  *  Because of file revisions, there may be MULTIPLE locations for any given "X Y obj"!!
  */
 connection.onDefinition(
@@ -277,18 +281,20 @@ connection.onDefinition(
 
     switch (token.type) {
       case "indirectObject": // X Y obj --> may have MULTIPLE objects with this definition!
-      case "indirectReference": { // X Y R
+      case "indirectReference": {
+        // X Y R
         const objMatch = lineText.match(/(\d+) (\d+)/);
         if (!objMatch) return null;
-  
+
         objectNumber = parseInt(objMatch[1]);
         genNumber = parseInt(objMatch[2]);
         break;
       }
-      case "xrefTableEntry": { // only for in-use entries!
+      case "xrefTableEntry": {
+        // only for in-use entries!
         const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
         if (!match) return null;
-  
+
         const offset = parseInt(match[1]);
         genNumber = parseInt(match[2]);
         const xRefInfo = docData.xrefMatrix;
@@ -304,18 +310,28 @@ connection.onDefinition(
     }
 
     // Sanity check object ID values
-    if ((objectNumber <= 0) || (genNumber < 0)) {
-      console.warn(`Invalid object ID for indirect object "${objectNumber} ${genNumber} obj"!`);
+    if (objectNumber <= 0 || genNumber < 0) {
+      console.warn(
+        `Invalid object ID for indirect object "${objectNumber} ${genNumber} obj"!`
+      );
       return null;
     }
 
     // Find all "X Y obj"
-    console.log(`Finding all indirect objects "${objectNumber} ${genNumber} obj"`);
-    const targetLocations: Location[] = findAllDefinitions(objectNumber, genNumber, document);
-    
+    console.log(
+      `Finding all indirect objects "${objectNumber} ${genNumber} obj"`
+    );
+    const targetLocations: Location[] = findAllDefinitions(
+      objectNumber,
+      genNumber,
+      document
+    );
+
     // Handle degenerate condition (no locations)
     if (targetLocations.length == 0) {
-      console.warn(`No indirect objects "${objectNumber} ${genNumber} obj" where found!`);
+      console.warn(
+        `No indirect objects "${objectNumber} ${genNumber} obj" where found!`
+      );
       return null;
     }
     return targetLocations;
@@ -345,7 +361,8 @@ connection.onReferences((params): Location[] | null => {
 
   switch (token.type) {
     case "indirectReference": // X Y R
-    case "indirectObject": {  // X Y obj
+    case "indirectObject": {
+      // X Y obj
       const objMatch = lineText.match(/(\d+) (\d+)/);
       if (!objMatch) return null;
 
@@ -353,7 +370,8 @@ connection.onReferences((params): Location[] | null => {
       genNumber = parseInt(objMatch[2]);
       break;
     }
-    case "xrefTableEntry": { // only for in-use entries!
+    case "xrefTableEntry": {
+      // only for in-use entries!
       const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
       if (!match) return null;
 
@@ -372,28 +390,33 @@ connection.onReferences((params): Location[] | null => {
   }
 
   // Sanity check object ID values
-  if ((objectNumber <= 0) || (genNumber < 0)) {
-    console.warn(`Invalid object ID for indirect reference "${objectNumber} ${genNumber} R"!`);
+  if (objectNumber <= 0 || genNumber < 0) {
+    console.warn(
+      `Invalid object ID for indirect reference "${objectNumber} ${genNumber} R"!`
+    );
     return null;
   }
 
   // Find all "X Y R"
-  console.log(`Finding all indirect references "${objectNumber} ${genNumber} R"`);
+  console.log(
+    `Finding all indirect references "${objectNumber} ${genNumber} R"`
+  );
   const references = findAllReferences(objectNumber, genNumber, document);
 
   // Handle degenerate condition (no references found)
   if (references.length == 0) {
-    console.warn(`No indirect references "${objectNumber} ${genNumber} R" where found!`);
+    console.warn(
+      `No indirect references "${objectNumber} ${genNumber} R" where found!`
+    );
     return null;
   }
   return references;
 });
 
-
 /**
  * Hover capabilities:
- *   - on "X Y obj" --> hover says how many references, etc. 
- *   - on "X Y R" --> hover says how many objects, etc. 
+ *   - on "X Y obj" --> hover says how many references, etc.
+ *   - on "X Y R" --> hover says how many objects, etc.
  *   - on conventional cross reference table entries --> hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
@@ -411,7 +434,8 @@ connection.onHover((params): Hover | null => {
   const xRefInfo = docData.xrefMatrix;
 
   switch (token.type) {
-    case "xrefTableEntry": { // both in-use and free
+    case "xrefTableEntry": {
+      // both in-use and free
       const match = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
       if (!match) return null;
 
@@ -432,7 +456,8 @@ connection.onHover((params): Hover | null => {
       break;
     }
 
-    case "indirectReference": { // X Y R
+    case "indirectReference": {
+      // X Y R
       const match = lineText.match(/\b(\d+) (\d+)\b/);
       if (!match) return null;
 
@@ -441,42 +466,56 @@ connection.onHover((params): Hover | null => {
       console.log(`Finding all objects "${objectNumber} ${genNumber} obj"`);
       const objects = findAllDefinitions(objectNumber, genNumber, document);
       if (objects.length == 0)
-        return { contents: `No object found for indirect reference "${objectNumber} ${genNumber} R"`};
+        return {
+          contents: `No object found for indirect reference "${objectNumber} ${genNumber} R"`,
+        };
       else if (objects.length == 1)
-        return { contents: `One object found for "${objectNumber} ${genNumber} R"`};
+        return {
+          contents: `One object found for "${objectNumber} ${genNumber} R"`,
+        };
       else
-        return { contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`};
+        return {
+          contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`,
+        };
       break;
     }
 
-    case "indirectObject": { // X Y obj
+    case "indirectObject": {
+      // X Y obj
       const match = lineText.match(/\b(\d+) (\d+)\b/);
       if (!match) return null;
 
       const objectNumber = parseInt(match[1]);
       const genNumber = parseInt(match[2]);
-      console.log(`Finding all indirect references "${objectNumber} ${genNumber} R"`);
+      console.log(
+        `Finding all indirect references "${objectNumber} ${genNumber} R"`
+      );
       const references = findAllReferences(objectNumber, genNumber, document);
       if (references.length == 0)
-        return { contents: `No indirect references to object ${objectNumber} ${genNumber} found.`};
+        return {
+          contents: `No indirect references to object ${objectNumber} ${genNumber} found.`,
+        };
       else if (references.length == 1)
-        return { contents: `One indirect reference to object ${objectNumber} ${genNumber}`};
+        return {
+          contents: `One indirect reference to object ${objectNumber} ${genNumber}`,
+        };
       else
-        return { contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`};
+        return {
+          contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`,
+        };
       break;
     }
 
     case "endobjKeyword": // "endobj"
-    case "endstreamKeyword": // "endstream"
-    {
+    case "endstreamKeyword": { // "endstream"
       // Look back up the file to find closest matching "\d+ \d+ obj"
       const lineNbr = findPreviousObjectLineNumber(position, document);
       if (lineNbr !== -1) {
-        const lineStr = document.getText({ 
-          start: {line: lineNbr, character: 0},
-          end: {line: lineNbr, character: Number.MAX_VALUE}
+        const lineStr = document.getText({
+          start: { line: lineNbr, character: 0 },
+          end: { line: lineNbr, character: Number.MAX_VALUE },
         });
-        return { contents: `Line ${lineNbr + 1}: "${lineStr}"`};
+        return { contents: `Line ${lineNbr + 1}: "${lineStr}"` };
       }
       break;
     }
@@ -666,7 +705,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
     // Get the list of diagnostics generated by the XRefMatrix building process
     const docData = pdfDocumentData.get(textDocument.uri);
-    if (docData && docData.xrefMatrix && (docData.xrefMatrix.diagnostics.length > 0)) {
+    if (
+      docData &&
+      docData.xrefMatrix &&
+      docData.xrefMatrix.diagnostics.length > 0
+    ) {
       console.log(`Appending xref diagnostics`);
       diagnostics = diagnostics.concat(docData.xrefMatrix.diagnostics);
     }
@@ -726,26 +769,38 @@ function updateXrefMatrixForDocument(uri: string, content: string) {
   docData.xrefMatrix = buildXrefMatrix(content);
 }
 
-function buildXrefMatrix(content: string) : XrefInfoMatrix {
+function buildXrefMatrix(content: string): XrefInfoMatrix {
   console.log(`buildXrefMatrix`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
+  const lines = content.split('\n');
 
   const mockPDFDocument: TextDocument = {
     getText: () => content,
-    uri: "mockURI", // mock URI
-    languageId: "plaintext", // or any language ID you want to mock
+    uri: "mockURI",
+    languageId: "pdf",
     version: 1, // mock version
     positionAt: (offset: number) => {
-      // Mock implementation; adjust if necessary
-      return { line: 0, character: offset };
+      let charCount = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (charCount + lines[i].length >= offset) {
+          return { line: i, character: offset - charCount };
+        }
+        charCount += lines[i].length + 1;
+      }
+      return {
+        line: lines.length - 1,
+        character: lines[lines.length - 1].length,
+      };
     },
     offsetAt: (position: Position) => {
-      // Mock implementation; adjust if necessary
-      return position.character;
+      let offset = 0;
+      for (let i = 0; i < position.line; i++) {
+        offset += lines[i].length + 1;
+      }
+      return offset + position.character;
     },
     lineCount: content.split("\n").length,
-    // Any other properties or methods from TextDocument should be added here in a similar fashion.
   };
 
   // Merge all xref tables found in the document into the matrix
