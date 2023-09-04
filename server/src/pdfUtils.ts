@@ -574,13 +574,7 @@ export class XrefInfoMatrix {
       else {
         xrefTable = pdf.slice(xrefStart, xrefEnd);
       }
-      ///////////////////////////////
-      /// WHY IS  positionAt(offset).line always 0 for any offset???
-      console.log(`Revision ${revision}: found cross reference table at offset ${xrefStart} to ${xrefEnd}`);
-      console.log(pdfFile.positionAt(xrefStart));
-      console.log(pdfFile.positionAt(xrefEnd));
       this.addXrefTable(pdfFile.positionAt(xrefStart).line, revision, xrefTable);
-      ///////////////////////////////
       revision++;
       do {
         // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
@@ -669,7 +663,7 @@ export class XrefInfoMatrix {
         // Check chaining of free list (singly linked list by \d{10} object numbers)
         if (letter === "f") {
           const freeObjNumber = parseInt(entryPatternMatch[1]);
-          if (nextFreeObj != currentObjectNum) {
+          if (nextFreeObj && (nextFreeObj != currentObjectNum)) {
             this.diagnostics.push({
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
@@ -778,7 +772,7 @@ export class XrefInfoMatrix {
     } // for-each line in this cross reference table
 
     // Was free list terminated with an object number of 0?
-    if (nextFreeObj != 0) {
+    if (nextFreeObj && (nextFreeObj != 0)) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Warning,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
