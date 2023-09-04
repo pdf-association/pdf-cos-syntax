@@ -125,9 +125,15 @@ If the cursor is placed over a conventional cross-reference table entry, then a 
 
 If the cursor is over the keywords `endstream` or `endobj` then the corresponding object number and line is displayed.
 
+![VSCode hover hint for endobj keyword](assets/VSCode-endobj-hover.png)
+
 If the cursor is over a key name which is a bitmask (`/F`, `/Ff`, `/Flags`), then a 32 bit binary bit mask is displayed.
 
+![VSCode hover hint for bitmask](assets/VSCode-bitmask-hover.png)
+
 If the cursor is over a hexadecimal string (between `<` and `>`), then the ASCII of that string is displayed.
+
+![VSCode hover hint for hex string](assets/VSCode-hexstring-hover.png)
 
 
 ## Auto-complete and auto-closing
@@ -236,6 +242,9 @@ Validation checks include:
 - checking that cross-reference entries are 20 bytes in length (note: VSCode does not display line endings)
 - checking that the cross-reference table free list of objects is valid 
 - checking that the last non-blank line of the PDF/FDF starts with `%%EOF`
+
+![VSCode example problem reports](assets/VSCode-problem-report.png)
+
 
 
 ## Snippets
