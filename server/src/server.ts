@@ -33,6 +33,10 @@ import {
   Definition,
   Location,
   Hover,
+  DocumentSymbolParams,
+  DocumentSymbol,
+  SymbolKind,
+  SelectionRange,
 } from "vscode-languageserver/node";
 
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
@@ -136,9 +140,7 @@ connection.onInitialize((params: InitializeParams) => {
 
   const result: InitializeResult = {
     capabilities: {
-      // textDocumentSync: TextDocumentSyncKind.Incremental,
       textDocumentSync: TextDocumentSyncKind.Full,
-      // Tell the client that this server supports code completion.
       completionProvider: {
         resolveProvider: true,
       },
@@ -152,6 +154,7 @@ connection.onInitialize((params: InitializeParams) => {
         },
         full: true,
       },
+      documentSymbolProvider: true,
     },
   };
   if (hasWorkspaceFolderCapability) {
@@ -549,6 +552,88 @@ connection.onHover((params): Hover | null => {
   return null;
 });
 
+connection.onDocumentSymbol(
+  (params: DocumentSymbolParams): DocumentSymbol[] => {
+    const { textDocument } = params;
+    const document = documents.get(textDocument.uri);
+    if (!document) return [];
+    const pdfParser = new PDFParser(document);
+
+    const symbols: DocumentSymbol[] = [];
+    // Header section
+    if (pdfParser.hasHeader()) {
+      symbols.push({
+        name: "Header",
+        kind: SymbolKind.Namespace,
+        range: pdfParser.getHeaderRange(), // This should return the computed range for the header
+        selectionRange: pdfParser.getHeaderSelectionRange(),
+        children: [
+          /*...*/
+        ],
+      });
+    }
+
+    // Original PDF sections
+    if (pdfParser.hasOriginalContent()) {
+      const originalPDFSymbol: DocumentSymbol = {
+        name: "Original PDF",
+        kind: SymbolKind.Namespace,
+        range: pdfParser.getOriginalContentRange(),
+        selectionRange: pdfParser.getOriginalContentSelectionRange(),
+        children: [],
+      };
+
+      pdfParser.getObjects().forEach((obj) => {
+        originalPDFSymbol.children.push({
+          name: `Object ${obj.id}`,
+          kind: SymbolKind.Object,
+          range: obj.getRange(),
+          selectionRange: obj.getSelectionRange(),
+          children: [
+            /* ... streams, etc. ... */
+          ],
+        });
+      });
+
+      symbols.push(originalPDFSymbol);
+    }
+
+    // Similarly, fill in for trailer, cross-reference tables, etc.
+
+    return symbols;
+
+    // symbols.push({
+    //   name: "Original File",
+    //   kind: SymbolKind.Namespace,
+    //   range: {
+    //     start: { line: 0, character: 0 },
+    //     end: { line: 10, character: 0 },
+    //   },
+    //   selectionRange: {
+    //     start: { line: 0, character: 0 },
+    //     end: { line: 0, character: 10 },
+    //   },
+    //   children: [
+    //     {
+    //       name: "Object 12",
+    //       kind: SymbolKind.Object,
+    //       range: {
+    //         start: { line: 2, character: 0 },
+    //         end: { line: 4, character: 0 },
+    //       },
+    //       selectionRange: {
+    //         start: { line: 2, character: 0 },
+    //         end: { line: 2, character: 10 },
+    //       },
+    //       children: [],
+    //     },
+    //     // ... Add other objects or sections.
+    //   ],
+    // });
+    // return symbols;
+  }
+);
+
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);
@@ -840,3 +925,38 @@ function buildXrefMatrix(content: string): XrefInfoMatrix {
 
   return xrefMatrix;
 }
+
+class PDFParser {
+  content: string;
+
+  constructor(content: string) {
+    this.content = content;
+  }
+
+  hasHeader(): boolean {
+    return this.content.startsWith('%PDF');
+  }
+
+  getHeaderRange(): Range {
+    const startLine = 0;
+    const endLine = this.content.indexOf('\n');
+    return {
+      start: { line: startLine, character: 0 },
+      end: { line: endLine, character: 0 } 
+    };
+  }
+
+  getHeaderSelectionRange(): SelectionRange {
+    return {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 0 } 
+    };
+  }
+
+  hasOriginalContent() {}
+
+  getOriginalContentRange() {}
+
+  getOriginalContentSelectionRange() {}
+}
+
