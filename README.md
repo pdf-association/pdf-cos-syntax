@@ -140,6 +140,8 @@ If the cursor is over a hexadecimal string (between `<` and `>`), then the ASCII
 This extension supports auto-complete and auto-closing for arrays (`[`,`]`), literal strings (`(`/`)`), hex strings (`<`/`>`), dictionaries (`<<`/`>>`) and PostScript brackets (`{`/`}`), outside of strings and comments.
 If text is highlighted, and one of the above PDF token start symbols is then typed, VSCode will automatically add the corresponding PDF token end symbol after the highlighted text. If these tokens are entered, then the corresponding PDF token end symbol will be added after the cursor (except for dictionaries).
 
+Auto-completion is also enabled for PDF names once `/` is pressed. This is based on the [Arlington PDF Model](https://github.com/pdf-association/arlington-pdf-model).
+
 
 ## Multi-line folding
 Folding is enabled for PDF objects streams (`X Y obj`/`endobj`), streams (`stream`/`endstream`), conventional cross reference tables (`xref`/`trailer`) and multi-line PDF dictionary objects (`<<`/`>>`). The dictionary start token `<<` must be on a line by itself or preceded by a PDF name object (e.g. a key name). The dictionary end token `>>` must also be at the start of a line. 

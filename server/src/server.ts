@@ -50,6 +50,10 @@ import {
   XrefInfoMatrix,
 } from "./pdfUtils";
 
+import {
+  DictKeyCodeCompletion
+} from "./ArlingtonUtils";
+
 // for server debug.
 import { debug } from "console";
 import { TextEncoder } from "util";
@@ -142,7 +146,7 @@ connection.onInitialize((params: InitializeParams) => {
       textDocumentSync: TextDocumentSyncKind.Full,
       // Tell the client that this server supports code completion for PDF names
       completionProvider: {
-        resolveProvider: true,
+        resolveProvider: false, // change to true so onCompletionResolve() gets called
         triggerCharacters: [ "/" ]
       },
       definitionProvider: true,
@@ -227,6 +231,7 @@ connection.onDidChangeWatchedFiles((_change) => {
   connection.console.log("We received an file change event");
 });
 
+
 /** 
  * Intellisense code completion on "/" for PDF names.  Items are automatically 
  * sorted alphabetically and will auto-filter as the user types more.
@@ -238,43 +243,13 @@ connection.onCompletion(
     const cursor = _textDocumentPosition.position;
     const doc = documents.get(_textDocumentPosition.textDocument.uri);
     if (!doc) return [];
-    return [
-      {
-        label: "Type",
-        kind: CompletionItemKind.Variable,
-        data: 1,
-        detail: "the type of a dictionary",
-        documentation: "name"
-      },
-      {
-        label: "Subtype",
-        kind: CompletionItemKind.Variable,
-        data: 2,
-        detail: "the subtype of a dictionary",
-        documentation: "name"
-      },
-      {
-        label: "Length",
-        kind: CompletionItemKind.Variable,
-        data: 2,
-        detail: "the Length of a stream",
-        documentation: "integer",
-      },
-      {
-        label: "ProcSets",
-        kind: CompletionItemKind.Variable,
-        data: 3,
-        detail: "PostScript procedure sets",
-        documentation: { kind: MarkupKind.Markdown, value: "`array` _(Deprecated in 1.4)_" },
-        tags: [ CompletionItemTag.Deprecated ]
-      },
-    ];
+    return DictKeyCodeCompletion();
   }
 );
 
+
 /**
- * This handler resolves additional information for the item selected in
- * the completion list. 
+ * NOT USED unless completionProvider: { resolveProvider: false, ... }
  */ 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   // switch (item.data) {
@@ -286,13 +261,10 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   //     item.detail = "the subtype of a dictionary";
   //     break;
   //   }
-  //   case 3: {
-  //     item.detail = "the Length of a stream";
-  //     break;
-  //   }
   // }
   return item;
 });
+
 
 /**
  *  "Go to definition" capability:
