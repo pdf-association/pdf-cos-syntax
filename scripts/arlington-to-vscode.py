@@ -11,6 +11,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # Contributors: Peter Wyatt, PDF Association
+#
+# Converts an Arlington PDF Model "pandas.tsv" monolithic model
+# into a JSON file for use with VSCode Code Completion.
+#
 
 import pandas as pd
 import sys
@@ -28,8 +32,8 @@ rowCount = 1
 # them to be sequential
 def CreateVSCodeCompletionData(row):
     global rowCount
-    rowCount = rowCount + 1;
-    return rowCount - 1;
+    rowCount = rowCount + 1
+    return rowCount - 1
 
 
 # VSCode Code Completion MarkDown-styled documentation a-la PDF specifications
@@ -43,9 +47,9 @@ def CreateVSCodeCompletionDocumentation(row):
     if (len(row["SinceVersion"]) == 3):
         s = s + "PDF " + row["SinceVersion"]
     if (row["Required"] == "TRUE"):
-        s = s + "; Required";
+        s = s + "; Required"
     elif (row["Required"] == "FALSE"):
-        s = s + "; Optional";
+        s = s + "; Optional"
     if (row["DeprecatedIn"] != ""):
         s = s + "; Deprecated in PDF " + row["DeprecatedIn"]
     s = s + ")_"
@@ -59,16 +63,20 @@ def CreateVSCodeCompletionDocumentation(row):
 
 # Convert pandas TSV to JSON, but also add some additional fields for VSCode Code Completion
 def ArlingtonToTS(pandas_fname: str, json_fname: str):
-    df = pd.read_csv(pandas_fname, delimiter='\t', na_filter=False, dtype={'Object':'string', 'Key':'string', 'Type':'string', 'SinceVersion':'string', 'DeprecatedIn':'string', 'Required':'string', 'IndirectReference':'string', 'Inheritable':'string', 'DefaultValue':'string', 'PossibleValues':'string', 'SpecialCase':'string', 'Link':'string', 'Note':'string'})
+    df = pd.read_csv(pandas_fname, delimiter='\t', na_filter=False, 
+                     dtype={'Object':'string', 'Key':'string', 'Type':'string', 'SinceVersion':'string',
+                             'DeprecatedIn':'string', 'Required':'string', 'IndirectReference':'string', 
+                             'Inheritable':'string', 'DefaultValue':'string', 'PossibleValues':'string',
+                             'SpecialCase':'string', 'Link':'string', 'Note':'string'})
 
     # df is a pandas DataFrame of a full Arlington file set
     df = df.drop(columns='Note')
 
     # Drop all arrays - where "Object" contains "Array" or "ColorSpace"
     arr_obj = df[ df["Object"].find("Array") != -1].index
-    df.drop(index_names, inplace = True)
+    df.drop(arr_obj, inplace = True)
     arr_obj = df[ df["Object"].find("ColorSpace") != -1].index
-    df.drop(index_names, inplace = True)
+    df.drop(arr_obj, inplace = True)
 
     # Add new columns needed for VSCode Code Completion
     df["Data"] = df.apply( lambda row: CreateVSCodeCompletionData(row), axis=1)
