@@ -73,9 +73,9 @@ def ArlingtonToTS(pandas_fname: str, json_fname: str):
     df = df.drop(columns='Note')
 
     # Drop all arrays - where "Object" contains "Array" or "ColorSpace"
-    arr_obj = df[ df["Object"].find("Array") != -1].index
+    arr_obj = df[ df["Object"].map( lambda x: x.find("Array") != -1)].index
     df.drop(arr_obj, inplace = True)
-    arr_obj = df[ df["Object"].find("ColorSpace") != -1].index
+    arr_obj = df[ df["Object"].map( lambda x: x.find("ColorSpace") != -1)].index
     df.drop(arr_obj, inplace = True)
 
     # Add new columns needed for VSCode Code Completion
