@@ -86,7 +86,7 @@ const tokenTypes = [
 ];
 const tokenModifiers = ["deprecated"];
 
-// The example settings
+// The PDF COS Syntax extension settings
 interface PDSCOSSyntaxSettings {
   maxNumberOfProblems: number;
 }
