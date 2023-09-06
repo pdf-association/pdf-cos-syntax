@@ -926,39 +926,6 @@ function buildXrefMatrix(content: string): XrefInfoMatrix {
   return xrefMatrix;
 }
 
-// class PDFParser {
-//   content: string;
-
-//   constructor(content: string) {
-//     this.content = content;
-//   }
-
-//   hasHeader(): boolean {
-//     return this.content.startsWith('%PDF');
-//   }
-
-//   getHeaderRange(): Range {
-//     const startLine = 0;
-//     const endLine = this.content.indexOf('\n');
-//     return {
-//       start: { line: startLine, character: 0 },
-//       end: { line: endLine, character: 0 }
-//     };
-//   }
-
-//   getHeaderSelectionRange(): SelectionRange {
-//     return {
-//       start: { line: 0, character: 0 },
-//       end: { line: 0, character: 0 }
-//     };
-//   }
-
-//   hasOriginalContent() {}
-
-//   getOriginalContentRange() {}
-
-//   getOriginalContentSelectionRange() {}
-// }
 class PDFParser {
   content: string;
 
