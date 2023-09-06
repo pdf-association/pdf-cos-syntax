@@ -565,7 +565,7 @@ connection.onDocumentSymbol(
     if (pdfParser.hasHeader()) {
       symbols.push({
         name: "Header",
-        kind: SymbolKind.Namespace,
+        kind: SymbolKind.Module,
         range: pdfParser.getHeaderRange(),
         selectionRange: pdfParser.getHeaderSelectionRange(),
         children: [],
@@ -576,7 +576,7 @@ connection.onDocumentSymbol(
     if (pdfParser.hasOriginalContent()) {
       const originalPDFSymbol: DocumentSymbol = {
         name: "Body",
-        kind: SymbolKind.Namespace,
+        kind: SymbolKind.Class,
         range: pdfParser.getOriginalContentRange(),
         selectionRange: pdfParser.getOriginalContentSelectionRange(),
         children: [],
@@ -586,7 +586,7 @@ connection.onDocumentSymbol(
       pdfParser.getObjects().forEach((obj) => {
         const objSymbol: DocumentSymbol = {
           name: `Object ${obj.id}`,
-          kind: SymbolKind.Object,
+          kind: SymbolKind.Method,
           range: obj.getRange(),
           selectionRange: obj.getSelectionRange(),
           children: [],
@@ -596,7 +596,7 @@ connection.onDocumentSymbol(
         if (pdfParser.hasStreamInsideObject(obj)) {
           objSymbol.children?.push({
             name: "Stream",
-            kind: SymbolKind.String,
+            kind: SymbolKind.Method,
             range: pdfParser.getStreamRangeInsideObject(obj),
             selectionRange: pdfParser.getStreamSelectionRangeInsideObject(obj),
             children: [],
@@ -613,7 +613,7 @@ connection.onDocumentSymbol(
     if (pdfParser.hasTrailer()) {
       symbols.push({
         name: "Trailer",
-        kind: SymbolKind.Namespace,
+        kind: SymbolKind.Interface,
         range: pdfParser.getTrailerRange(),
         selectionRange: pdfParser.getTrailerSelectionRange(),
         children: [],
@@ -623,7 +623,7 @@ connection.onDocumentSymbol(
     if (pdfParser.hasCrossReferenceTable()) {
       symbols.push({
         name: "Cross-Reference Table",
-        kind: SymbolKind.Namespace,
+        kind: SymbolKind.Property,
         range: pdfParser.getCrossReferenceTableRange(),
         selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
         children: [],
