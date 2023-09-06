@@ -560,77 +560,77 @@ connection.onDocumentSymbol(
     const pdfParser = new PDFParser(document);
 
     const symbols: DocumentSymbol[] = [];
+
     // Header section
     if (pdfParser.hasHeader()) {
       symbols.push({
         name: "Header",
         kind: SymbolKind.Namespace,
-        range: pdfParser.getHeaderRange(), // This should return the computed range for the header
+        range: pdfParser.getHeaderRange(),
         selectionRange: pdfParser.getHeaderSelectionRange(),
-        children: [
-          /*...*/
-        ],
+        children: [],
       });
     }
 
-    // Original PDF sections
+    // Original PDF sections (Body)
     if (pdfParser.hasOriginalContent()) {
       const originalPDFSymbol: DocumentSymbol = {
-        name: "Original PDF",
+        name: "Body",
         kind: SymbolKind.Namespace,
         range: pdfParser.getOriginalContentRange(),
         selectionRange: pdfParser.getOriginalContentSelectionRange(),
         children: [],
       };
 
+      // Populate objects
       pdfParser.getObjects().forEach((obj) => {
-        originalPDFSymbol.children.push({
+        const objSymbol: DocumentSymbol = {
           name: `Object ${obj.id}`,
           kind: SymbolKind.Object,
           range: obj.getRange(),
           selectionRange: obj.getSelectionRange(),
-          children: [
-            /* ... streams, etc. ... */
-          ],
-        });
+          children: [],
+        };
+
+        // Check for stream inside the object
+        if (pdfParser.hasStreamInsideObject(obj)) {
+          objSymbol.children?.push({
+            name: "Stream",
+            kind: SymbolKind.String,
+            range: pdfParser.getStreamRangeInsideObject(obj),
+            selectionRange: pdfParser.getStreamSelectionRangeInsideObject(obj),
+            children: [],
+          });
+        }
+
+        originalPDFSymbol.children?.push(objSymbol);
       });
 
       symbols.push(originalPDFSymbol);
     }
 
-    // Similarly, fill in for trailer, cross-reference tables, etc.
+    // Trailer
+    if (pdfParser.hasTrailer()) {
+      symbols.push({
+        name: "Trailer",
+        kind: SymbolKind.Namespace,
+        range: pdfParser.getTrailerRange(),
+        selectionRange: pdfParser.getTrailerSelectionRange(),
+        children: [],
+      });
+    }
+
+    if (pdfParser.hasCrossReferenceTable()) {
+      symbols.push({
+        name: "Cross-Reference Table",
+        kind: SymbolKind.Namespace,
+        range: pdfParser.getCrossReferenceTableRange(),
+        selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
+        children: [],
+      });
+    }
 
     return symbols;
-
-    // symbols.push({
-    //   name: "Original File",
-    //   kind: SymbolKind.Namespace,
-    //   range: {
-    //     start: { line: 0, character: 0 },
-    //     end: { line: 10, character: 0 },
-    //   },
-    //   selectionRange: {
-    //     start: { line: 0, character: 0 },
-    //     end: { line: 0, character: 10 },
-    //   },
-    //   children: [
-    //     {
-    //       name: "Object 12",
-    //       kind: SymbolKind.Object,
-    //       range: {
-    //         start: { line: 2, character: 0 },
-    //         end: { line: 4, character: 0 },
-    //       },
-    //       selectionRange: {
-    //         start: { line: 2, character: 0 },
-    //         end: { line: 2, character: 10 },
-    //       },
-    //       children: [],
-    //     },
-    //     // ... Add other objects or sections.
-    //   ],
-    // });
-    // return symbols;
   }
 );
 
@@ -926,37 +926,271 @@ function buildXrefMatrix(content: string): XrefInfoMatrix {
   return xrefMatrix;
 }
 
+// class PDFParser {
+//   content: string;
+
+//   constructor(content: string) {
+//     this.content = content;
+//   }
+
+//   hasHeader(): boolean {
+//     return this.content.startsWith('%PDF');
+//   }
+
+//   getHeaderRange(): Range {
+//     const startLine = 0;
+//     const endLine = this.content.indexOf('\n');
+//     return {
+//       start: { line: startLine, character: 0 },
+//       end: { line: endLine, character: 0 }
+//     };
+//   }
+
+//   getHeaderSelectionRange(): SelectionRange {
+//     return {
+//       start: { line: 0, character: 0 },
+//       end: { line: 0, character: 0 }
+//     };
+//   }
+
+//   hasOriginalContent() {}
+
+//   getOriginalContentRange() {}
+
+//   getOriginalContentSelectionRange() {}
+// }
 class PDFParser {
   content: string;
 
-  constructor(content: string) {
-    this.content = content;
+  constructor(document: TextDocument) {
+    this.content = document.getText();
   }
 
   hasHeader(): boolean {
-    return this.content.startsWith('%PDF');
+    return this.content.startsWith("%PDF");
   }
 
   getHeaderRange(): Range {
-    const startLine = 0;
-    const endLine = this.content.indexOf('\n');
+    const startIdx = this.content.indexOf("%PDF-");
+    const endIdx = this.content.indexOf("obj");
+    const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
+    const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
     return {
       start: { line: startLine, character: 0 },
-      end: { line: endLine, character: 0 } 
+      end: { line: endLine, character: 0 },
     };
   }
 
-  getHeaderSelectionRange(): SelectionRange {
+  getHeaderSelectionRange(): Range {
     return {
       start: { line: 0, character: 0 },
-      end: { line: 0, character: 0 } 
+      end: { line: 0, character: this.content.split("\n")[0].length },
     };
   }
 
-  hasOriginalContent() {}
+  hasOriginalContent(): boolean {
+    return /obj/.test(this.content);
+  }
 
-  getOriginalContentRange() {}
+  getOriginalContentRange(): Range {
+    const startIdx = this.content.indexOf("obj") + 3;
+    const endKeywords = ["xref", "trailer", "startxref", "%%EOF"];
+    let endIdx = this.content.length;
+    for (const keyword of endKeywords) {
+      const idx = this.content.indexOf(keyword);
+      if (idx !== -1 && idx < endIdx) {
+        endIdx = idx;
+      }
+    }
+    const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
+    const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
+    return {
+      start: { line: startLine, character: 0 },
+      end: { line: endLine, character: this.content[endLine - 1].length },
+    };
+  }
 
-  getOriginalContentSelectionRange() {}
+  getOriginalContentSelectionRange(): Range {
+    const range = this.getOriginalContentRange();
+    return {
+      start: range.start,
+      end: { line: range.start.line, character: 0 },
+    };
+  }
+
+  getObjects(): PDFObject[] {
+    const objects: PDFObject[] = [];
+    let match;
+    const regex = /(\d+ \d+ obj)[\s\S]+?(endobj)/g;
+    while ((match = regex.exec(this.content)) !== null) {
+      const startLine = this.content.slice(0, match.index).split("\n").length;
+      const endLine = startLine + match[0].split("\n").length;
+      objects.push(
+        new PDFObject(match[1], {
+          start: { line: startLine, character: 0 },
+          end: { line: endLine, character: match[2].length },
+        })
+      );
+    }
+    return objects;
+  }
+
+  getTrailerRange(): Range {
+    const startKeywords = ["xref", "trailer", "startxref"];
+    const endKeywords = ["%%EOF", "obj"];
+
+    let startIdx = this.content.length;
+    for (const keyword of startKeywords) {
+      const idx = this.content.lastIndexOf(keyword);
+      if (idx !== -1 && idx < startIdx) {
+        startIdx = idx;
+      }
+    }
+
+    let endIdx = this.content.length;
+    for (const keyword of endKeywords) {
+      const idx = this.content.indexOf(keyword, startIdx);
+      if (idx !== -1 && idx < endIdx) {
+        endIdx = idx;
+      }
+    }
+
+    const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
+    const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
+    return {
+      start: { line: startLine, character: 0 },
+      end: { line: endLine, character: this.content[endLine - 1].length },
+    };
+  }
+
+  hasStreamInsideObject(obj: PDFObject): boolean {
+    const objContent = this.content.slice(
+      obj.range.start.character,
+      obj.range.end.character
+    );
+    return /stream/.test(objContent);
+  }
+
+  getStreamRangeForObject(obj: PDFObject): Range | null {
+    const objContentStart = this.content
+      .slice(obj.range.start.character, obj.range.end.character)
+      .indexOf("stream");
+    const objContentEnd = this.content
+      .slice(obj.range.start.character, obj.range.end.character)
+      .indexOf("endstream");
+
+    if (objContentStart === -1 || objContentEnd === -1) {
+      return null;
+    }
+
+    const startLine =
+      obj.range.start.line +
+      this.content.slice(0, objContentStart).split("\n").length;
+    const endLine =
+      obj.range.start.line +
+      this.content.slice(0, objContentEnd).split("\n").length;
+
+    return {
+      start: { line: startLine, character: 0 },
+      end: { line: endLine, character: "endstream".length },
+    };
+  }
+
+  hasTrailer(): boolean {
+    return /trailer/.test(this.content);
+  }
+
+  getStreamRangeInsideObject(obj: PDFObject): Range {
+    const objContentStart = this.content
+      .slice(obj.range.start.line)
+      .indexOf("stream");
+    const objContentEnd = this.content
+      .slice(obj.range.start.line)
+      .indexOf("endstream");
+
+    if (objContentStart === -1 || objContentEnd === -1)
+      return { start: obj.range.start, end: obj.range.start }; // No stream found
+
+    const startLine = this.content.slice(0, objContentStart).split("\n").length;
+    const endLine = this.content.slice(0, objContentEnd).split("\n").length;
+
+    return {
+      start: { line: startLine, character: 0 },
+      end: { line: endLine, character: "endstream".length },
+    };
+  }
+
+  getStreamSelectionRangeInsideObject(obj: PDFObject): Range {
+    const streamRange = this.getStreamRangeInsideObject(obj);
+    return {
+      start: streamRange.start,
+      end: { line: streamRange.start.line, character: "stream".length },
+    };
+  }
+
+  getTrailerSelectionRange(): Range {
+    const trailerRange = this.getTrailerRange();
+
+    return {
+      start: trailerRange.start,
+      end: { line: trailerRange.start.line, character: "trailer".length },
+    };
+  }
+
+  hasCrossReferenceTable(): boolean {
+    return this.content.includes("xref");
+  }
+
+  getCrossReferenceTableRange(): Range {
+    const startIdx = this.content.indexOf("xref");
+    const endIdx = this.content.indexOf("trailer", startIdx);
+
+    if (startIdx === -1 || endIdx === -1)
+      return {
+        start: { line: 0, character: 0 },
+        end: { line: 0, character: 0 },
+      };
+
+    const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
+    const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
+
+    return {
+      start: { line: startLine, character: 0 },
+      end: { line: endLine, character: 0 },
+    };
+  }
+
+  getCrossReferenceTableSelectionRange(): Range {
+    const range = this.getCrossReferenceTableRange();
+
+    return {
+      start: range.start,
+      end: { line: range.start.line, character: "xref".length },
+    };
+  }
 }
 
+class PDFObject {
+  id: string;
+  range: Range;
+
+  constructor(id: string, range: Range) {
+    this.id = id;
+    this.range = range;
+  }
+
+  getRange(): Range {
+    return this.range;
+  }
+
+  getSelectionRange(): Range {
+    return {
+      start: this.range.start,
+      end: { line: this.range.start.line, character: this.id.length },
+    };
+  }
+
+  getStreamRange(parser: PDFParser): Range | null {
+    return parser.getStreamRangeForObject(this);
+  }
+}
