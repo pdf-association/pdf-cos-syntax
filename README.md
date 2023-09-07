@@ -18,7 +18,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 - Support for both `.pdf` and `.fdf` files (based on file extension)
 - PDF COS syntax and content stream operator [syntax highlighting](#syntax-highlighting) 
 - [Hover](#hover-hints) information for cross reference table entries, `endstream` and `endobj`, bitmask keys and hex strings
-- [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, and PostScript brackets
+- [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, PostScript brackets and PDF name objects (starting with `/`)
 - [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables, and all paired graphics operators
 - [Auto-indent and auto-outdent](#auto-indent-and-auto-outdent-on-enter) on ENTER 
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects, including in PDFs with incremental updates and multiple objects with the same ID 
@@ -27,6 +27,8 @@ PDF (**Portable Document Format**) is an open page description language standard
 - Basic PDF and FDF file validation, including comprehensive cross reference table checks
 - [Snippets](#snippets) for new object, new stream, and empty PDF/FDF files
 
+
+So get yourself the [latest no-cost PDF ISO 32000-2 specification](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/), grab your free [PDF Cheat Sheets](https://pdfa.org/resource/pdf-cheat-sheets/), check out a few repos of example text-centric PDF files (e.g. [PDF 2.0 Examples](https://github.com/pdf-association/pdf20examples/) or [these files from DARPA "SafeDocs"](https://github.com/pdf-association/safedocs)), and begin to program in PDF like any other graphics or page description language. And, if you already know HTML or SVG, then becoming fluent in PDF is not far away!
 
 ## PDF files are _BINARY_!
 
@@ -57,13 +59,14 @@ If saved from VSCode, this will remain valid and thus is **highly recommended** 
 
 All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc. To assist with visualizing  whitespace and any non-printable control bytes, it is **strongly recommended** to enable both "Render whitespace" and "Render Control Characters" via the View \| Appearance... submenu.
 
-A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF 1.5 or later files with either cross-reference (`/Type /XRef`) streams or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
+A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF 1.5 or later files with either cross-reference (`/Type /XRef`) streams, hybrid-reference PDFs that have trailer dictionaries with a `/XRefStm` entry, or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
+
 
 ### Alternatives
 
 The free open-source [VIM editor](https://www.vim.org/) ("Vi IMproved") also supports basic PDF COS syntax highlighting, but lacks many other features this extension provides.
 
-Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain classes of changes to PDF files, however the exact syntax (such as whitespace and delimiters) and precise file layout (such as incremental updates and cross reference tables) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus provided a different level of support when learning PDF.
+Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain classes of changes to PDF files, however the exact syntax (such as whitespace and delimiters) and precise file layout (such as incremental updates and cross reference information) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus provided a different level of support when learning PDF.
 
 # Features
 
@@ -269,7 +272,7 @@ This section describes how real-world heavily binary PDFs that would otherwise b
 
 ## Using [QPDF](https://github.com/qpdf/qpdf) (_OSS_)
 
-Note that this will _remove_ all incremental updates and consolidate as an _original PDF_.
+Note that this will _remove_ all incremental updates and consolidate everything into a single revision.
 
 ```bash
 qpdf --qdf --compress-streams=n --object-streams=disable --newline-before-endstream --decode-level=all --preserve-unreferenced --preserve-unreferenced-resources --normalize-content file.pdf file-as-qdf.pdf
@@ -300,7 +303,7 @@ Note that this Adobe Acrobat method will not be as "pure text" as other methods 
 
 Avoid using `^` start-of-line due to PDFs specific end-of-line rules which can vary and not match the current platform which `grep` will then ignore.
 
-* Number of incremental updates = approximated by number of `%%EOF` or `startxref` lines
+* Number of revisions = number of `%%EOF` or `startxref` lines
 
 ```bash
 grep --text --count -Po "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr
