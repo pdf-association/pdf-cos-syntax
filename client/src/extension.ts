@@ -17,7 +17,7 @@
  * (DARPA). Approved for public release.
 */
 import * as path from "path";
-import { workspace, ExtensionContext, languages } from "vscode";
+import { workspace, ExtensionContext, languages, commands, Uri, window } from "vscode";
 
 import {
   LanguageClient,
@@ -49,10 +49,12 @@ export function activate(context: ExtensionContext) {
 
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
-    // Register the server for plain text documents for both PDF and FDF
+    // Register the server for local filesystem and unsaved files for both PDF and FDF
     documentSelector: [
       { scheme: "file", language: "pdf" },
       { scheme: "file", language: "fdf" },
+      { scheme: "untitled", language: "pdf" },
+      { scheme: "untitled", language: "fdf" },
     ],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
@@ -70,10 +72,10 @@ export function activate(context: ExtensionContext) {
 
   const provider = new PDFFoldingRangeProvider();
   context.subscriptions.push(
-    languages.registerFoldingRangeProvider("pdf", provider)
-  );
-  context.subscriptions.push(
-    languages.registerFoldingRangeProvider("fdf", provider)
+    languages.registerFoldingRangeProvider({ scheme: "file", language: "pdf" }, provider),
+    languages.registerFoldingRangeProvider({ scheme: "file", language: "fdf" }, provider),
+    languages.registerFoldingRangeProvider({ scheme: "untitled", language: "pdf" }, provider),
+    languages.registerFoldingRangeProvider({ scheme: "untitled", language: "fdf" }, provider)
   );
 	
   // line commenting
@@ -82,17 +84,14 @@ export function activate(context: ExtensionContext) {
       comments: {
         lineComment: "%",
       },
-    })
-  );
-
-  context.subscriptions.push(
+    }),
     languages.setLanguageConfiguration("fdf", {
       comments: {
         lineComment: "%",
       },
     })
   );
-  
+
   // Start the client. This will also launch the server
   client.start();
 }
