@@ -251,7 +251,6 @@ Validation checks include:
 ![VSCode example problem reports](assets/VSCode-problem-report.png)
 
 
-
 ## Snippets
 
 [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets) are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (Windows: `CTRL` + `SPACE`, or Mac: &#8984; `SPACE`)
@@ -262,6 +261,28 @@ Validation checks include:
   - The easiest way to use this snippet is to create an empty file with a `.pdf` (or `.fdf`) extension in the Explorer panel. Then open the new file, type `PDF-` on line 1 and select the snippet.
 * `FDF-` - a complete minimal empty FDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does **not** do snippet expansion inside comments! The snippet will automatically add the `%` for you.
 
+
+
+# Custom Commands
+
+The extension provides various custom commands via the Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`)under a new "PDF" category:
+
+![VSCode PDF Command Palette](assets/vscode-command-palette.png)
+
+* import and conversion of various common image files (such as JPEG, PNG, or GIF) to a new Image XObject at the current cursor position using either ASCII-Hex or ASCII-85 filters. The use of these filters ensures that the binary image data does not get corrupted by VSCode as the output from these filters is always ASCII. The Image XObject can either be raw pixels (with single `/ASCIIHexDecode` or `/ASCII85Decode` filter) or a JPEG (using a chain of filters such as `[ /ASCIIHexDecode /DCTDecode ]` or `[ /ASCII85Decode /DCTDecode ]`).
+
+* import and conversion of any external file (such as ICC, etc.) as a new stream object at the current cursor position using either ASCII-Hex or ASCII-85 filters. The use of these filters ensures that any binary data in the external file does not get corrupted by VSCode as the output from these filters is always ASCII.
+
+* conversion of selected data to or from `/ASCIIHexDecode` or `/ASCII85Decode` encoded formats. In both cases the complete encoded data must be selected and include the appropriate end-of-data (EOD) marker (`>` and `~>` respectively). 
+    - Note that VSCode _may corrupt binary data_ on decoding!
+
+* conversion of a selected literal string (`(`...`)`) to a hex string (`<`...`>`). The entire literal string must be selected, including `(` and `)`.
+
+* conversion of a selected hex string (`<`...`>`) to a literal string (`(`...`)`) . The entire hex string must be selected, including `<` and `>`.
+
+* conversion of one or more indirect objects (from `X Y obj` to `endobj`, excluding stream objects) from a body section into a single new object stream _(PDF 1.5)_. The new object stream will replace the selection and use the object number of the first selected object.
+    - Note that the version of the PDF file is **not** changed! 
+    - The new object stream is **uncompressed** (so it remains visible in VSCode) and thus will be incompatible with certain viewers, such as Adobe.
 
 ---
 ---
