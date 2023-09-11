@@ -30,9 +30,6 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "activationEvents": [
-    "onLanguage:pdf"
-  ],
   "icon": "assets/pdf-light.png",
   "main": "./client/out/extension",
   "contributes": {
@@ -122,6 +119,196 @@
         "path": "./snippets/fdf-snippets.json"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "pdf.submenu",
+          "group": "pdf"
+        }
+      ],
+      "pdf.submenu": [
+        {
+          "command": "pdf-cos-syntax.imageAHex",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.imageAHex",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.imageA85",
+          "enablement": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.imageAHexDCT",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.imageA85DCT",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.dataAHex",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.dataA85",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.convertLiteral2Hex",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.convertHex2Literal",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.convert2ObjectStream",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.convert2XrefStream",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.2AsciiHex",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.2Ascii85",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.FromAsciiHex",
+          "when": "editorLangId == pdf"
+        },
+        {
+          "command": "pdf-cos-syntax.FromAscii85",
+          "when": "editorLangId == pdf"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "pdf.submenu",
+        "label": "PDF"
+      }
+    ],
+    "commands": [
+      {
+        "command": "pdf-cos-syntax.imageAHex",
+        "title": "Insert an Image XObject using /ASCIIHexDecode filter on raw pixels",
+        "shortTitle": "Insert an Image XObject (ASCII-Hex only)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.imageA85",
+        "title": "Insert an Image XObject using /ASCII85Decode filter on raw pixels",
+        "shortTitle": "Insert an Image XObject (ASCII-85 only)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.imageAHexDCT",
+        "title": "Insert an Image XObject using /ASCIIHexDecode and /DCTDecode (JPEG) filters",
+        "shortTitle": "Insert an Image XObject (ASCII-Hex of a JPEG)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.imageA85DCT",
+        "title": "Insert an Image XObject using /ASCII85Decode and /DCTDecode (JPEG) filters",
+        "shortTitle": "Insert an Image XObject (ASCII-85 of a JPEG)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.dataAHex",
+        "title": "Insert binary data as a stream object using /ASCIIHexDecode filter",
+        "shortTitle": "Insert a stream object (ASCII-Hex)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.dataA85",
+        "title": "Insert binary data a stream object using /ASCII85Decode filter",
+        "shortTitle": "Insert a stream object (ASCII-85)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.convertLiteral2Hex",
+        "title": "Convert PDF literal string to a hex string",
+        "shortTitle": "Convert PDF literal string to a hex string",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.convertHex2Literal",
+        "title": "Convert PDF hex string to a literal string",
+        "shortTitle": "Convert PDF hex string to a literal string",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.convert2ObjectStream",
+        "title": "Convert 1 or more indirect PDF objects to a single object stream (uncompressed)",
+        "shortTitle": "Convert PDF objects to an object stream",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.convert2XrefStream",
+        "title": "Convert a cross reference table to cross reference stream (ASCII-Hex)",
+        "shortTitle": "Convert a cross reference table to cross reference stream (ASCII-Hex)",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.2AsciiHex",
+        "title": "Compress data using ASCII-Hex",
+        "shortTitle": "Compress data using ASCII-Hex",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.2Ascii85",
+        "title": "Compress data using ASCII-85",
+        "shortTitle": "Compress data using ASCII-85",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.FromAsciiHex",
+        "title": "Uncompress data from ASCII-Hex to raw bytes",
+        "shortTitle": "Uncompress data from ASCII-Hex to raw bytes",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      },
+      {
+        "command": "pdf-cos-syntax.FromAscii85",
+        "title": "Uncompress data from ASCII-85 to raw bytes",
+        "shortTitle": "Uncompress data from ASCII-85 to raw bytes",
+        "category": "PDF",
+        "icon": "$(zap)",
+        "enablement": "editorLangId == pdf"
+      }
+    ],
     "configurationDefaults": {
       "[pdf]": {
         "editor.semanticHighlighting.enabled": true
@@ -192,6 +379,8 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "ascii85": "^1.0.2",
+    "sharp": "^0.32.5",
     "vscode-languageserver": "^8.1.0",
     "vscode-languageserver-textdocument": "^1.0.8"
   }
