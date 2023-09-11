@@ -13,7 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (ADDED) Custom commands to import binary data as a new stream object with `/ASCII85Decode`/`/ASCIIHexDecode` filters
 - (ADDED) Custom commands to convert between `/ASCII85Decode`/`/ASCIIHexDecode` and uncompressed data
 - (ADDED) Custom commands to convert between PDF literal and hex strings
-- (ADDED) Custom commands to convert 1 or more selected non-stream objects to a single PDF 1.5 object stream
+- (ADDED) Custom command to convert 1 or more selected non-stream objects to a single PDF 1.5 object stream
+- (ADDED) Custom command to conventional cross reference table, trailer, etc. to a cross reference stream
+- (ADDED) Editor context submenu "PDF" with above commands
+- (ADDED) Status bar item showing selected lines
 
 ## 0.1.4 - 2023-09-04
 - (IMPROVED) Hover hints for cross-reference table entries

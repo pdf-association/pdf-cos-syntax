@@ -265,7 +265,7 @@ Validation checks include:
 
 # Custom Commands
 
-The extension provides various custom commands via the Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`)under a new "PDF" category:
+The extension provides various custom commands via the Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`) or the editor context menu under a new "PDF" category:
 
 ![VSCode PDF Command Palette](assets/vscode-command-palette.png)
 
@@ -281,8 +281,13 @@ The extension provides various custom commands via the Command Palette (`CTRL`+`
 * conversion of a selected hex string (`<`...`>`) to a literal string (`(`...`)`) . The entire hex string must be selected, including `<` and `>`.
 
 * conversion of one or more indirect objects (from `X Y obj` to `endobj`, excluding stream objects) from a body section into a single new object stream _(PDF 1.5)_. The new object stream will replace the selection and use the object number of the first selected object.
-    - Note that the version of the PDF file is **not** changed! 
-    - The new object stream is **uncompressed** (so it remains visible in VSCode) and thus will be incompatible with certain viewers, such as Adobe.
+    - Note that the version of the PDF file is **_not_** changed! 
+    - The new object stream is **uncompressed** (so it remains fully readable in VSCode) and thus will **_not_** work with certain viewers, such as Adobe.
+
+* conversion of a selected conventional cross reference table starting with the `xref` keyword all the way to the `%%EOF` marker to a cross reference stream with `/ASCIIHexDecode` compression. 
+    - The fixed layout with whitespace of the resulting hex data makes this specific format amenible to easy reading in VSCode. Refer to Table 18 in ISO 32000-2:2020.
+    - Be sure to select _everything_ from `xref` to `%%EOF` inclusive! This includes the `xref` keyword, all the cross reference table lines, the `trailer` keyword and trailer dictionary, the `startxref` keyword and byte offset, and the `%%EOF` marker.
+    - Note that Adobe does **_not_** support cross reference streams with `/ASCIIHexDecode` filters!
 
 ---
 ---
