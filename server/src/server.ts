@@ -773,14 +773,6 @@ connection.onDocumentSymbol(
       const bodyObjects = pdfParser.getObjects();
       originalPdfSymbol.children?.push(...addObjectSymbols(bodyObjects));
 
-      const crossReferenceSymbol: DocumentSymbol = {
-        name: "Cross reference table",
-        kind: SymbolKind.Property,
-        range: pdfParser.getCrossReferenceTableRange(),
-        selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
-        children: [],
-      };
-
       const trailerSymbol: DocumentSymbol = {
         name: "Trailer",
         kind: SymbolKind.Interface,
@@ -796,7 +788,16 @@ connection.onDocumentSymbol(
         ],
       };
 
-      originalPdfSymbol.children?.push(crossReferenceSymbol, trailerSymbol);
+      if (pdfParser.hasCrossReferenceTable()) {
+        const crossReferenceSymbol: DocumentSymbol = {
+          name: "Cross reference table",
+          kind: SymbolKind.Property,
+          range: pdfParser.getCrossReferenceTableRange(),
+          selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
+          children: [],
+        };
+        originalPdfSymbol.children?.push(crossReferenceSymbol, trailerSymbol);
+      }
 
       symbols.push(originalPdfSymbol);
     }
