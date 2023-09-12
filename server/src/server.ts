@@ -553,174 +553,6 @@ connection.onHover((params): Hover | null => {
   return null;
 });
 
-// connection.onDocumentSymbol(
-//   (params: DocumentSymbolParams): DocumentSymbol[] => {
-//     const { textDocument } = params;
-//     const document = documents.get(textDocument.uri);
-//     if (!document) return [];
-//     const pdfParser = new PDFParser(document);
-
-//     const symbols: DocumentSymbol[] = [];
-
-//     // Header section
-//     if (pdfParser.hasHeader()) {
-//       symbols.push({
-//         name: "Header",
-//         kind: SymbolKind.Module,
-//         range: pdfParser.getHeaderRange(),
-//         selectionRange: pdfParser.getHeaderSelectionRange(),
-//         children: [],
-//       });
-//     }
-
-//     // Original PDF sections (Body)
-//     if (pdfParser.hasOriginalContent()) {
-//       const originalPDFSymbol: DocumentSymbol = {
-//         name: "Body",
-//         kind: SymbolKind.Class,
-//         range: pdfParser.getOriginalContentRange(),
-//         selectionRange: pdfParser.getOriginalContentSelectionRange(),
-//         children: [],
-//       };
-
-//       // Populate objects
-//       pdfParser.getObjects().forEach((obj) => {
-//         const objSymbol: DocumentSymbol = {
-//           name: `Object ${obj.id}`,
-//           kind: SymbolKind.Method,
-//           range: obj.getRange(),
-//           selectionRange: obj.getSelectionRange(),
-//           children: [],
-//         };
-
-//         // Check for stream inside the object
-//         if (pdfParser.hasStreamInsideObject(obj)) {
-//           objSymbol.children?.push({
-//             name: "Stream",
-//             kind: SymbolKind.Method,
-//             range: pdfParser.getStreamRangeInsideObject(obj),
-//             selectionRange: pdfParser.getStreamSelectionRangeInsideObject(obj),
-//             children: [],
-//           });
-//         }
-
-//         originalPDFSymbol.children?.push(objSymbol);
-//       });
-
-//       symbols.push(originalPDFSymbol);
-//     }
-
-//     // Trailer
-//     if (pdfParser.hasTrailer()) {
-//       symbols.push({
-//         name: "Trailer",
-//         kind: SymbolKind.Interface,
-//         range: pdfParser.getTrailerRange(),
-//         selectionRange: pdfParser.getTrailerSelectionRange(),
-//         children: [],
-//       });
-//     }
-
-//     if (pdfParser.hasCrossReferenceTable()) {
-//       symbols.push({
-//         name: "Cross-Reference Table",
-//         kind: SymbolKind.Property,
-//         range: pdfParser.getCrossReferenceTableRange(),
-//         selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
-//         children: [],
-//       });
-//     }
-
-//     // let currentPosition = pdfParser.getHeaderEndPosition();
-//     // let updateCount = 0;
-
-//     // while (pdfParser.hasMoreContent(currentPosition)) {
-//     //   // Updated or new objects
-//     //   const objectsInUpdate = pdfParser.getObjectsInUpdate(currentPosition);
-//     //   objectsInUpdate.forEach((obj) => {
-//     //     const objSymbol: DocumentSymbol = {
-//     //       name: `Object ${obj.id}`,
-//     //       kind: SymbolKind.Method,
-//     //       range: obj.getRange(),
-//     //       selectionRange: obj.getSelectionRange(),
-//     //       children: [],
-//     //     };
-
-//     //     // Check for stream inside the object
-//     //     if (pdfParser.hasStreamInsideObject(obj)) {
-//     //       objSymbol.children.push({
-//     //         name: "Stream",
-//     //         kind: SymbolKind.Method,
-//     //         range: pdfParser.getStreamRangeInsideObject(obj),
-//     //         selectionRange: pdfParser.getStreamSelectionRangeInsideObject(obj),
-//     //         children: [],
-//     //       });
-//     //     }
-
-//     //     symbols.push(objSymbol);
-//     //   });
-
-//     //   // Cross-reference table for the update
-//     //   const crossReferenceRange = pdfParser.getCrossReferenceTableRangeInUpdate(currentPosition);
-//     //   symbols.push({
-//     //     name: "Cross Reference",
-//     //     kind: SymbolKind.Property,
-//     //     range: crossReferenceRange,
-//     //     selectionRange: crossReferenceRange,
-//     //     children: [],
-//     //   });
-
-//     //   // Trailer for the update
-//     //   const trailerRange = pdfParser.getTrailerRangeInUpdate(currentPosition);
-//     //   symbols.push({
-//     //     name: "Trailer",
-//     //     kind: SymbolKind.Interface,
-//     //     range: trailerRange,
-//     //     selectionRange: trailerRange,
-//     //     children: [],
-//     //   });
-
-//     //   // Update the current position to after this %%EOF
-//     //   currentPosition = pdfParser.getPositionAfterEndOfUpdate(currentPosition);
-//     //   updateCount++;
-//     // }
-
-//     // while (pdfParser.hasMoreContent(currentPosition)) {
-//     //   const bodyName =
-//     //     updateCount === 0
-//     //       ? "Original PDF"
-//     //       : `Incremental Update ${updateCount}`;
-//     //   const bodyRange = pdfParser.getBodyRange(currentPosition);
-
-//     //   symbols.push({
-//     //     name: bodyName,
-//     //     kind: SymbolKind.Namespace,
-//     //     range: bodyRange,
-//     //     selectionRange: bodyRange, // or some other logic for finer selection
-//     //     children: [], // this can be filled in like earlier with objects, streams, etc.
-//     //   });
-
-//     //   currentPosition = pdfParser.getBodyEndPosition(bodyRange);
-
-//     //   const crossReferenceRange =
-//     //     pdfParser.getBodyRange(currentPosition);
-//     //   symbols.push({
-//     //     name: "Cross Reference",
-//     //     kind: SymbolKind.Property,
-//     //     range: crossReferenceRange,
-//     //     selectionRange: crossReferenceRange, // or fine-tune as needed
-//     //     children: [],
-//     //   });
-
-//     //   currentPosition =
-//     //     pdfParser.getCrossReferenceEndPosition(crossReferenceRange);
-//     //   updateCount++;
-//     // }
-
-//     return symbols;
-//   }
-// );
-
 connection.onDocumentSymbol(
   (params: DocumentSymbolParams): DocumentSymbol[] => {
     const { textDocument } = params;
@@ -767,26 +599,39 @@ connection.onDocumentSymbol(
         kind: SymbolKind.Class,
         range: pdfParser.getOriginalContentRange(),
         selectionRange: pdfParser.getOriginalContentSelectionRange(),
-        // children: addObjectSymbols(bodyObjects),
         children: [],
       };
-      const bodyObjects = pdfParser.getObjects();
-      originalPdfSymbol.children?.push(...addObjectSymbols(bodyObjects));
 
-      const trailerSymbol: DocumentSymbol = {
-        name: "Trailer",
-        kind: SymbolKind.Interface,
-        range: pdfParser.getTrailerRange(),
-        selectionRange: pdfParser.getTrailerSelectionRange(),
-        children: [
-          {
-            name: "Trailer dictionary",
-            kind: SymbolKind.Field,
-            range: pdfParser.getTrailerDictionaryRange(),
-            selectionRange: pdfParser.getTrailerDictionarySelectionRange(),
-          },
-        ],
+      const bodySectionSymbol: DocumentSymbol = {
+        name: "Body",
+        kind: SymbolKind.Method,
+        range: pdfParser.getBodySectionRange(),
+        selectionRange: pdfParser.getBodySectionSelectionRange(),
+        children: [],
       };
+
+      const bodyObjects = pdfParser.getObjects();
+      bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
+      originalPdfSymbol.children?.push(bodySectionSymbol);
+
+      if (pdfParser.hasTrailer()) {
+        const trailerSymbol: DocumentSymbol = {
+          name: "Trailer",
+          kind: SymbolKind.Interface,
+          range: pdfParser.getTrailerRange(),
+          selectionRange: pdfParser.getTrailerSelectionRange(),
+          children: [
+            {
+              name: "Trailer dictionary",
+              kind: SymbolKind.Field,
+              range: pdfParser.getTrailerDictionaryRange(),
+              selectionRange: pdfParser.getTrailerDictionarySelectionRange(),
+            },
+          ],
+        };
+
+        originalPdfSymbol.children?.push(trailerSymbol);
+      }
 
       if (pdfParser.hasCrossReferenceTable()) {
         const crossReferenceSymbol: DocumentSymbol = {
@@ -796,7 +641,7 @@ connection.onDocumentSymbol(
           selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
           children: [],
         };
-        originalPdfSymbol.children?.push(crossReferenceSymbol, trailerSymbol);
+        originalPdfSymbol.children?.push(crossReferenceSymbol);
       }
 
       symbols.push(originalPdfSymbol);
@@ -812,9 +657,20 @@ connection.onDocumentSymbol(
         selectionRange: pdfParser.getBodySelectionRange(currentPosition),
         children: [],
       };
+
+      const bodySectionSymbol: DocumentSymbol = {
+        name: "Body",
+        kind: SymbolKind.Method,
+        range: pdfParser.getBodySectionRange(updateCount),
+        selectionRange: pdfParser.getBodySectionSelectionRange(updateCount),
+        children: [],
+      };
+
       const bodyObjects =
         pdfParser.getObjectsFromIncrementalUpdate(updateCount);
-      incrementalUpdateSymbol.children?.push(...addObjectSymbols(bodyObjects));
+
+      bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
+      incrementalUpdateSymbol.children?.push(bodySectionSymbol);
 
       const incrementalCrossReferenceSymbol: DocumentSymbol = {
         name: "Cross reference table",

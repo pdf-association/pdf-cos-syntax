@@ -4,21 +4,21 @@ import PDFObject from "./PdfObject";
 /**
  * Notes on JavaScript/TypeScript regular expression and PDF lexical rules based on:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions
- * 
+ *
  * - PDF whitespace are ONLY the 6 characters / \t\n\r\f\0/
- *    - this is DIFFERENT to  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#white_space 
- * 
+ *    - this is DIFFERENT to  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#white_space
+ *
  * - PDF EOL sequences are ONLY the 3: \r, \n, or \r\n
  *    - PDF files are NOT required to use consistent EOLs so there can be a mix!
- *    - this is DIFFERENT to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#line_terminators 
- * 
+ *    - this is DIFFERENT to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#line_terminators
+ *
  * - official PDF delimiters (in addition to whitespace and EOL): / <>[]()\//
- * 
+ *
  * - object IDs (object number and generation number pairs) CANNOT have '+'/'-' so /\d+\ is OK
- * 
+ *
  * - JS space, Word and word boundary character classes (\w, \W, \b, \B, \s, \S) CANNOT be
  *    used as they do not match PDF's definition!!!
- * 
+ *
  * - once all PDF EOLs are normalized to ONLY \n, can then rely on string.startsWith(), etc.
  */
 
@@ -39,8 +39,7 @@ export default class PDFParser {
 
   getHeaderRange(): Range {
     let startIdx = this.content.indexOf("%PDF-");
-    if (startIdx === -1)
-       startIdx = this.content.indexOf("%FDF-");
+    if (startIdx === -1) startIdx = this.content.indexOf("%FDF-");
 
     const endIdx = this.content.indexOf(" obj");
     return {
@@ -245,9 +244,9 @@ export default class PDFParser {
 
   hasMoreContent(position: number): boolean {
     const remainingContent = this.content.slice(position);
-    
+
     const EOFCount = (remainingContent.match(/%%EOF/g) || []).length;
-    
+
     return EOFCount > 1;
   }
 
@@ -338,31 +337,6 @@ export default class PDFParser {
     return endPos;
   }
 
-  //   getObjectsFromIncrementalUpdate(updateCount = 1): PDFObject[] {
-  //     let startIdx = this.getOriginalContentEndPosition();
-
-  //     for (let i = 1; i < updateCount; i++) {
-  //       startIdx = this.content.indexOf("%%EOF", startIdx + 1);
-  //       if (startIdx === -1) {console.log("error first");
-  //         throw new Error(
-  //           "The specified update count exceeds the number of updates in the PDF."
-  //         );
-  //         continue;
-  //       }
-  //       startIdx = this.content.indexOf("xref", startIdx + 1);
-  //       if (startIdx === -1) {console.log("error second");
-  //         throw new Error(
-  //           "Malformed PDF: Incremental update doesn't have an associated xref."
-  //         );
-  //         continue;
-  //       }
-  //       console.log("startIdx: " + startIdx);
-  //     }
-  // console.log("outof for loop");
-  //     const contentSlice = this.content.slice(startIdx); console.log("contentSlice" + contentSlice);
-  //     const parser = new PDFParser({ getText: () => contentSlice } as any);
-  //     return parser.getObjects();
-  //   }
   getObjectsFromIncrementalUpdate(updateCount = 1): PDFObject[] {
     let startIdx = this.getOriginalContentEndPosition();
 
@@ -380,7 +354,6 @@ export default class PDFParser {
 
       eofCount++;
 
-      // If we've found the right number of EOFs, then look for the next xref
       if (eofCount === updateCount) {
         startIdx = this.content.indexOf("xref", startIdx + 1);
 
@@ -394,9 +367,11 @@ export default class PDFParser {
     }
 
     if (startIdx === -1) {
-      console.error(`Unable to determine the start index for the incremental update ${updateCount}.`);
+      console.error(
+        `Unable to determine the start index for the incremental update ${updateCount}.`
+      );
       return [];
-  }
+    }
 
     const contentSlice = this.content.slice(startIdx);
     const parser = new PDFParser({ getText: () => contentSlice } as any);
@@ -539,4 +514,70 @@ export default class PDFParser {
   getLineFromPosition(position: number): number {
     return this.content.slice(0, position).split("\n").length;
   }
+
+  getBodySectionRange(updateCount?: number): Range {
+    if (updateCount == undefined) {
+      const startIdx = this.getHeaderRange().end.line;
+      const endIdx = this.getOriginalContentRange().end.line;
+      return {
+        start: { line: startIdx, character: 0 },
+        end: { line: endIdx, character: 0 },
+      };
+    } else {
+      const incrementalRange = this.getIncrementalUpdateRange(updateCount);
+
+      const startSearchPos = this.content
+        .split("\n", incrementalRange.start.line)
+        .join("\n").length;
+      const xrefPosition = this.content.indexOf("xref", startSearchPos);
+
+      return {
+        start: incrementalRange.start,
+        end: { line: this.countLinesUntil(xrefPosition), character: 0 },
+      };
+    }
+  }
+
+  getBodySectionSelectionRange(updateCount?: number): Range {
+    const bodyRange = this.getBodySectionRange(updateCount);
+    return {
+      start: bodyRange.start,
+      end: {
+        line: bodyRange.start.line,
+        character: this.content.split("\n")[bodyRange.start.line].length,
+      },
+    };
+  }
+
+  getIncrementalUpdateRange(updateCount: number): Range {
+    let startIdx = this.getOriginalContentEndPosition();
+
+    for (let i = 1; i < updateCount; i++) {
+      startIdx = this.content.indexOf("%%EOF", startIdx + 1);
+      if (startIdx === -1) {
+        throw new Error(
+          "The specified update count exceeds the number of updates in the PDF."
+        );
+      }
+    }
+
+    startIdx = startIdx + "%%EOF".length;
+
+    const endIdx = this.content.indexOf("%%EOF", startIdx + 1);
+    if (endIdx === -1) {
+      throw new Error(
+        "The specified update count exceeds the number of updates in the PDF."
+      );
+    }
+
+    return {
+      start: { line: this.countLinesUntil(startIdx), character: 0 },
+      end: {
+        line: this.countLinesUntil(endIdx),
+        character: 0,
+      },
+    };
+  }
+
+  
 }
