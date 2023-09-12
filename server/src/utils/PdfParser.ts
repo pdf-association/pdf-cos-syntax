@@ -13,12 +13,15 @@ export default class PDFParser {
   }
 
   hasHeader(): boolean {
-    return this.content.startsWith("%PDF");
+    return this.content.startsWith("%PDF-") || this.content.startsWith("%FDF-");
   }
 
   getHeaderRange(): Range {
-    const startIdx = this.content.indexOf("%PDF-");
-    const endIdx = this.content.indexOf("obj");
+    let startIdx = this.content.indexOf("%PDF-");
+    if (startIdx === -1)
+       startIdx = this.content.indexOf("%FDF-");
+
+    const endIdx = this.content.indexOf(" obj");
     return {
       start: { line: this.countLinesUntil(startIdx), character: 0 },
       end: { line: this.countLinesUntil(endIdx), character: 0 },
@@ -362,7 +365,7 @@ export default class PDFParser {
 
         if (startIdx === -1) {
           console.error(
-            "Malformed PDF: Incremental update doesn't have an associated xref."
+            `Malformed PDF: Incremental update ${updateCount} doesn't have an associated xref.`
           );
           return [];
         }
@@ -370,7 +373,7 @@ export default class PDFParser {
     }
 
     if (startIdx === -1) {
-      console.error("Unable to determine the start index for the incremental update.");
+      console.error(`Unable to determine the start index for the incremental update ${updateCount}.`);
       return [];
   }
 
