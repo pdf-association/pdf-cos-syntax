@@ -1,6 +1,27 @@
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
 import PDFObject from "./PdfObject";
 
+/**
+ * Notes on JavaScript/TypeScript regular expression and PDF lexical rules based on:
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions
+ * 
+ * - PDF whitespace are ONLY the 6 characters / \t\n\r\f\0/
+ *    - this is DIFFERENT to  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#white_space 
+ * 
+ * - PDF EOL sequences are ONLY the 3: \r, \n, or \r\n
+ *    - PDF files are NOT required to use consistent EOLs so there can be a mix!
+ *    - this is DIFFERENT to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#line_terminators 
+ * 
+ * - official PDF delimiters (in addition to whitespace and EOL): / <>[]()\//
+ * 
+ * - object IDs (object number and generation number pairs) CANNOT have '+'/'-' so /\d+\ is OK
+ * 
+ * - JS space, Word and word boundary character classes (\w, \W, \b, \B, \s, \S) CANNOT be
+ *    used as they do not match PDF's definition!!!
+ * 
+ * - once all PDF EOLs are normalized to ONLY \n, can then rely on string.startsWith(), etc.
+ */
+
 export default class PDFParser {
   content: string;
 
