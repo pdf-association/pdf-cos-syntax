@@ -11,7 +11,7 @@
 			""
 		]
 	},
-	"Creat a new FDF stream object": {
+	"Create a new FDF stream object": {
 		"description": "Insert an empty FDF stream object",
 		"prefix": "stream",
 		"body": [
