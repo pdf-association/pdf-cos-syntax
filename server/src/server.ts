@@ -686,12 +686,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     );
   }
 
-  // Validate "%%EOF" marker for both PDF and FDF
+  // Validate "%%EOF" marker for both PDF and FDF.
+  // Degenerate case is an empty PDF!
   let i = textDocument.lineCount - 1;
   let lastLine = textDocument
     .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
     .trim();
-  while (lastLine.length === 0) {
+  while ((lastLine.length === 0) && (i > 0)) {
     i--;
     lastLine = textDocument
       .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
