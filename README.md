@@ -18,7 +18,7 @@ PDF (**Portable Document Format**) is an open page description language standard
 - Support for both `.pdf` and `.fdf` files (based on file extension)
 - PDF COS syntax and content stream operator [syntax highlighting](#syntax-highlighting) 
 - [Hover](#hover-hints) information for cross reference table entries, `endstream` and `endobj`, bitmask keys and hex strings
-- [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, and PostScript brackets
+- [Auto-complete and Auto-closing](#auto-complete-and-auto-closing) for dictionaries, arrays, literal and hex strings, PostScript brackets and PDF name objects (starting with `/`)
 - [Multi-line folding](#folding) for PDF objects, streams, dictionaries, conventional cross reference tables, and all paired graphics operators
 - [Auto-indent and auto-outdent](#auto-indent-and-auto-outdent-on-enter) on ENTER 
 - "[Go To definition](#go-to-functionality)", "Go To declaration", and "Find all references" functionality for PDF objects, including in PDFs with incremental updates and multiple objects with the same ID 
@@ -27,6 +27,8 @@ PDF (**Portable Document Format**) is an open page description language standard
 - Basic PDF and FDF file validation, including comprehensive cross reference table checks
 - [Snippets](#snippets) for new object, new stream, and empty PDF/FDF files
 
+
+So get yourself the [latest no-cost PDF ISO 32000-2 specification](https://www.pdfa-inc.org/product/iso-32000-2-pdf-2-0-bundle-sponsored-access/), grab your free [PDF Cheat Sheets](https://pdfa.org/resource/pdf-cheat-sheets/), check out a few repos of example text-centric PDF files (e.g. [PDF 2.0 Examples](https://github.com/pdf-association/pdf20examples/) or [these files from DARPA "SafeDocs"](https://github.com/pdf-association/safedocs)), and begin to program in PDF like any other graphics or page description language. And, if you already know HTML or SVG, then becoming fluent in PDF is not far away!
 
 ## PDF files are _BINARY_!
 
@@ -57,13 +59,14 @@ If saved from VSCode, this will remain valid and thus is **highly recommended** 
 
 All other binary data, such as images or Unicode sequences, can be encoded using `ASCIIHexDecode` or `ASCII85Decode` filters, hex strings, literal string escape sequences, name object hex codes, etc. To assist with visualizing  whitespace and any non-printable control bytes, it is **strongly recommended** to enable both "Render whitespace" and "Render Control Characters" via the View \| Appearance... submenu.
 
-A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF 1.5 or later files with either cross-reference (`/Type /XRef`) streams or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
+A productive learning environment also works best with _conventional_ PDF files with _conventional_ cross reference tables (i.e. those with the `xref` and `trailer` keywords). PDF 1.5 or later files with either cross-reference (`/Type /XRef`) streams, hybrid-reference PDFs that have trailer dictionaries with a `/XRefStm` entry, or object streams (`/Type /ObjStm`) have additional hurdles to understanding PDF.
+
 
 ### Alternatives
 
 The free open-source [VIM editor](https://www.vim.org/) ("Vi IMproved") also supports basic PDF COS syntax highlighting, but lacks many other features this extension provides.
 
-Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain classes of changes to PDF files, however the exact syntax (such as whitespace and delimiters) and precise file layout (such as incremental updates and cross reference tables) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus provided a different level of support when learning PDF.
+Various GUI-based PDF forensic analysis tools such as [iText RUPS](https://github.com/itext/i7j-rups) and [Apache PDFBox Debugger](https://pdfbox.apache.org/) allow users to make certain classes of changes to PDF files, however the exact syntax (such as whitespace and delimiters) and precise file layout (such as incremental updates and cross reference information) cannot be edited nor precisely controlled. Such tools also use their own lexical analyzers and parsers and thus provided a different level of support when learning PDF.
 
 # Features
 
@@ -139,6 +142,8 @@ If the cursor is over a hexadecimal string (between `<` and `>`), then the ASCII
 ## Auto-complete and auto-closing
 This extension supports auto-complete and auto-closing for arrays (`[`,`]`), literal strings (`(`/`)`), hex strings (`<`/`>`), dictionaries (`<<`/`>>`) and PostScript brackets (`{`/`}`), outside of strings and comments.
 If text is highlighted, and one of the above PDF token start symbols is then typed, VSCode will automatically add the corresponding PDF token end symbol after the highlighted text. If these tokens are entered, then the corresponding PDF token end symbol will be added after the cursor (except for dictionaries).
+
+Auto-completion is also enabled for PDF names once `/` is pressed. This is based on the [Arlington PDF Model](https://github.com/pdf-association/arlington-pdf-model).
 
 
 ## Multi-line folding
@@ -246,7 +251,6 @@ Validation checks include:
 ![VSCode example problem reports](assets/VSCode-problem-report.png)
 
 
-
 ## Snippets
 
 [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets) are templated fragments of PDF syntax that can be inserted into a PDF at the current cursor location. Snippets are accessed via the Command Palette "Insert Snippet" or via IntelliSence (Windows: `CTRL` + `SPACE`, or Mac: &#8984; `SPACE`)
@@ -258,6 +262,33 @@ Validation checks include:
 * `FDF-` - a complete minimal empty FDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does **not** do snippet expansion inside comments! The snippet will automatically add the `%` for you.
 
 
+
+# Custom Commands
+
+The extension provides various custom commands via the Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`) or the editor context menu under a new "PDF" category:
+
+![VSCode PDF Command Palette](assets/vscode-command-palette.png)
+
+* import and conversion of various common image files (such as JPEG, PNG, or GIF) to a new Image XObject at the current cursor position using either ASCII-Hex or ASCII-85 filters. The use of these filters ensures that the binary image data does not get corrupted by VSCode as the output from these filters is always ASCII. The Image XObject can either be raw pixels (with single `/ASCIIHexDecode` or `/ASCII85Decode` filter) or a JPEG (using a chain of filters such as `[ /ASCIIHexDecode /DCTDecode ]` or `[ /ASCII85Decode /DCTDecode ]`).
+
+* import and conversion of any external file (such as ICC, etc.) as a new stream object at the current cursor position using either ASCII-Hex or ASCII-85 filters. The use of these filters ensures that any binary data in the external file does not get corrupted by VSCode as the output from these filters is always ASCII.
+
+* conversion of selected data to or from `/ASCIIHexDecode` or `/ASCII85Decode` encoded formats. In both cases the complete encoded data must be selected and include the appropriate end-of-data (EOD) marker (`>` and `~>` respectively). 
+    - Note that VSCode _may corrupt binary data_ on decoding!
+
+* conversion of a selected literal string (`(`...`)`) to a hex string (`<`...`>`). The entire literal string must be selected, including `(` and `)`.
+
+* conversion of a selected hex string (`<`...`>`) to a literal string (`(`...`)`) . The entire hex string must be selected, including `<` and `>`.
+
+* conversion of one or more indirect objects (from `X Y obj` to `endobj`, excluding stream objects) from a body section into a single new object stream _(PDF 1.5)_. The new object stream will replace the selection and use the object number of the first selected object.
+    - Note that the version of the PDF file is **_not_** changed! 
+    - The new object stream is **uncompressed** (so it remains fully readable in VSCode) and thus will **_not_** work with certain viewers, such as Adobe.
+
+* conversion of a selected conventional cross reference table starting with the `xref` keyword all the way to the `%%EOF` marker to a cross reference stream with `/ASCIIHexDecode` compression. 
+    - The fixed layout with whitespace of the resulting hex data makes this specific format amenible to easy reading in VSCode. Refer to Table 18 in ISO 32000-2:2020.
+    - Be sure to select _everything_ from `xref` to `%%EOF` inclusive! This includes the `xref` keyword, all the cross reference table lines, the `trailer` keyword and trailer dictionary, the `startxref` keyword and byte offset, and the `%%EOF` marker.
+    - Note that Adobe does **_not_** support cross reference streams with `/ASCIIHexDecode` filters!
+
 ---
 ---
 
@@ -267,7 +298,7 @@ This section describes how real-world heavily binary PDFs that would otherwise b
 
 ## Using [QPDF](https://github.com/qpdf/qpdf) (_OSS_)
 
-Note that this will _remove_ all incremental updates and consolidate as an _original PDF_.
+Note that this will _remove_ all incremental updates and consolidate everything into a single revision.
 
 ```bash
 qpdf --qdf --compress-streams=n --object-streams=disable --newline-before-endstream --decode-level=all --preserve-unreferenced --preserve-unreferenced-resources --normalize-content file.pdf file-as-qdf.pdf
@@ -298,7 +329,7 @@ Note that this Adobe Acrobat method will not be as "pure text" as other methods 
 
 Avoid using `^` start-of-line due to PDFs specific end-of-line rules which can vary and not match the current platform which `grep` will then ignore.
 
-* Number of incremental updates = approximated by number of `%%EOF` or `startxref` lines
+* Number of revisions = number of `%%EOF` or `startxref` lines
 
 ```bash
 grep --text --count -Po "%%EOF" *.pdf | sed -e "s/\(.*\):\(.*\)/\2\t\1/g" | sort -nr

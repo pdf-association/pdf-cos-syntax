@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.1.5 - 2023-xx-xx
+## 0.1.5 - 2023-09-xx
+- (ADDED) Code completion options for PDF names when `/` is pressed (from [Arlington PDF Model](https://github.com/pdf-association/arlington-pdf-model))
+- (FIXED) Support for new (unsaved) PDF/FDF files
+- (ADDED) Custom commands to import images as new Image XObjects with `/ASCII85Decode`/`/ASCIIHexDecode` on raw pixels
+- (ADDED) Custom commands to import images as new Image XObjects with `/ASCII85Decode`/`/ASCIIHexDecode` on JPEGs (`/DCTDecode`)
+- (ADDED) Custom commands to import binary data as a new stream object with `/ASCII85Decode`/`/ASCIIHexDecode` filters
+- (ADDED) Custom commands to convert between `/ASCII85Decode`/`/ASCIIHexDecode` and uncompressed data
+- (ADDED) Custom commands to convert between PDF literal and hex strings
+- (ADDED) Custom command to convert 1 or more selected non-stream objects to a single PDF 1.5 object stream
+- (ADDED) Custom command to conventional cross reference table, trailer, etc. to a cross reference stream
+- (ADDED) Editor context submenu "PDF" with above commands
+- (ADDED) Status bar item showing selected lines
 
 ## 0.1.4 - 2023-09-04
 - (IMPROVED) Hover hints for cross-reference table entries

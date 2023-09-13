@@ -26,11 +26,13 @@ import {
   DidChangeConfigurationNotification,
   CompletionItem,
   CompletionItemKind,
+  CompletionItemTag,
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
   Position,
   Definition,
+  MarkupKind,
   Location,
   Hover,
   DocumentSymbolParams,
@@ -51,6 +53,10 @@ import {
   findPreviousObjectLineNumber,
   XrefInfoMatrix,
 } from "./pdfUtils";
+
+import {
+  DictKeyCodeCompletion
+} from "./ArlingtonUtils";
 
 // for server debug.
 import { debug } from "console";
@@ -85,7 +91,7 @@ const tokenTypes = [
 ];
 const tokenModifiers = ["deprecated"];
 
-// The example settings
+// The PDF COS Syntax extension settings
 interface PDSCOSSyntaxSettings {
   maxNumberOfProblems: number;
 }
@@ -142,8 +148,13 @@ connection.onInitialize((params: InitializeParams) => {
   const result: InitializeResult = {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
+
+
+      // Tell the client that this server supports code completion for PDF names
+
       completionProvider: {
-        resolveProvider: true,
+        resolveProvider: false, // change to true so onCompletionResolve() gets called
+        triggerCharacters: [ "/" ]
       },
       definitionProvider: true,
       referencesProvider: true,
@@ -228,39 +239,40 @@ connection.onDidChangeWatchedFiles((_change) => {
   connection.console.log("We received an file change event");
 });
 
-// This handler provides the initial list of the completion items.
+
+/** 
+ * Intellisense code completion on "/" for PDF names.  Items are automatically 
+ * sorted alphabetically and will auto-filter as the user types more.
+ */ 
 connection.onCompletion(
   (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
     // The pass parameter contains the position of the text document in
-    // which code complete got requested. For the example we ignore this
-    // info and always provide the same completion items.
-    return [
-      {
-        label: "TypeScript",
-        kind: CompletionItemKind.Text,
-        data: 1,
-      },
-      {
-        label: "JavaScript",
-        kind: CompletionItemKind.Text,
-        data: 2,
-      },
-    ];
+    // which code-complete got requested. 
+    const cursor = _textDocumentPosition.position;
+    const doc = documents.get(_textDocumentPosition.textDocument.uri);
+    if (!doc) return [];
+    return DictKeyCodeCompletion();
   }
 );
 
-// This handler resolves additional information for the item selected in
-// the completion list.
+
+/**
+ * NOT USED unless completionProvider: { resolveProvider: false, ... }
+ */ 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  if (item.data === 1) {
-    item.detail = "TypeScript details";
-    item.documentation = "TypeScript documentation";
-  } else if (item.data === 2) {
-    item.detail = "JavaScript details";
-    item.documentation = "JavaScript documentation";
-  }
+  // switch (item.data) {
+  //   case 1: { 
+  //     item.detail = "the type of a dictionary";
+  //     break;
+  //   }
+  //   case 2: {
+  //     item.detail = "the subtype of a dictionary";
+  //     break;
+  //   }
+  // }
   return item;
 });
+
 
 /**
  *  "Go to definition" capability:
@@ -845,12 +857,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     );
   }
 
-  // Validate "%%EOF" marker for both PDF and FDF
+  // Validate "%%EOF" marker for both PDF and FDF.
+  // Degenerate case is an empty PDF!
   let i = textDocument.lineCount - 1;
   let lastLine = textDocument
     .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
     .trim();
-  while (lastLine.length === 0) {
+  while ((lastLine.length === 0) && (i > 0)) {
     i--;
     lastLine = textDocument
       .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
