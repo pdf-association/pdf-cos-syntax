@@ -21,16 +21,16 @@ import { window } from "vscode";
 import * as fs from 'fs';
 import * as util from 'util';
 import * as sharp from 'sharp';
-import { ascii85 } from 'ascii85'; 
+import Ascii85 = require('ascii85');
 
 /**
  * Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
-  const a85: string = ascii85.encode(bytes);
-  const s: string[] = [ a85 ];
-  // console.log(`_convertToAscii85filter: ${s}`); 
-  return s;
+  const a85encoded = Ascii85.encode(bytes, { delimiter: false });
+  const res = _stringToChunks(a85encoded + '~>', 70);
+  // console.log(`_convertToAscii85filter: ${res}`); 
+  return res;
 }
 
 
@@ -46,7 +46,7 @@ export function convertFromAscii85Filter(a85: string): string {
       return '';
     }
 
-    const s: string = ascii85.decode(a85);
+    const s: string = Ascii85.decode(a85);
     // console.log(`_convertFromAscii85filter: ${s}`); 
     return s;
   }
@@ -363,6 +363,7 @@ export async function convertImageToAscii85DCT(): Promise<string[]> {
     const img = await sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
+        console.log(info);
         width = info.width;
         height = info.height;
       });
@@ -371,6 +372,7 @@ export async function convertImageToAscii85DCT(): Promise<string[]> {
     await img.jpeg()
       .toBuffer()
       .then((data) => {
+        console.log(data);
         const extras: string[] = [];
         extras.push(`  /Type /XObject`);
         extras.push(`  /Subtype /Image`);
