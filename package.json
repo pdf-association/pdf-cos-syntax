@@ -35,7 +35,7 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "PDF/FDF extension configuration",
+      "title": "PDF",
       "properties": {
         "pdf-cos-syntax.maxNumberOfProblems": {
           "scope": "resource",
@@ -311,10 +311,30 @@
     ],
     "configurationDefaults": {
       "[pdf]": {
-        "editor.semanticHighlighting.enabled": true
+        "editor.semanticHighlighting.enabled": true,
+        "editor.suggestOnTriggerCharacters": true,
+        "editor.renderWhitespace": "all",
+        "files.trimTrailingWhitespace": false,
+        "editor.renderControlCharacters": true,
+        "editor.suggest.selectionMode": "whenTriggerCharacter",
+        "editor.quickSuggestions": {
+          "other": true,
+          "comments": false,
+          "strings": false
+        }
       },
       "[fdf]": {
-        "editor.semanticHighlighting.enabled": true
+        "editor.semanticHighlighting.enabled": true,
+        "editor.suggestOnTriggerCharacters": true,
+        "editor.renderWhitespace": "all",
+        "files.trimTrailingWhitespace": false,
+        "editor.renderControlCharacters": true,
+        "editor.suggest.selectionMode": "whenTriggerCharacter",
+        "editor.quickSuggestions": {
+          "other": true,
+          "comments": false,
+          "strings": false
+        }        
       }
     },
     "semanticTokenTypes": [
