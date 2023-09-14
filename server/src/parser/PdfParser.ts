@@ -1,8 +1,18 @@
-import { TextDocument, Range } from "vscode-languageserver-textdocument";
-import PDFObject from '../models/PdfObject';
-
-
 /**
+ * @brief A PDF parser that classifies ranges of bytes as certain types of "object"  
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+ * 
  * Notes on JavaScript/TypeScript regular expression and PDF lexical rules based on:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions
  *
@@ -21,112 +31,221 @@ import PDFObject from '../models/PdfObject';
  *    used as they do not match PDF's definition!!!
  *
  * - once all PDF EOLs are normalized to ONLY \n, can then rely on string.startsWith(), etc.
+ * 
+ * - non-regex searching for "xref", "stream" and "obj" can mismatch to "startxref", "endstream" and "endobj"!
+ *   Should use a regex with look-before for PDF whitespace or EOLs. BE CAREFUL WITH indexOf()!
+ *
  */
+import { TextDocument, Range } from "vscode-languageserver-textdocument";
+import PDFObject from '../models/PdfObject';
 
 export default class PDFParser {
   content: string;
 
+  /** Start of an object ` obj` - does not account for object ID! 
+   *  Includes a leading SPACE to avoid mismatch with `endobj` in case 
+   * of malformed PDFs.
+   */
+  private readonly _objKeyword: string = " obj"; 
+
+  /** Complete object from `X Y obj` to `endobj`. 
+   * Non-greedy for body data. Anything allowed between keywords.
+   * 2 match expressions for `X Y obj` and `endobj`. 
+   */
+  /*eslint no-control-regex: 0 */
+  private readonly _completeObjectRegex: RegExp =
+     /(\d+[ \t\r\n\f\0]+\d+[ \t\r\n\f\0]+obj)[\x00-\xFF]*?[ \t\r\n\f\0](endobj)/;
+
+  /** `stream` keyword. Will also mismatch `endstream`! */
+  private readonly _streamKeyword: string = "stream"; 
+
+  /** `stream` keyword regex. AVOIDS mismatch with `endstream` 
+   * by using look-before for required whitespace and PDF EOLs! 
+   */
+  private readonly _streamRegex: RegExp = new RegExp(/(?<=[ \t\r\n\f\0])stream/);
+
+  /** `endstream` keyword */
+  private readonly _endstreamKeyword: string = "endstream";
+
+  /** `xref` keyword. Will mismatch with `startxref`! */
+  private readonly _xrefKeyword: string = "xref";
+
+  /** 
+   * `xref` regex. AVOIDS mismatch with `startxref`
+   * by using look-before for required whitespace and PDF EOLs! 
+   */
+  private readonly _xrefRegex: RegExp = new RegExp(/(?<=[ \t\r\n\f\0])xref/);
+
+  /** `trailer` keyword. */
+  private readonly _trailerKeyword: string = "trailer";
+
+  /** `trailer` keyword regex. No whitespace or EOL requirements. */
+  private readonly _trailerRegex: RegExp = new RegExp(this._trailerKeyword);
+
+  /** `startxref` keyword. */
+  private readonly _startxrefKeyword: string = "startxref";
+
+  /** `%%EOF` marker keyword. */
+  private readonly _EOFKeyword: string = "%%EOF";
+
+  /** `%%EOF` marker regex. No whitespace or EOL requirements. Global! */
+  private readonly _EOFRegex = new RegExp(this._EOFKeyword, 'g');
+
+
+  /** 
+   * Normalize PDF line endings but keep character counts unchanged. 
+   * This parser ONLY checks and splits with "\n"!
+   */
   constructor(document: TextDocument) {
     this.content = document.getText();
+    this.content = this.content.replace(/\r\n/g, " \n");
+    this.content = this.content.replace(/\r/g, "\n");
   }
 
+
+  /** Counts the number of lines from start of the PDF up to but **NOT**
+   *  including offset {@link index}.
+   */ 
   private countLinesUntil(index: number): number {
+    if (index < 0) {
+      console.warn(`PDFParser.countLinesUntil was -1 --> 0!`);
+      return 0;
+    }
     return this.content.slice(0, index).split("\n").length - 1;
   }
 
+  /** Only checks for `%[PF]DF-`. Does not check for `\d\.\d` */
   hasHeader(): boolean {
     return this.content.startsWith("%PDF-") || this.content.startsWith("%FDF-");
   }
 
+  /** Header range is from `%[PF]DF-` to line immediately before first `X Y obj` */
   getHeaderRange(): Range {
     let startIdx = this.content.indexOf("%PDF-");
     if (startIdx === -1) startIdx = this.content.indexOf("%FDF-");
 
-    const endIdx = this.content.indexOf(" obj");
+    let endIdx = this.content.indexOf(this._objKeyword);
+
+    // Header is missing or is AFTER the first "X Y obj"!?!
+    if ((startIdx === -1) || (endIdx == -1) || (endIdx <= (startIdx + "%PDF-".length)))
+      console.warn(`PDFParser.getHeaderRange was weird: startIdx=${startIdx}, endIdx=${endIdx}!`);
+
+    // Normalize the data so range is always valid. Variables are now LINE NUMBERS!
+    startIdx = Math.max(0, this.countLinesUntil(startIdx));
+    endIdx = Math.max(0, this.countLinesUntil(startIdx), this.countLinesUntil(endIdx) - 1);
     return {
-      start: { line: this.countLinesUntil(startIdx), character: 0 },
-      end: { line: this.countLinesUntil(endIdx), character: 0 },
+      start: { line: startIdx, character: 0 },
+      end: { line: endIdx, character: this.content.split("\n")[endIdx].length },
     };
   }
 
-  getHeaderSelectionRange(): Range {
-    return {
-      start: { line: 0, character: 0 },
-      end: { line: 0, character: this.content.split("\n")[0].length },
-    };
+  getHeaderEndPosition(): number {
+    const headerEnd = this.content.indexOf(this._objKeyword);
+    return headerEnd;
   }
 
+  /** Ensures there is a complete object from "X Y obj" to "endobj" */
   hasOriginalContent(): boolean {
-    return /obj/.test(this.content);
+    const res: boolean = this._completeObjectRegex.test(this.content);
+    console.log(`hasOriginalContent: ${res}`);
+    return res;
   }
 
   getOriginalContentRange(): Range {
-    const startIdx = this.content.indexOf("obj") + 3;
-    const endIdx = this.findFirstOccurrence([
-      "xref",
-      "trailer",
-      "startxref",
-      "%%EOF",
-    ]);
-    return {
-      start: { line: this.countLinesUntil(startIdx), character: 0 },
-      end: {
-        line: this.countLinesUntil(endIdx),
-        character: this.content.slice(0, endIdx).lastIndexOf("\n"),
-      },
-    };
-  }
-
-  getOriginalContentSelectionRange(): Range {
-    const range = this.getOriginalContentRange();
-    return {
-      start: range.start,
-      end: { line: range.start.line, character: 0 },
-    };
+    // Locate the 1st full object `X Y obj` to `endobj`
+    const match = this._completeObjectRegex.exec(this.content);
+    if (match && (match.index >= 0)) {
+      const startIdx = match.index; // start original body is from `X Y obj`
+      console.log(`Matched full object: starting at ${match.index} for ${match[0].length} chars`);
+      const endIdx = this.findFirstOccurrence(
+        [ this._xrefKeyword, this._trailerKeyword, this._startxrefKeyword, this._EOFKeyword ], 
+        startIdx + match[0].length
+      );
+      console.log(`getOriginalContentRange: offset ${startIdx} - ${endIdx}`);
+      if (endIdx !== -1) 
+        return {
+          start: { line: this.countLinesUntil(startIdx), character: 0 },
+          end: {
+            line: this.countLinesUntil(endIdx),
+            character: this.content.slice(0, endIdx).lastIndexOf("\n"),
+          },
+        };
+    }
+    console.error(`getOriginalContentRange: failed!`);
+    return { start: {line: 0, character: 0}, end: {line: 0, character: 0} };
   }
 
   getObjects(): PDFObject[] {
     const objects: PDFObject[] = [];
-    const regex = /(\d+ \d+ obj)[\s\S]+?(endobj)/g;
     let match;
-    while ((match = regex.exec(this.content)) !== null) {
+    const completeObjectRegexSticky = new RegExp(this._completeObjectRegex, "g");
+    while ((match = completeObjectRegexSticky.exec(this.content)) !== null) {
       const startLine = this.countLinesUntil(match.index);
       const endLine = startLine + match[0].split("\n").length;
+      console.log(`Found object ${match[1]}: at offset ${match.index} = line ${startLine}:0 to ${endLine}:${match[2].length}`);
       objects.push(
-        new PDFObject(match[1], {
-          start: { line: startLine - 1, character: 0 },
-          end: { line: endLine, character: match[2].length },
-        })
+        new PDFObject(
+          match[1], 
+          {
+            start: { line: startLine, character: 0 },
+            end: { line: endLine, character: match[2].length },
+          },
+          match.index
+        )
       );
     }
     return objects;
   }
 
-  private findFirstOccurrence(keywords: string[], startIdx = 0): number {
+  /** Find the first occurence using simple strings and indexOf(). MAY GET MISMATCHES! */
+  private findFirstOccurrence(keywords: string[], startIdx: number = 0): number {
     let firstOccurrence = this.content.length;
+    let firstKeyword: string = "";
     for (const keyword of keywords) {
       const idx = this.content.indexOf(keyword, startIdx);
       if (idx !== -1 && idx < firstOccurrence) {
         firstOccurrence = idx;
+        firstKeyword = keyword; 
       }
     }
+    console.log(`findFirstOccurrence(${startIdx}): ${firstKeyword} at ${firstOccurrence}`);
     return firstOccurrence;
+  }
+
+  /** Find the first occurence using simple strings and indexOf(). MAY GET MISMATCHES! */
+  private findFirstOccurrenceRegex(keywordRegexes: RegExp[], startIdx: number = 0): number {
+    const s = this.content.slice(startIdx);
+    let firstOccurrence = s.length;
+    let firstRegex: string = "";
+    for (const regex of keywordRegexes) {
+      const m = s.match(regex);
+      if (m && m.index && (m.index < firstOccurrence)) {
+        firstOccurrence = m.index;
+        firstRegex = regex.source;
+      }
+    }
+    console.log(`findFirstOccurrenceRegex(${startIdx}): ${firstRegex} at ${firstOccurrence}`);
+    return firstOccurrence + startIdx;
   }
 
   private findLastOccurrence(keywords: string[]): number {
     let lastOccurrence = -1;
+    let lastKeyword: string = "";
     for (const keyword of keywords) {
       const idx = this.content.lastIndexOf(keyword);
       if (idx > lastOccurrence) {
         lastOccurrence = idx;
+        lastKeyword = keyword;
       }
     }
+    console.log(`findLastOccurrence: ${lastKeyword} at ${lastOccurrence}`);
     return lastOccurrence;
   }
 
   getTrailerRange(): Range {
-    const startIdx = this.findLastOccurrence(["xref", "trailer", "startxref"]);
-    const endIdx = this.findFirstOccurrence(["%%EOF", "obj"], startIdx);
+    const startIdx = this.findLastOccurrence([this._xrefKeyword, this._trailerKeyword, this._startxrefKeyword]);
+    const endIdx = this.findFirstOccurrence([this._EOFKeyword, this._objKeyword], startIdx);
+    console.log(`getTrailerRange: offset ${startIdx} - ${endIdx}`);
     return {
       start: { line: this.countLinesUntil(startIdx), character: 0 },
       end: {
@@ -138,89 +257,102 @@ export default class PDFParser {
 
   hasStreamInsideObject(obj: PDFObject): boolean {
     const objContent = this.content.slice(
-      obj.range.start.character,
-      obj.range.end.character
+      obj.getStartOffset(),
+      obj.getEndOffset()
     );
-    return /stream/.test(objContent);
+    const res: boolean = this._streamRegex.test(objContent);
+    console.log(`hasStreamInsideObject for ${obj.getID()} from ${obj.getStartOffset()} to ${obj.getEndOffset()} --> ${res}`);
+    return res;
   }
 
+  /**
+   * Determines if a PDF object `X Y obj` to `endobj`
+   * contains a stream by the presence of **BOTH** keywords `stream`
+   * and `endstream`.
+   */
   getStreamRangeForObject(obj: PDFObject): Range | null {
-    const objContentStart = this.content.indexOf(
-      "stream",
-      obj.range.start.character
+    const objContent = this.content.slice(
+      obj.getStartOffset(),
+      obj.getEndOffset()
     );
-    const objContentEnd = this.content.indexOf(
-      "endstream",
-      obj.range.start.character
-    );
+    const objStreamStart = objContent.indexOf(this._streamKeyword);
+    const objStreamEnd = objContent.indexOf(this._endstreamKeyword, this._streamKeyword.length);
 
-    if (objContentStart === -1 || objContentEnd === -1) return null;
+    if (objStreamStart === -1 || objStreamEnd === -1) {
+      console.log(`getStreamRangeForObject: not a stream!`);
+      return null;
+    }
 
+    console.log(`getStreamRangeForObject: found a stream!`);
     return {
-      start: { line: this.countLinesUntil(objContentStart), character: 0 },
+      start: { 
+        line: this.countLinesUntil(obj.getStartOffset() + objStreamStart), 
+        character: 0 
+      },
       end: {
-        line: this.countLinesUntil(objContentEnd),
-        character: "endstream".length,
+        line: this.countLinesUntil(obj.getStartOffset() + objStreamEnd),
+        character: this._endstreamKeyword.length, // assumes "endstream" at start of line! POSSIBLY WRONG
       },
     };
   }
 
   hasTrailer(): boolean {
-    return /trailer/.test(this.content);
+    const res = this._trailerRegex.test(this.content);
+    console.log(`hasTrailer = ${res}`);
+    return res;
   }
 
-  getStreamRangeInsideObject(obj: PDFObject): Range {
-    const objContentStart = this.content
-      .slice(obj.range.start.line)
-      .indexOf("stream");
-    const objContentEnd = this.content
-      .slice(obj.range.start.line)
-      .indexOf("endstream");
+  getStreamRangeInsideObject(obj: PDFObject): Range | null {
+    const objContent = this.content.slice(
+      obj.getStartOffset(),
+      obj.getEndOffset()
+    );
+    const objStreamStart = objContent.indexOf(this._streamKeyword);
+    const objStreamEnd = objContent.indexOf(this._endstreamKeyword, this._streamKeyword.length);
 
-    if (objContentStart === -1 || objContentEnd === -1)
-      return { start: obj.range.start, end: obj.range.start }; // No stream found
+    if (objStreamStart === -1 || objStreamEnd === -1)
+      return null; // No stream found
 
-    const startLine = this.content.slice(0, objContentStart).split("\n").length;
-    const endLine = this.content.slice(0, objContentEnd).split("\n").length;
+    const startLine = this.content.slice(0, obj.getStartOffset() + objStreamStart).split("\n").length;
+    const endLine = this.content.slice(0, obj.getStartOffset() + objStreamEnd).split("\n").length;
 
+    console.log(`getStreamRangeInsideObject: found a stream from line ${startLine} to ${endLine}`);
     return {
       start: { line: startLine, character: 0 },
-      end: { line: endLine, character: "endstream".length },
-    };
-  }
-
-  getStreamSelectionRangeInsideObject(obj: PDFObject): Range {
-    const streamRange = this.getStreamRangeInsideObject(obj);
-    return {
-      start: streamRange.start,
-      end: { line: streamRange.start.line, character: "stream".length },
+      end: { line: endLine, character: this._endstreamKeyword.length },
     };
   }
 
   getTrailerSelectionRange(): Range {
     const trailerRange = this.getTrailerRange();
-
-    return {
-      start: trailerRange.start,
-      end: { line: trailerRange.start.line, character: "trailer".length },
-    };
+    console.log(`getTrailerSelectionRange`);
+    return trailerRange;
   }
 
+  /**
+   * Checks if PDF file has a conventional cross reference table anywhere.
+   * @todo Shouldn't this be with a startPos???
+   */
   hasCrossReferenceTable(): boolean {
-    return this.content.includes("xref");
+    console.log(`hasCrossReferenceTable`);
+    return this._xrefRegex.test(this.content);
   }
 
-  getCrossReferenceTableRange(): Range {
-    const startIdx = this.content.indexOf("xref");
-    const endIdx = this.content.indexOf("trailer", startIdx);
+  /**
+   * Gets a conventional cross reference table.
+   * @todo Shouldn't this be with a startPos???
+   */
+  getCrossReferenceTableRange(): Range | null {
+    const startIdx = this.content.indexOf(this._xrefKeyword);
+    let endIdx = this.content.indexOf(this._trailerKeyword, startIdx);
+    if (endIdx === -1)
+      endIdx = this.content.indexOf(this._startxrefKeyword, startIdx);
+    console.log(`getCrossReferenceTableRange: from ${startIdx} - ${endIdx}`);
 
     if (startIdx === -1 || endIdx === -1)
-      return {
-        start: { line: 0, character: 0 },
-        end: { line: 0, character: 0 },
-      };
+      return null;
 
-    const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
+    const startLine = this.content.slice(0, startIdx).split("\n").length;
     const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
 
     return {
@@ -229,46 +361,53 @@ export default class PDFParser {
     };
   }
 
-  getCrossReferenceTableSelectionRange(): Range {
-    const range = this.getCrossReferenceTableRange();
-
-    return {
-      start: range.start,
-      end: { line: range.start.line, character: "xref".length },
-    };
-  }
-
-  getHeaderEndPosition(): number {
-    const headerEnd = this.content.indexOf("obj");
-    return headerEnd;
-  }
-
+  /**
+   * Returns true of there is more content after offset {@link position}
+   * as defined by the presence of a `%%EOF` marker comment.
+   */
   hasMoreContent(position: number): boolean {
     const remainingContent = this.content.slice(position);
-
-    const EOFCount = (remainingContent.match(/%%EOF/g) || []).length;
-
+    const EOFCount = (remainingContent.match(this._EOFRegex) || []).length;
+    console.log(`hasMoreContent from ${position} = ${EOFCount > 1}`);
     return EOFCount > 1;
   }
 
+  /**
+   * Looks for the end of a body section (indirect objects) starting at {@link startPos}.
+   * Indicated by the presence of the 1st keyword `trailer`, `startxref`, or `%%EOF`.
+   */
   getBodyEndPosition(startPos: number): number {
-    const endKeywords = ["xref", "trailer", "startxref", "%%EOF"];
+    const endKeywords = [this._xrefKeyword, this._trailerKeyword, this._startxrefKeyword, this._EOFKeyword];
     let endPos = this.content.length;
-
+    let keywordMarker: string = "";
     for (const keyword of endKeywords) {
       const idx = this.content.indexOf(keyword, startPos);
       if (idx !== -1 && idx < endPos) {
+        keywordMarker = keyword;
         endPos = idx;
       }
     }
-
+    console.log(`getBodyEndPosition from ${startPos}: found ${keywordMarker} at ${endPos}`);
     return endPos;
   }
 
+  /**
+   * Looks for the end of a conventional cross reference section starting at {@link startPos}.
+   * Indicated by the presence of the 1st keyword `trailer`, `startxref`, or `%%EOF`.
+   */
   getCrossReferenceEndPosition(startPos: number): number {
-    const endKeyword = "trailer";
-    const endPos = this.content.indexOf(endKeyword, startPos);
-    return endPos !== -1 ? endPos : this.content.length;
+    let endPos = this.content.length;
+    let keywordMarker: string = "";
+    const endKeywords = [this._trailerKeyword, this._startxrefKeyword, this._EOFKeyword];
+    for (const keyword of endKeywords) {
+      const idx = this.content.indexOf(keyword, startPos);
+      if (idx !== -1 && idx < endPos) {
+        keywordMarker = keyword;
+        endPos = idx;
+      }
+    }
+    console.log(`getCrossReferenceEndPosition from ${startPos}: found ${keywordMarker} at ${endPos}`);
+    return endPos;
   }
 
   getBodyRange(startPos?: number): Range {
@@ -276,6 +415,7 @@ export default class PDFParser {
     const end = this.getBodyEndPosition(start);
     const startLine = this.content.slice(0, start).split("\n").length - 1;
     const endLine = this.content.slice(0, end).split("\n").length - 1;
+    console.log(`getBodyRange from ${startPos}: from line ${startLine} at ${endLine}`);
     return {
       start: { line: startLine, character: 0 },
       end: {
@@ -291,6 +431,7 @@ export default class PDFParser {
     const end = this.getCrossReferenceEndPosition(start);
     const startLine = this.content.slice(0, start).split("\n").length - 1;
     const endLine = this.content.slice(0, end).split("\n").length - 1;
+    console.log(`getCrossReferenceRange from ${startPos}: from line ${startLine} at ${endLine}`);
     return {
       start: { line: startLine, character: 0 },
       end: {
@@ -301,33 +442,34 @@ export default class PDFParser {
     };
   }
 
-  getTrailerDictionaryRange(): Range {
-    const startIdx = this.content.lastIndexOf("trailer");
-    const endIdx = this.content.indexOf("startxref", startIdx);
-    if (startIdx === -1 || endIdx === -1) {
-      return {
-        start: { line: 0, character: 0 },
-        end: { line: 0, character: 0 },
-      };
+  getTrailerDictionaryRange(): Range | null {
+    const startIdx = this.content.lastIndexOf(this._trailerKeyword);
+    let endIdx = -1;
+
+    let keywordMarker: string = "";
+    const endKeywords = [this._startxrefKeyword, this._EOFKeyword];
+    for (const keyword of endKeywords) {
+      const idx = this.content.indexOf(keyword, startIdx);
+      if (idx !== -1 && idx < endIdx) {
+        keywordMarker = keyword;
+        endIdx = idx;
+      }
     }
+    console.log(`getTrailerDictionaryRange: from offset ${startIdx} - ${endIdx}`);
+    if (startIdx === -1 || endIdx === -1)
+      return null;
+
     const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
     const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
+    console.log(`getTrailerDictionaryRange: from line ${startLine} at ${endLine}`);
     return {
       start: { line: startLine, character: 0 },
       end: { line: endLine, character: 0 },
     };
   }
 
-  getTrailerDictionarySelectionRange(): Range {
-    const range = this.getTrailerDictionaryRange();
-    return {
-      start: range.start,
-      end: { line: range.start.line, character: "trailer".length },
-    };
-  }
-
   getOriginalContentEndPosition(): number {
-    const endKeywords = ["xref", "trailer", "startxref", "%%EOF"];
+    const endKeywords = [this._xrefKeyword, this._trailerKeyword, this._startxrefKeyword, this._EOFKeyword];
     let endPos = this.content.length;
     for (const keyword of endKeywords) {
       const idx = this.content.indexOf(keyword);
@@ -335,16 +477,16 @@ export default class PDFParser {
         endPos = idx;
       }
     }
+    console.log(`getOriginalContentEndPosition: ${endPos}`);
     return endPos;
   }
 
-  getObjectsFromIncrementalUpdate(updateCount = 1): PDFObject[] {
+  getObjectsFromIncrementalUpdate(updateCount: number = 1): PDFObject[] {
     let startIdx = this.getOriginalContentEndPosition();
-
     let eofCount = 0;
 
     while (eofCount < updateCount) {
-      startIdx = this.content.indexOf("%%EOF", startIdx + 1);
+      startIdx = this.content.indexOf(this._EOFKeyword, startIdx + 1);
 
       if (startIdx === -1) {
         console.error(
@@ -356,7 +498,7 @@ export default class PDFParser {
       eofCount++;
 
       if (eofCount === updateCount) {
-        startIdx = this.content.indexOf("xref", startIdx + 1);
+        startIdx = this.content.indexOf(this._xrefKeyword, startIdx + 1);
 
         if (startIdx === -1) {
           console.error(
@@ -386,6 +528,8 @@ export default class PDFParser {
     const startLine = this.content.slice(0, bodyStart).split("\n").length - 1;
     const endLine = this.content.slice(0, bodyEnd).split("\n").length - 1;
 
+    console.log(`getBodySelectionRange`);
+
     return {
       start: { line: startLine, character: 0 },
       end: {
@@ -398,44 +542,34 @@ export default class PDFParser {
     };
   }
 
-  getCrossReferenceTableRangeFromIncrement(updateCount: number): Range {
-    let startIdx = this.content.indexOf("xref");
-    let endIdx = this.content.indexOf("trailer", startIdx);
+  getCrossReferenceTableRangeFromIncrement(updateCount: number): Range | null {
+    let startIdx = this.content.indexOf(this._xrefKeyword);
+    let endIdx = this.content.indexOf(this._trailerKeyword, startIdx);
+    if (endIdx === -1)
+      endIdx = this.content.indexOf(this._startxrefKeyword, startIdx);
 
-    for (let i = 1; i < updateCount && startIdx !== -1 && endIdx !== -1; i++) {
-      startIdx = this.content.indexOf("xref", endIdx);
-      endIdx = this.content.indexOf("trailer", startIdx);
+    for (let i = 1; (i < updateCount) && (startIdx !== -1) && (endIdx !== -1); i++) {
+      startIdx = this.content.indexOf(this._xrefKeyword, endIdx);
+      endIdx = this.content.indexOf(this._trailerKeyword, startIdx);
+      if (endIdx === -1)
+        endIdx = this.content.indexOf(this._startxrefKeyword, startIdx);
     }
 
-    if (startIdx === -1 || endIdx === -1) {
-      return {
-        start: { line: 0, character: 0 },
-        end: { line: 0, character: 0 },
-      };
-    }
+    if (startIdx === -1 || endIdx === -1) return null;
 
-    const startLine = this.content.slice(0, startIdx).split("\n").length - 1;
+    const startLine = this.content.slice(0, startIdx).split("\n").length;
     const endLine = this.content.slice(0, endIdx).split("\n").length - 1;
 
+    console.log(`getCrossReferenceTableRangeFromIncrement(${updateCount}: line ${startLine} - ${endLine})`);
     return {
       start: { line: startLine, character: 0 },
       end: { line: endLine, character: 0 },
     };
   }
 
-  getCrossReferenceTableSelectionRangeFromIncrement(
-    updateCount: number
-  ): Range {
-    const range = this.getCrossReferenceTableRangeFromIncrement(updateCount);
-    return {
-      start: range.start,
-      end: { line: range.start.line, character: "xref".length },
-    };
-  }
-
   getTrailerRangeFromIncrement(updateCount: number): Range {
-    const trailerStartKeyword = "trailer";
-    const trailerEndKeyword = "startxref";
+    const trailerStartKeyword = this._trailerKeyword;
+    const trailerEndKeyword = this._startxrefKeyword;
 
     const trailerStart = this.findNthOccurrence(
       this.content,
@@ -468,7 +602,7 @@ export default class PDFParser {
 
     return {
       start: { line: this.getLineFromPosition(dictStart), character: 0 },
-      end: { line: this.getLineFromPosition(dictEnd + 2), character: 0 },
+      end: { line: this.getLineFromPosition(dictEnd + ">>".length), character: 0 },
     };
   }
 
@@ -482,8 +616,7 @@ export default class PDFParser {
       .split("\n", range.start.line)
       .join("\n").length;
 
-    const xrefKeyword = "startxref";
-    const xrefEnd = this.content.indexOf(xrefKeyword, startCharPosition);
+    const xrefEnd = this.content.indexOf(this._startxrefKeyword, startCharPosition);
     const endCharPosition = this.content
       .split("\n", range.end.line + 1)
       .join("\n").length;
@@ -494,7 +627,7 @@ export default class PDFParser {
       );
     }
 
-    return xrefEnd + xrefKeyword.length;
+    return xrefEnd + this._startxrefKeyword.length;
   }
 
   findNthOccurrence(
@@ -512,26 +645,31 @@ export default class PDFParser {
     return index ? index - 1 : -1;
   }
 
+  /** Maps an offset position to a line number (used by Range) */
   getLineFromPosition(position: number): number {
     return this.content.slice(0, position).split("\n").length;
   }
 
-  getBodySectionRange(updateCount?: number): Range {
-    if (updateCount == undefined) {
-      const startIdx = this.getHeaderRange().end.line;
-      const endIdx = this.getOriginalContentRange().end.line;
-      return {
-        start: { line: startIdx, character: 0 },
-        end: { line: endIdx, character: 0 },
-      };
-    } else {
+
+  getBodySectionRange(updateCount: number = 0): Range {
+    console.log(`getBodySectionRange(${updateCount})`);
+
+    if (updateCount == 0) {
+      // Original PDF 
+      const res = this.getOriginalContentRange();
+      console.log(`getBodySectionRange() = lines ${res.start.line} - ${res.end.line}`);
+      return res;
+    } 
+    else {
+      // Incremental update 1..N
       const incrementalRange = this.getIncrementalUpdateRange(updateCount);
 
       const startSearchPos = this.content
         .split("\n", incrementalRange.start.line)
         .join("\n").length;
-      const xrefPosition = this.content.indexOf("xref", startSearchPos);
+      const xrefPosition = this.content.indexOf(this._xrefKeyword, startSearchPos);
 
+      console.log(`getBodySectionRange(${updateCount}) = lines ${incrementalRange.start.line} - ${this.countLinesUntil(xrefPosition)}`);
       return {
         start: incrementalRange.start,
         end: { line: this.countLinesUntil(xrefPosition), character: 0 },
@@ -539,22 +677,11 @@ export default class PDFParser {
     }
   }
 
-  getBodySectionSelectionRange(updateCount?: number): Range {
-    const bodyRange = this.getBodySectionRange(updateCount);
-    return {
-      start: bodyRange.start,
-      end: {
-        line: bodyRange.start.line,
-        character: this.content.split("\n")[bodyRange.start.line].length,
-      },
-    };
-  }
-
   getIncrementalUpdateRange(updateCount: number): Range {
     let startIdx = this.getOriginalContentEndPosition();
 
     for (let i = 1; i < updateCount; i++) {
-      startIdx = this.content.indexOf("%%EOF", startIdx + 1);
+      startIdx = this.content.indexOf(this._EOFKeyword, startIdx + 1);
       if (startIdx === -1) {
         throw new Error(
           "The specified update count exceeds the number of updates in the PDF."
@@ -562,23 +689,19 @@ export default class PDFParser {
       }
     }
 
-    startIdx = startIdx + "%%EOF".length;
+    startIdx = startIdx + this._EOFKeyword.length;
 
-    const endIdx = this.content.indexOf("%%EOF", startIdx + 1);
+    const endIdx = this.content.indexOf(this._EOFKeyword, startIdx + 1);
     if (endIdx === -1) {
       throw new Error(
         "The specified update count exceeds the number of updates in the PDF."
       );
     }
 
+    console.log(`getIncrementalUpdateRange(${updateCount}) = offset ${startIdx} - ${endIdx}`);
     return {
       start: { line: this.countLinesUntil(startIdx), character: 0 },
-      end: {
-        line: this.countLinesUntil(endIdx),
-        character: 0,
-      },
+      end: { line: this.countLinesUntil(endIdx), character: 0 }
     };
   }
-
-  
 }
