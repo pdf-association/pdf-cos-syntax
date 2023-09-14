@@ -1,5 +1,5 @@
 import { Range } from 'vscode-languageserver-textdocument';
-import PDFParser from './PdfParser';
+import PDFParser from '../parser/PdfParser';
 
 export default class PDFObject {
   id: string;

@@ -17,7 +17,7 @@
 import { 
   ArlingtonPDFModel, 
   AlringtonItem 
-} from "./ArlingtonPDFModel";
+} from "../models/ArlingtonPDFModel";
 
 import {
   CompletionItem,

@@ -1,5 +1,6 @@
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
-import PDFObject from "./PdfObject";
+import PDFObject from '../models/PdfObject';
+
 
 /**
  * Notes on JavaScript/TypeScript regular expression and PDF lexical rules based on:
