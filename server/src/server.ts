@@ -25,23 +25,19 @@ import {
   InitializeParams,
   DidChangeConfigurationNotification,
   CompletionItem,
-  CompletionItemKind,
-  CompletionItemTag,
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
   Position,
   Definition,
-  MarkupKind,
   Location,
   Hover,
   DocumentSymbolParams,
   DocumentSymbol,
   SymbolKind,
-  SelectionRange,
 } from "vscode-languageserver/node";
 
-import { Range, TextDocument } from "vscode-languageserver-textdocument";
+import { TextDocument, Range } from "vscode-languageserver-textdocument";
 
 import {
   isFileFDF,
@@ -51,17 +47,20 @@ import {
   findAllDefinitions,
   findAllReferences,
   findPreviousObjectLineNumber,
-  XrefInfoMatrix,
-} from "./pdfUtils";
+  tokenizeDocument,
+  buildXrefMatrix,
+} from "./utils/pdfUtils";
 
 import {
   DictKeyCodeCompletion
-} from "./ArlingtonUtils";
+} from "./utils/ArlingtonUtils";
 
 // for server debug.
 import { debug } from "console";
 import { TextEncoder } from "util";
-import PDFParser from "./utils/PdfParser";
+import PDFParser from "./parser/PdfParser";
+import { PDSCOSSyntaxSettings, PDFDocumentData } from './types';
+import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
@@ -79,38 +78,12 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-// Needs to match package.json
-const tokenTypes = [
-  "indirectReference",
-  "indirectObject",
-  "xrefTableEntry",
-  "endobjKeyword",
-  "endstreamKeyword",
-  "hexString",
-  "bitMask",
-];
-const tokenModifiers = ["deprecated"];
-
-// The PDF COS Syntax extension settings
-interface PDSCOSSyntaxSettings {
-  maxNumberOfProblems: number;
-}
-
-interface SimpleTextDocument {
-  getText(): string;
-}
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
 const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
 let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
-
-// Cache the settings for all open documents!
-type PDFDocumentData = {
-  settings: PDSCOSSyntaxSettings;
-  xrefMatrix?: XrefInfoMatrix;
-};
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
@@ -149,9 +122,7 @@ connection.onInitialize((params: InitializeParams) => {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
 
-
       // Tell the client that this server supports code completion for PDF names
-
       completionProvider: {
         resolveProvider: false, // change to true so onCompletionResolve() gets called
         triggerCharacters: [ "/" ]
@@ -161,8 +132,8 @@ connection.onInitialize((params: InitializeParams) => {
       hoverProvider: true,
       semanticTokensProvider: {
         legend: {
-          tokenTypes: tokenTypes,
-          tokenModifiers: tokenModifiers,
+          tokenTypes: TOKEN_TYPES,
+          tokenModifiers: TOKEN_MODIFIERS,
         },
         full: true,
       },
@@ -220,11 +191,6 @@ connection.onDidChangeConfiguration((change) => {
 documents.onDidClose((e) => {
   pdfDocumentData.delete(e.document.uri);
 });
-// const tokenCache: Map<string, SemanticTokenInfo[]> = new Map();
-// documents.onDidChangeContent(change => {
-//   tokenCache.delete(change.document.uri);
-//   // tokenCache.set(change.document.uri, parseDocumentForTokens(change.document));
-// });
 
 /** The content of a text document has changed. This event is emitted
  *  when the text document first opened or when its content has changed.
@@ -260,16 +226,6 @@ connection.onCompletion(
  * NOT USED unless completionProvider: { resolveProvider: false, ... }
  */ 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  // switch (item.data) {
-  //   case 1: { 
-  //     item.detail = "the type of a dictionary";
-  //     break;
-  //   }
-  //   case 2: {
-  //     item.detail = "the subtype of a dictionary";
-  //     break;
-  //   }
-  // }
   return item;
 });
 
@@ -565,151 +521,173 @@ connection.onHover((params): Hover | null => {
   return null;
 });
 
+/**
+ * Creates the Outline tree and breadcrumbs
+ */
 connection.onDocumentSymbol(
   (params: DocumentSymbolParams): DocumentSymbol[] => {
-    const { textDocument } = params;
-    const document = documents.get(textDocument.uri);
-    if (!document) return [];
+  const { textDocument } = params;
+  const document = documents.get(textDocument.uri);
+  if (!document) return [];
 
-    const pdfParser = new PDFParser(document);
-    const symbols: DocumentSymbol[] = [];
+  const pdfParser = new PDFParser(document);
+  const symbols: DocumentSymbol[] = [];
+  let r1: Range;
+  let r2: Range | null;
 
-    const addObjectSymbols = (objectList: any[]): DocumentSymbol[] => {
-      return objectList.map((obj) => {
-        const children: DocumentSymbol[] = [];
-        if (pdfParser.hasStreamInsideObject(obj)) {
+  const addObjectSymbols = (objectList: any[]): DocumentSymbol[] => {
+    return objectList.map((obj) => {
+      const children: DocumentSymbol[] = [];
+      if (pdfParser.hasStreamInsideObject(obj)) {
+        const r3 = pdfParser.getStreamRangeInsideObject(obj);
+        if (r3)
           children.push({
             name: "Stream",
             kind: SymbolKind.Method,
-            range: pdfParser.getStreamRangeInsideObject(obj),
-            selectionRange: pdfParser.getStreamSelectionRangeInsideObject(obj),
+            range: r3,
+            selectionRange: r3,
           });
-        }
-        return {
-          name: `Object ${obj.id}`,
-          kind: SymbolKind.Method,
-          range: obj.getRange(),
-          selectionRange: obj.getSelectionRange(),
-          children: children,
-        };
-      });
+      }
+      const r4 = obj.getRange();
+      return {
+        name: `Object ${obj.getID()}`,
+        kind: SymbolKind.Method,
+        range: r4,
+        selectionRange: r4,
+        children: children,
+      };
+    });
+  };
+
+  // All PDFs should have a header - except if its being edited
+  console.group(`Original PDF`);
+  if (pdfParser.hasHeader()) {
+    symbols.push({
+      name: "Header",
+      kind: SymbolKind.Module,
+      range: pdfParser.getHeaderRange(),
+      selectionRange: pdfParser.getHeaderRange(), 
+      children: [],
+    });
+  }
+
+  if (pdfParser.hasOriginalContent()) {
+    r1 = pdfParser.getOriginalContentRange();
+    const originalPdfSymbol: DocumentSymbol = {
+      name: "Original PDF",
+      kind: SymbolKind.Class,
+      range: r1,
+      selectionRange: r1,
+      children: [],
     };
 
-    if (pdfParser.hasHeader()) {
-      symbols.push({
-        name: "Header",
-        kind: SymbolKind.Module,
-        range: pdfParser.getHeaderRange(),
-        selectionRange: pdfParser.getHeaderSelectionRange(),
-        children: [],
-      });
-    }
+    r1 = pdfParser.getBodySectionRange();
+    const bodySectionSymbol: DocumentSymbol = {
+      name: "Body",
+      kind: SymbolKind.Method,
+      range: r1,
+      selectionRange: r1,
+      children: [],
+    };
 
-    if (pdfParser.hasOriginalContent()) {
-      const originalPdfSymbol: DocumentSymbol = {
-        name: "Original PDF",
-        kind: SymbolKind.Class,
-        range: pdfParser.getOriginalContentRange(),
-        selectionRange: pdfParser.getOriginalContentSelectionRange(),
-        children: [],
-      };
+    const bodyObjects = pdfParser.getObjects();
+    bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
+    originalPdfSymbol.children?.push(bodySectionSymbol);
 
-      const bodySectionSymbol: DocumentSymbol = {
-        name: "Body",
-        kind: SymbolKind.Method,
-        range: pdfParser.getBodySectionRange(),
-        selectionRange: pdfParser.getBodySectionSelectionRange(),
-        children: [],
-      };
-
-      const bodyObjects = pdfParser.getObjects();
-      bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
-      originalPdfSymbol.children?.push(bodySectionSymbol);
-
-      if (pdfParser.hasTrailer()) {
-        const trailerSymbol: DocumentSymbol = {
-          name: "Trailer",
-          kind: SymbolKind.Interface,
-          range: pdfParser.getTrailerRange(),
-          selectionRange: pdfParser.getTrailerSelectionRange(),
-          children: [
-            {
-              name: "Trailer dictionary",
-              kind: SymbolKind.Field,
-              range: pdfParser.getTrailerDictionaryRange(),
-              selectionRange: pdfParser.getTrailerDictionarySelectionRange(),
-            },
-          ],
-        };
-
-        originalPdfSymbol.children?.push(trailerSymbol);
-      }
-
-      if (pdfParser.hasCrossReferenceTable()) {
+    if (pdfParser.hasCrossReferenceTable()) {
+      r2 = pdfParser.getCrossReferenceTableRange();
+      if (r2) {
         const crossReferenceSymbol: DocumentSymbol = {
           name: "Cross reference table",
           kind: SymbolKind.Property,
-          range: pdfParser.getCrossReferenceTableRange(),
-          selectionRange: pdfParser.getCrossReferenceTableSelectionRange(),
+          range: r2,
+          selectionRange: r2,
           children: [],
         };
         originalPdfSymbol.children?.push(crossReferenceSymbol);
       }
-
-      symbols.push(originalPdfSymbol);
     }
 
-    let updateCount = 1;
-    let currentPosition = pdfParser.getOriginalContentEndPosition();
-    while (pdfParser.hasMoreContent(currentPosition)) {
-      const incrementalUpdateSymbol: DocumentSymbol = {
-        name: `Incremental Update ${updateCount}`,
-        kind: SymbolKind.Namespace,
-        range: pdfParser.getBodyRange(currentPosition),
-        selectionRange: pdfParser.getBodySelectionRange(currentPosition),
-        children: [],
+    if (pdfParser.hasTrailer()) {
+      r1 = pdfParser.getTrailerRange();
+      const trailerSymbol: DocumentSymbol = {
+        name: "Trailer",
+        kind: SymbolKind.Interface,
+        range: r1,
+        selectionRange: r1,
+        children: []
       };
+      r2 = pdfParser.getTrailerDictionaryRange();
+      if (r2) {
+        trailerSymbol.children?.push({
+            name: "Trailer dictionary",
+            kind: SymbolKind.Field,
+            range: r2,
+            selectionRange: r2
+        });
+        originalPdfSymbol.children?.push(trailerSymbol);
+      }
+    }
 
-      const bodySectionSymbol: DocumentSymbol = {
-        name: "Body",
-        kind: SymbolKind.Method,
-        range: pdfParser.getBodySectionRange(updateCount),
-        selectionRange: pdfParser.getBodySectionSelectionRange(updateCount),
-        children: [],
-      };
+    symbols.push(originalPdfSymbol);
+  }
+  console.groupEnd();
 
-      const bodyObjects =
-        pdfParser.getObjectsFromIncrementalUpdate(updateCount);
+  // Process any incremental updates
+  let updateCount = 1;
+  let currentPosition = pdfParser.getOriginalContentEndPosition();
+  while (pdfParser.hasMoreContent(currentPosition)) {
+    console.group(`updateCount = ${updateCount}`);
 
-      bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
-      incrementalUpdateSymbol.children?.push(bodySectionSymbol);
+    r1 = pdfParser.getBodyRange(currentPosition);
+    const incrementalUpdateSymbol: DocumentSymbol = {
+      name: `Incremental Update ${updateCount}`,
+      kind: SymbolKind.Namespace,
+      range: r1,
+      selectionRange: r1,
+      children: [],
+    };
 
+    r1 = pdfParser.getBodySectionRange(updateCount);
+    const bodySectionSymbol: DocumentSymbol = {
+      name: "Body",
+      kind: SymbolKind.Method,
+      range: r1,
+      selectionRange: r1,
+      children: [],
+    };
+
+    const bodyObjects =
+      pdfParser.getObjectsFromIncrementalUpdate(updateCount);
+
+    bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
+    incrementalUpdateSymbol.children?.push(bodySectionSymbol);
+
+    r2 = pdfParser.getCrossReferenceTableRangeFromIncrement(updateCount);
+    if (r2) {
       const incrementalCrossReferenceSymbol: DocumentSymbol = {
         name: "Cross reference table",
         kind: SymbolKind.Property,
-        range: pdfParser.getCrossReferenceTableRangeFromIncrement(updateCount),
-        selectionRange:
-          pdfParser.getCrossReferenceTableSelectionRangeFromIncrement(
-            updateCount
-          ),
+        range: r2,
+        selectionRange: r2,
         children: [],
       };
+
+      // Assume if cross referece table then trailer
+      /// @todo THIS IS A BAD ASSUMPTION when editing!!! 
+      r1 = pdfParser.getTrailerRangeFromIncrement(updateCount);
+      r2 = pdfParser.getTrailerDictionaryRangeFromIncrement(updateCount);
       const incrementalTrailerSymbol: DocumentSymbol = {
         name: "Trailer",
         kind: SymbolKind.Interface,
-        range: pdfParser.getTrailerRangeFromIncrement(updateCount),
-        selectionRange:
-          pdfParser.getTrailerSelectionRangeFromIncrement(updateCount),
+        range: r1,
+        selectionRange: r1,
         children: [
           {
             name: "Trailer dictionary",
             kind: SymbolKind.Field,
-            range:
-              pdfParser.getTrailerDictionaryRangeFromIncrement(updateCount),
-            selectionRange:
-              pdfParser.getTrailerDictionarySelectionRangeFromIncrement(
-                updateCount
-              ),
+            range: r2,
+            selectionRange: r2,
           },
         ],
       };
@@ -718,15 +696,17 @@ connection.onDocumentSymbol(
         incrementalCrossReferenceSymbol,
         incrementalTrailerSymbol
       );
-
-      symbols.push(incrementalUpdateSymbol);
-
-      currentPosition = pdfParser.getIncrementalUpdateEndPosition(updateCount);
-      updateCount++;
     }
-    return symbols;
+
+    symbols.push(incrementalUpdateSymbol);
+    currentPosition = pdfParser.getIncrementalUpdateEndPosition(updateCount);
+    updateCount++;
+    console.groupEnd();
   }
-);
+
+  // console.log(JSON.stringify(symbols, null, 2)); // pretty-print 
+  return symbols;
+});
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
@@ -735,25 +715,20 @@ documents.listen(connection);
 // Listen on the connection
 connection.listen();
 
-class SemanticTokensBuilder {
-  private _data: number[] = [];
 
-  public push(
-    line: number,
-    char: number,
-    length: number,
-    tokenType: number,
-    tokenModifier: number
-  ) {
-    this._data.push(line, char, length, tokenType, tokenModifier);
-  }
 
-  public build(): any {
-    return {
-      data: this._data,
-    };
-  }
-}
+
+// async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
+//   const currentData = pdfDocumentData.get(resource) || {
+//     settings: globalSettings,
+//   };
+//   const newSettings = await connection.workspace.getConfiguration({
+//     scopeUri: resource,
+//     section: "pdf-cos-syntax",
+//   });
+//   pdfDocumentData.set(resource, { ...currentData, settings: newSettings });
+//   return { ...currentData, settings: newSettings };
+// }
 
 /**
  * Perform basic validation of a conventional PDF:
@@ -919,56 +894,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
-function tokenizeDocument(document: TextDocument): any {
-  const tokensBuilder = new SemanticTokensBuilder();
-
-  for (let line = 0; line < document.lineCount; line++) {
-    const currentLine = document.getText({
-      start: { line: line, character: 0 },
-      end: { line: line, character: Number.MAX_VALUE },
-    });
-
-    const pattern = new RegExp(/(\d+ \d+ R)/, "g");
-    let match;
-    while ((match = pattern.exec(currentLine)) !== null) {
-      tokensBuilder.push(
-        line,
-        match.index,
-        match[0].length,
-        tokenTypes.indexOf("indirectReference"),
-        0 // assuming no modifier
-      );
-    }
-
-    // pattern = new RegExp(/(\d+ \d+ obj)/, "g");
-    // while ((match = pattern.exec(currentLine)) !== null) {
-    //   tokensBuilder.push(
-    //     line,
-    //     match.index,
-    //     match[0].length,
-    //     tokenTypes.indexOf("indirectObject"),
-    //     0  // assuming no modifier
-    //   );
-    // }
-
-    // ... other token matchers ...
-  }
-
-  return tokensBuilder.build();
-}
-
-async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
-  const currentData = pdfDocumentData.get(resource) || {
-    settings: globalSettings,
-  };
-  const newSettings = await connection.workspace.getConfiguration({
-    scopeUri: resource,
-    section: "pdf-cos-syntax",
-  });
-  pdfDocumentData.set(resource, { ...currentData, settings: newSettings });
-  return { ...currentData, settings: newSettings };
-}
-
 function updateXrefMatrixForDocument(uri: string, content: string) {
   let docData = pdfDocumentData.get(uri);
   if (!docData) {
@@ -980,41 +905,3 @@ function updateXrefMatrixForDocument(uri: string, content: string) {
   docData.xrefMatrix = buildXrefMatrix(content);
 }
 
-function buildXrefMatrix(content: string): XrefInfoMatrix {
-  // Create a new instance of the XrefInfoMatrix
-  const xrefMatrix = new XrefInfoMatrix();
-  const lines = content.split("\n");
-
-  const mockPDFDocument: TextDocument = {
-    getText: () => content,
-    uri: "mockURI",
-    languageId: "pdf",
-    version: 1, // mock version
-    positionAt: (offset: number) => {
-      let charCount = 0;
-      for (let i = 0; i < lines.length; i++) {
-        if (charCount + lines[i].length >= offset) {
-          return { line: i, character: offset - charCount };
-        }
-        charCount += lines[i].length + 1;
-      }
-      return {
-        line: lines.length - 1,
-        character: lines[lines.length - 1].length,
-      };
-    },
-    offsetAt: (position: Position) => {
-      let offset = 0;
-      for (let i = 0; i < position.line; i++) {
-        offset += lines[i].length + 1;
-      }
-      return offset + position.character;
-    },
-    lineCount: content.split("\n").length,
-  };
-
-  // Merge all xref tables found in the document into the matrix
-  xrefMatrix.mergeAllXrefTables(mockPDFDocument);
-
-  return xrefMatrix;
-}
