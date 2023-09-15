@@ -21,6 +21,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as pdf from './pdfClientUtilities';
+import * as sankey from './sankey-webview';
 
 import {
   LanguageClient,
@@ -31,6 +32,92 @@ import {
 
 import { PDFFoldingRangeProvider } from "./PDFFoldingRangeProvider";
 
+/////////////////////////////////////////////////////////////////////
+// Some fake CSV data for now. NO header row!
+const fakeData = [ 
+  `Preamble,Cavity,16,red`,
+  `"PDF file",Header,16,`,
+  `"PDF file","Object 1",20,`,
+  `"PDF file","Object 2",22,`,
+  `"PDF file","Object 3",42,`,
+  `"PDF file",Cavity,6,red`,
+  `"PDF file","Object 4",15,`,
+  `"PDF file","Object 6",3494,`,
+  `"PDF file","Object 7",441,`,
+  `"PDF file","Object 5",30,`,
+  `"PDF file","Object 9",30,`,
+  `"PDF file","Object 8",404,`,
+  `"PDF file","Object 10",104,`,
+  `"PDF file","Object 11",40,`,
+  `"PDF file","Object 16",4050,`,
+  `"PDF file","Object 15",4041,`,
+  `"PDF file","Object 14",30,`,
+  `"PDF file","Object 13",10,`,
+  `"PDF file","Object 12",5,`,
+  `"PDF file",xref,248,lightgreen`,
+  `"PDF file",trailer,28,lightblue`,
+  `"PDF file",EOF,6,blue`,
+  `"Incremental Update 1","Object 4",27,`,
+  `"Incremental Update 1","Object 17",485,`,
+  `"Incremental Update 1","Object 18",72,`,
+  `"Incremental Update 1","Object 19",46,`,
+  `"Incremental Update 1","Object 22",120,`,
+  `"Incremental Update 1","Object 23",4305,`,
+  `"Incremental Update 1",xref,128,lightgreen`,
+  `"Incremental Update 1",trailer,31,lightblue`,
+  `"Incremental Update 1",EOF,6,blue`,
+  `Gap,Cavity,12,red`,
+  `"Incremental Update 2","Object 4",22,`,
+  `"Incremental Update 2","Object 24",59,`,
+  `"Incremental Update 2","Object 20",283,`,
+  `"Incremental Update 2","Object 21",42,`,
+  `"Incremental Update 2","Object 5",10,`,
+  `"Incremental Update 2","Object 9",5,`,
+  `"Incremental Update 2",xref,128,lightgreen`,
+  `"Incremental Update 2",trailer,32,lightblue`,
+  `"Incremental Update 2",EOF,6,blue`,
+  `Postamble,Cavity,12,red`,
+  `"Object 1",Document,20,`,
+  `"Object 2",Document,22,`,
+  `"Object 3",Document,42,`,
+  `"Object 4","Page 1",27,Linen`,
+  `"Object 5","Page 1",30,Linen`,
+  `"Object 6","Page 1",3494,Linen`,
+  `"Object 7","Page 1",441,Linen`,
+  `"Object 8","Page 1",404,Linen`,
+  `"Object 9",Document,30,`,
+  `"Object 10",Document,104,`,
+  `"Object 11","Page 2",40,LavenderBlush`,
+  `"Object 12","Page 2",5,LavenderBlush`,
+  `"Object 13","Page 2",10,LavenderBlush`,
+  `"Object 14","Page 2",30,LavenderBlush`,
+  `"Object 15","Page 2",4041,LavenderBlush`,
+  `"Object 16","Page 2",4050,LavenderBlush`,
+  `"Object 17","Page 1",485,Linen`,
+  `"Object 18","Page 1",72,Linen`,
+  `"Object 19","Page 1",46,Linen`,
+  `"Object 20","Page 1",283,Linen`,
+  `"Object 21","Page 1",42,Linen`,
+  `"Object 22","Page 2",120,LavenderBlush`,
+  `"Object 23","Page 2",4305,LavenderBlush`,
+  `"Object 24","Page 2",59,LavenderBlush`,
+  `"Page 1",Content,426,PaleGoldenRod`,
+  `"Page 1",Fonts,1331,LightBlue`,
+  `"Page 1",Colors,639,LightCyan`,
+  `"Page 1",Images,1171,MistyRose`,
+  `"Page 1",Annotations,0,Wheat`,
+  `"Page 1",Tagged PDF,1065,PeachPuff`,
+  `"Page 1",Other,692,OldLace`,
+  `"Page 2",Content,1772,PaleGoldenRod`,
+  `"Page 2",Fonts,2912,LightBlue`,
+  `"Page 2",Colors,1772,LightCyan`,
+  `"Page 2",Images,0,MistyRose`,
+  `"Page 2",Annotations,772,Wheat`,
+  `"Page 2",Tagged PDF,1899,PeachPuff`,
+  `"Page 2",Other,3533,OldLace`
+];
+const fakeDataCSV: string = fakeData.join("\n");
+////////////////////////////////////////////////////////////////////////
 
 let client: LanguageClient;
 let pdfStatusBarItem: vscode.StatusBarItem;
@@ -126,6 +213,28 @@ export function activate(context: vscode.ExtensionContext) {
   
   // update status bar item once at start
   updateStatusBarItem();
+
+  // Sankey Flow Diagram webview - initiated by Command Palette custom command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pdf-cos-syntax.sankey', () => {
+      console.log(`pdf-cos-syntax.sankey`);
+      sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
+    })
+  );
+  
+  if (vscode.window.registerWebviewPanelSerializer) {
+    // Make sure we register a serializer in activation event
+    vscode.window.registerWebviewPanelSerializer(
+      sankey.SankeyPanel.viewType, 
+      {
+        async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, state: any) {
+          console.log(`Got state: ${state}`);
+          // Reset the webview options so we use latest uri for `localResourceRoots`.
+          webviewPanel.webview.options = sankey.getWebviewOptions(context.extensionUri);
+          sankey.SankeyPanel.revive(webviewPanel, context);
+        }
+      });
+  }
 
   // Start the client. This will also launch the LSP server
   client.start();
