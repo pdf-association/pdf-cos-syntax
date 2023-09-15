@@ -58,9 +58,10 @@ import {
 // for server debug.
 import { debug } from "console";
 import { TextEncoder } from "util";
-import PDFParser from "./parser/PdfParser";
+import PDFParser, { PDFSectionType } from "./parser/PdfParser";
 import { PDSCOSSyntaxSettings, PDFDocumentData } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
+import PDFObject from './models/PdfObject';
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
@@ -532,14 +533,13 @@ connection.onDocumentSymbol(
 
   const pdfParser = new PDFParser(document);
   const symbols: DocumentSymbol[] = [];
-  let r1: Range;
-  let r2: Range | null;
 
-  const addObjectSymbols = (objectList: any[]): DocumentSymbol[] => {
-    return objectList.map((obj) => {
+  // Add PDF Object to the list, with stream sub-object as necessary
+  const addObjectSymbols = (objectList: PDFObject[]): DocumentSymbol[] => {
+    return objectList.map((obj: PDFObject) => {
       const children: DocumentSymbol[] = [];
-      if (pdfParser.hasStreamInsideObject(obj)) {
-        const r3 = pdfParser.getStreamRangeInsideObject(obj);
+      if (pdfParser.hasObjectStreamInside(obj)) {
+        const r3 = pdfParser.getObjectStreamRange(obj);
         if (r3)
           children.push({
             name: "Stream",
@@ -548,10 +548,10 @@ connection.onDocumentSymbol(
             selectionRange: r3,
           });
       }
-      const r4 = obj.getRange();
+      const r4 = pdfParser.getObjectRange(obj);
       return {
-        name: `Object ${obj.getID()}`,
-        kind: SymbolKind.Method,
+        name: `Object ${obj.getObjectID()}`,
+        kind: SymbolKind.Object,
         range: r4,
         selectionRange: r4,
         children: children,
@@ -559,152 +559,111 @@ connection.onDocumentSymbol(
     });
   };
 
-  // All PDFs should have a header - except if its being edited
-  console.group(`Original PDF`);
-  if (pdfParser.hasHeader()) {
-    symbols.push({
-      name: "Header",
-      kind: SymbolKind.Module,
-      range: pdfParser.getHeaderRange(),
-      selectionRange: pdfParser.getHeaderRange(), 
-      children: [],
-    });
-  }
+  // For each file revision, build up the Outline based on the order 
+  // discovered in the PDF file. DON'T ASSUME because editing can break things!!
+  let r1: Range;
+  for (let revision = 0; revision < pdfParser.getNumRevisions(); revision++) {
+    let revisionName: string = `Incremental Update ${revision}`;
+    if (revision === 0)
+      revisionName = `Original PDF`;
+    console.group(`Revision ${revision} = ${revisionName}`);
 
-  if (pdfParser.hasOriginalContent()) {
-    r1 = pdfParser.getOriginalContentRange();
-    const originalPdfSymbol: DocumentSymbol = {
-      name: "Original PDF",
-      kind: SymbolKind.Class,
-      range: r1,
-      selectionRange: r1,
-      children: [],
-    };
-
-    r1 = pdfParser.getBodySectionRange();
-    const bodySectionSymbol: DocumentSymbol = {
-      name: "Body",
-      kind: SymbolKind.Method,
-      range: r1,
-      selectionRange: r1,
-      children: [],
-    };
-
-    const bodyObjects = pdfParser.getObjects();
-    bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
-    originalPdfSymbol.children?.push(bodySectionSymbol);
-
-    if (pdfParser.hasCrossReferenceTable()) {
-      r2 = pdfParser.getCrossReferenceTableRange();
-      if (r2) {
-        const crossReferenceSymbol: DocumentSymbol = {
-          name: "Cross reference table",
-          kind: SymbolKind.Property,
-          range: r2,
-          selectionRange: r2,
-          children: [],
-        };
-        originalPdfSymbol.children?.push(crossReferenceSymbol);
-      }
-    }
-
-    if (pdfParser.hasTrailer()) {
-      r1 = pdfParser.getTrailerRange();
-      const trailerSymbol: DocumentSymbol = {
-        name: "Trailer",
-        kind: SymbolKind.Interface,
-        range: r1,
-        selectionRange: r1,
-        children: []
-      };
-      r2 = pdfParser.getTrailerDictionaryRange();
-      if (r2) {
-        trailerSymbol.children?.push({
-            name: "Trailer dictionary",
-            kind: SymbolKind.Field,
-            range: r2,
-            selectionRange: r2
-        });
-        originalPdfSymbol.children?.push(trailerSymbol);
-      }
-    }
-
-    symbols.push(originalPdfSymbol);
-  }
-  console.groupEnd();
-
-  // Process any incremental updates
-  let updateCount = 1;
-  let currentPosition = pdfParser.getOriginalContentEndPosition();
-  while (pdfParser.hasMoreContent(currentPosition)) {
-    console.group(`updateCount = ${updateCount}`);
-
-    r1 = pdfParser.getBodyRange(currentPosition);
-    const incrementalUpdateSymbol: DocumentSymbol = {
-      name: `Incremental Update ${updateCount}`,
+    // Top level container for this revision
+    r1 = pdfParser.getRevisionRange(revision);
+    const revisionSymbol: DocumentSymbol = {
+      name: revisionName,
       kind: SymbolKind.Namespace,
       range: r1,
       selectionRange: r1,
       children: [],
     };
+  
+    // Add the sections in this revision, in file order
+    const fileOrder = pdfParser.getRevisionSectionOrder(revision);
+    // console.log(JSON.stringify(fileOrder));
 
-    r1 = pdfParser.getBodySectionRange(updateCount);
-    const bodySectionSymbol: DocumentSymbol = {
-      name: "Body",
-      kind: SymbolKind.Method,
-      range: r1,
-      selectionRange: r1,
-      children: [],
-    };
+    for (const section of fileOrder) {
+      switch (section) {
+        case PDFSectionType.Header: {
+            r1 = pdfParser.getHeaderRange(revision);
+            revisionSymbol.children?.push({
+              name: "Header",
+              kind: SymbolKind.Interface,
+              range: r1,
+              selectionRange: r1, 
+              children: [],
+            });
+            break;
+          }
 
-    const bodyObjects =
-      pdfParser.getObjectsFromIncrementalUpdate(updateCount);
+        case PDFSectionType.Body: {
+            r1 = pdfParser.getBodyRange(revision);
+            const bodySectionSymbol: DocumentSymbol = {
+              name: "Body",
+              kind: SymbolKind.Package,
+              range: r1,
+              selectionRange: r1,
+              children: [],
+            };
+            const bodyObjects = pdfParser.getBodyObjects(revision);
+            bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
+            revisionSymbol.children?.push(bodySectionSymbol);
+            break;
+          }
 
-    bodySectionSymbol.children?.push(...addObjectSymbols(bodyObjects));
-    incrementalUpdateSymbol.children?.push(bodySectionSymbol);
+        case PDFSectionType.CrossReference: {
+            r1 = pdfParser.getCrossReferenceTableRange(0);
+            const crossReferenceSymbol: DocumentSymbol = {
+              name: "Cross reference table",
+              kind: SymbolKind.Module,
+              range: r1,
+              selectionRange: r1,
+              children: [],
+            };
+            revisionSymbol.children?.push(crossReferenceSymbol);
+            break;
+          }
 
-    r2 = pdfParser.getCrossReferenceTableRangeFromIncrement(updateCount);
-    if (r2) {
-      const incrementalCrossReferenceSymbol: DocumentSymbol = {
-        name: "Cross reference table",
-        kind: SymbolKind.Property,
-        range: r2,
-        selectionRange: r2,
-        children: [],
-      };
+        case PDFSectionType.Footer: {
+            // Footer section includes one or more of: trailer, startxref and %%EOF
+            console.group(`Footer`);
+            const subsections = pdfParser.getFooterSubsections(revision);
+            // console.log(JSON.stringify(subsections));
+            const footerSubSymbols: DocumentSymbol[] = [];
+            for (const sect of subsections) {
+              r1 = pdfParser.getFooterSubsectionRange(revision, sect);
+              const footerSubSymbol: DocumentSymbol = {
+                name: sect,
+                kind: SymbolKind.Class,
+                range: r1,
+                selectionRange: r1,
+                children: [],
+              };
+              footerSubSymbols.push(footerSubSymbol);
+            }
+            r1 = pdfParser.getFooterRange(revision);
+            const footerSectionSymbol: DocumentSymbol = {
+              name: "Footer",
+              kind: SymbolKind.Package,
+              range: r1,
+              selectionRange: r1,
+              children: footerSubSymbols,
+            };
+            revisionSymbol.children?.push(footerSectionSymbol);
+            console.groupEnd();
+            break;
+          }
 
-      // Assume if cross referece table then trailer
-      /// @todo THIS IS A BAD ASSUMPTION when editing!!! 
-      r1 = pdfParser.getTrailerRangeFromIncrement(updateCount);
-      r2 = pdfParser.getTrailerDictionaryRangeFromIncrement(updateCount);
-      const incrementalTrailerSymbol: DocumentSymbol = {
-        name: "Trailer",
-        kind: SymbolKind.Interface,
-        range: r1,
-        selectionRange: r1,
-        children: [
-          {
-            name: "Trailer dictionary",
-            kind: SymbolKind.Field,
-            range: r2,
-            selectionRange: r2,
-          },
-        ],
-      };
-
-      incrementalUpdateSymbol.children?.push(
-        incrementalCrossReferenceSymbol,
-        incrementalTrailerSymbol
-      );
+        default:
+          throw new Error(`Unexpected PDF section ${section.toString()}!`);
+        }
     }
 
-    symbols.push(incrementalUpdateSymbol);
-    currentPosition = pdfParser.getIncrementalUpdateEndPosition(updateCount);
-    updateCount++;
+    symbols.push(revisionSymbol);
     console.groupEnd();
   }
 
-  // console.log(JSON.stringify(symbols, null, 2)); // pretty-print 
+  // console.log(JSON.stringify(symbols, null, 2)); 
   return symbols;
 });
 

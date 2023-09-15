@@ -1,5 +1,5 @@
 /**
- * @brief Simple class representing a PDF object with a Range  
+ * @brief Simple class representing metrics a single PDF indirect object   
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
@@ -13,92 +13,72 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
-import { Range } from 'vscode-languageserver-textdocument';
-import PDFParser from '../parser/PdfParser';
-
 
 export default class PDFObject {
-  /** The content of the PDF object as a VSCode (UTF-8) string */
-  private readonly _id: string;
-
-  /** 
-   * Range as start and end Line / Character pairs in the full PDF file. 
-   * 
-   * NOT AS BYTE OFFSET!! 
-   */
-  private readonly _range: Range;
-
-  /** 
-   * Start position offset in the full PDF file. NOT A LINE / CHARACTER POSITION!!
-   * 
-   * Ending position is {@link startOffset} + {@link id}.length
-   */
+  private readonly _objectNumber: number;
+  private readonly _generationNumber: number;
   private readonly _startOffset: number;
+  private readonly _endOffset: number;
+  private readonly _startStreamOffset: number;
+  private readonly _endStreamOffset: number;
 
-  constructor(id: string, range: Range, start: number) {
-    this._id = id;
-    this._range = range;
+  /**
+   * First line match for object identifier. Raw data can span lines.
+   * Object starts with object number so no look-before is required.
+   */
+  private readonly _objectIdentifier: RegExp = 
+    /(\d+)[ \t\r\n\f\0]+(\d+)[ \t\r\n\f\0]+obj/;
+
+  /**
+   * @param obj - the full PDF object data (from `X Y obj` to `endobj`)
+   * @param start - the byte offset of the start of `X Y obj`
+   * @param stmStartOffset - the byte offset of the start of the stream or -1
+   * @param stmEndOffset - the byte offset of the start of the stream or -1
+   */
+  constructor(obj: string, start: number, stmStartOffset: number,  stmEndOffset: number, ) {
     this._startOffset = start;
-    this._validateRange("constructor", range);
-  }
+    this._endOffset = start + obj.length;
+    this._startStreamOffset = stmStartOffset;
+    this._endStreamOffset = stmEndOffset;
 
-  private _validateRange(ctx: string, r: Range) {
-    // Validate the range is sensible
-    if ((r.start.line < 0) || (r.end.line < 0))
-      console.error(`PDFObject validation failure for ${ctx} "${this._id}": bad range.*.line`);
-    if ((r.start.character < 0) || (r.end.character < 0))
-      console.error(`PDFObject validation failure for ${ctx} "${this._id}": bad range.*.character`);
-    if (r.end.line < r.start.line)
-      console.error(`PDFObject validation failure for ${ctx} "${this._id}": bad start vs end line`);
-    if (r.end.line === r.start.line) {
-      // "id" on one line
-      if (r.end.character < r.start.character)
-        console.error(`PDFObject validation failure for ${ctx} "${this._id}": bad start vs end characters on same line`);
-      if ((r.end.character === r.start.character) || (this._id.length === 0))
-        console.error(`PDFObject validation failure for ${ctx} "${this._id}": zero characters on a line`);
-      if ((r.end.character - r.start.character) !== this._id.length)
-        console.error(`PDFObject validation failure for ${ctx} "${this._id}": character length != id.length`);
+    const match = obj.match(this._objectIdentifier);
+    if (match && (match.length == 3)) {
+      this._objectNumber = parseInt(match[1]);
+      this._generationNumber = parseInt(match[2]);
+    }
+    else 
+      throw new Error(`Could not find object ID in ${obj.slice(0,10)}!`);
+
+    if (stmStartOffset !== -1) {
+      if ((stmStartOffset >= stmEndOffset) ||
+          (stmStartOffset <= start) ||
+          (stmEndOffset > this._endOffset)) 
+        throw new Error(`Stream offsets are invalid for object ${this.getObjectID()}}!`);
     }
   }
 
-  /** Returns the VSCode version of the data associated with the object (UTF-8) */
-  getID(): string {
-    return this._id;
+  /** Returns a single line, nicely spaced string of the object ID */
+  getObjectID(): string {
+    return `${this._objectNumber} ${this._generationNumber} obj`;
   }
 
-  /**
-   *  Returns the Range (start and end line/character pairs!) associated with the object.
-   *  Based on \n line endings.
-   */
-  getRange(): Range {
-    return this._range;
-  }
-
-  /** 
-   * Returns the absolute starting byte offset associated with the object in the PDF file.
-   * Always >= 0.
-   */
   getStartOffset(): number {
     return this._startOffset;
   }
 
-  /** 
-   * Returns the absolute end byte offset associated with the object in the PDF file.
-   * This is the NEXT byte in the PDF after the end of {@link getID()}
-   */
   getEndOffset(): number {
-    return this._startOffset + this._id.length;
+    return this._endOffset;
   }
 
-  /**
-   *  If this object is a stream, then return the Range (start and end line/character pairs!)
-   *  associated with the stream data. Returns null if not a stream.
-   *  This range will always be within {@link getRange()}.
-   */
-  getStreamRange(parser: PDFParser): Range | null {
-    const r = parser.getStreamRangeForObject(this);
-    if (r)
-      this._validateRange("getStreamRange", r);
-    return r;
+  getStartStreamOffset(): number {
+    return this._startStreamOffset;
+  }
+
+  getEndStreamOffset(): number {
+    return this._endStreamOffset;
+  }
+
+  hasStream(): boolean {
+    return (this._startStreamOffset !== -1) && (this._endStreamOffset !== -1);
   }
 }
