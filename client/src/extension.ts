@@ -242,7 +242,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 /**
- * Update status bar (far left) with # of selected lines and bytes
+ * Update status bar (far right) with # of selected lines and bytes
  */
 function updateStatusBarItem(): void {
   const lines = getNumberOfSelectedLines(vscode.window.activeTextEditor);
