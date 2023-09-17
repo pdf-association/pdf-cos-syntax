@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (ADDED) Custom command to conventional cross reference table, trailer, etc. to a cross reference stream
 - (ADDED) Editor context submenu "PDF" with above commands
 - (ADDED) Status bar item showing selected lines
+- (ADDED) Outline tree view and breadcrumbs, based on simple marker-based parser (NOT a full PDF parser as this fails during editing
+- (ADDED) Sankey Flow Diagrams
 
 ## 0.1.4 - 2023-09-04
 - (IMPROVED) Hover hints for cross-reference table entries
