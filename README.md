@@ -262,8 +262,14 @@ Validation checks include:
 * `FDF-` - a complete minimal empty FDF file. Do **not** prefix this with `%` as this is a PDF comment marker and VSCode does **not** do snippet expansion inside comments! The snippet will automatically add the `%` for you.
 
 
+## Outline View and breadcrumbs
 
-# Custom Commands
+The extension analyzes PDFs for certain keywords and special comments (i.e. `%%PDF-x.y`, `X Y obj`, `stream`, `endstream`, `endobj`, `trailer`, `startxref`, `%%EOF`) to provide an outline tree-view of the physical file layout and structure. Objects (`X Y obj` to `endobj`) shown in this view are shown in the _physical file order_, not by object number order (since objects in PDF may be in any order). This is displayed in Outline window and as a "breadcrumb" trail at the top of the edit window. When editing a PDF, and especially if changing any of these keywords, strange or partial file structures may be shown. If this persists, ensure keywords are spelt correctly, are in the correct order, and that the required whitespace rules are used - generally speaking this means having keywords start on new lines.
+
+![VSCode Breadcrumbs](assets/VSCode-breadcrumbs.png)
+![VSCode Outline View](assets/VSCode-outline-view.png)
+
+## Custom Commands
 
 The extension provides various custom commands via the Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`) or the editor context menu under a new "PDF" category:
 
@@ -301,7 +307,7 @@ This section describes how real-world heavily binary PDFs that would otherwise b
 Note that this will _remove_ all incremental updates and consolidate everything into a single revision.
 
 ```bash
-qpdf --qdf --compress-streams=n --object-streams=disable --newline-before-endstream --decode-level=all --preserve-unreferenced --preserve-unreferenced-resources --normalize-content file.pdf file-as-qdf.pdf
+qpdf --qdf --compress-streams=n --object-streams=disable --newline-before-endstream --decode-level=all --preserve-unreferenced --preserve-unreferenced-resources --normalize-content=n file.pdf file-as-qdf.pdf
 ```
 
 ## Using [Apache PDFBox-app](https://pdfbox.apache.org/2.0/commandline.html#writedecodeddoc) (_OSS_)
