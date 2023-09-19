@@ -339,7 +339,7 @@ export class XrefInfoMatrix {
         this.matrix[currentObjectNum][revision] = entry;
 
         entryCount--;
-        if (entryCount < 0) entryCount = null;
+        if (entryCount <= 0) entryCount = null;
         currentObjectNum++;
         startLineNbr++;
         continue;
