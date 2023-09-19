@@ -17,11 +17,27 @@
  */
 'use strict';
 
-import { window } from "vscode";
+import * as vscode from "vscode";
 import * as fs from 'fs';
 import * as util from 'util';
 import * as sharp from 'sharp';
 import Ascii85 = require('ascii85');
+
+
+/**
+ * Convert current EOL setting to count bytes so lengths can be adjusted accordingly.
+ * 
+ * @param eol - current editor EOL setting ("auto" is normalized to something) 
+ * @returns 1 or 2 bytes per EOL.
+ */
+function _EOLtoBytes(eol: vscode.EndOfLine) {
+  switch (eol) {
+		case vscode.EndOfLine.CRLF: return 2;
+		case vscode.EndOfLine.LF: return 1;
+    default: return 1; // should never happen! Code rot?? 
+  }
+}
+
 
 /**
  * Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
@@ -42,7 +58,7 @@ export function convertFromAscii85Filter(a85: string): string {
   try {
     if (a85.slice(a85.length - 2, a85.length - 1) !== '~>') {
       console.error(`Error: ASCII-85 data did not with '~>' end of data marker!`);
-      window.showErrorMessage(`Error: ASCII-85 data did not with '~>' end of data marker!`);
+      vscode.window.showErrorMessage(`Error: ASCII-85 data did not with '~>' end of data marker!`);
       return '';
     }
 
@@ -52,7 +68,7 @@ export function convertFromAscii85Filter(a85: string): string {
   }
   catch (error) {
     console.error(`_convertFromAscii85filter: Error ${error}`); 
-    window.showErrorMessage(`ASCII-85 decompression error: ${error}!`);
+    vscode.window.showErrorMessage(`ASCII-85 decompression error: ${error}!`);
     return '';
   }
 }
@@ -101,8 +117,8 @@ export function convertToAsciiHexFilter(data: Buffer): string[] {
 export function convertFromAsciiHexFilter(aHex: string): string {
   try {
     if (aHex[aHex.length - 1] !== '>') {
-      console.error(`Error: ASCII-Hex data did not with '>' end of data marker!`);
-      window.showErrorMessage(`Error: ASCII-Hex data did not with '>' end of data marker!`);
+      console.error(`Error: ASCII-Hex data did not end with '>' end of data marker!`);
+      vscode.window.showErrorMessage(`Error: ASCII-Hex data did not end with '>' end of data marker!`);
       return '';
     }
     aHex = aHex.slice(0, aHex.length - 1);  // remove EOD '>'
@@ -123,7 +139,7 @@ export function convertFromAsciiHexFilter(aHex: string): string {
       else if (' \t\r\n\f\0'.indexOf(aHex[i]) === -1) {
         // Bad data!
         console.error(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
-        window.showErrorMessage(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
+        vscode.window.showErrorMessage(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
         return '';
       }
       i++;
@@ -133,13 +149,14 @@ export function convertFromAsciiHexFilter(aHex: string): string {
   }
   catch (error) {
     console.error(`convertFromAsciiHexFilter: Error ${error}`); 
-    window.showErrorMessage(`Error: ASCII-Hex ${error}!`);
+    vscode.window.showErrorMessage(`Error: ASCII-Hex ${error}!`);
     return '';
   }
 }
 
 
 /**
+ * @todo move to hover
  * Normalizes a PDF name but replace the 2-digit `#` hex codes with the
  * ASCII character.
  * @param name - the PDF name
@@ -164,6 +181,7 @@ export function normalizedPDFname(name: string): string {
  * Converts some arbitrary binary data to an ASCIIHex-encoded PDF stream object that
  * will work nicely in VSCode.
  * 
+ * @param eol - the EOL setting in the editor. Impacts length calculations
  * @param data - a buffer of bytes
  * @param objNum - object number to use
  * @param genNum - generation number to use. Default = 0
@@ -172,6 +190,7 @@ export function normalizedPDFname(name: string): string {
  * @returns a full PDF stream object of the data encoded as ASCIIHex 
  */
 export function convertDataToAscii85Stream(
+  eol: vscode.EndOfLine,
   data: Buffer, 
   objNum: number, 
   genNum: number = 0, 
@@ -180,10 +199,12 @@ export function convertDataToAscii85Stream(
 ): string[] {
   let obj: string[] = [];
   const a85: string[] = convertToAscii85Filter(data);
+  const num_a85_lines =  a85.length;
+  const a85_length = a85.join('\n').length + (num_a85_lines * _EOLtoBytes(eol));
   obj.push(`${objNum} ${genNum} obj`);
   obj.push(`<<`);
   obj = obj.concat(otherEntries);
-  obj.push(`  /Length ${a85.join('\n').length} % length of the ASCII85 encoded data`);
+  obj.push(`  /Length ${a85_length} % length of the ASCII85 encoded data, ${num_a85_lines} lines`);
   obj.push(`  /Filter [ /ASCII85Decode ${otherFilters} ]`);
   obj.push(`  /DL ${data.length} % length of the decoded data`);
   obj.push(`>>`);
@@ -200,6 +221,7 @@ export function convertDataToAscii85Stream(
  * Converts some arbitrary binary data to an ASCII85-encoded PDF stream obj that
  * will work nicely in VSCode.
  * 
+ * @param eol - the EOL setting in the editor. Impacts length calculations
  * @param data - a buffer of bytes
  * @param objNum - object number to use
  * @param genNum - generation number to use. Default = 0
@@ -208,6 +230,7 @@ export function convertDataToAscii85Stream(
  * @returns a full PDF stream object of the data encoded as ASCII85 
  */
 export function convertDataToAsciiHexStream(
+  eol: vscode.EndOfLine,
   data: Buffer, 
   objNum: number, 
   genNum: number = 0, 
@@ -216,10 +239,12 @@ export function convertDataToAsciiHexStream(
 ): string[] {
   let obj: string[] = [];
   const aHex: string[] = convertToAsciiHexFilter(data);
+  const num_aHex_lines =  aHex.length;
+  const aHex_length = aHex.join('\n').length + (num_aHex_lines * _EOLtoBytes(eol));
   obj.push(`${objNum} ${genNum} obj`);
   obj.push(`<<`);
   obj = obj.concat(otherEntries);
-  obj.push(`  /Length ${aHex.join('\n').length} % length of the ASCIIHex encoded data`);
+  obj.push(`  /Length ${aHex_length} % length of the ASCIIHex encoded data, ${num_aHex_lines} lines`);
   obj.push(`  /Filter [ /ASCIIHexDecode ${otherFilters}]`);
   obj.push(`  /DL ${data.length} % length of the decoded data`);
   obj.push(`>>`);
@@ -288,7 +313,7 @@ export function convertLiteralToHexString(literal: string): string {
     i++;
   }
   hex = hex + ">";
-  console.log(`Converted ${literal} to ${hex}`);
+  // console.log(`Converted ${literal} to ${hex}`);
   return hex;
 }
 
@@ -331,7 +356,7 @@ export function convertHexToLiteralString(hexString: string): string {
     i = i + 2;
   }
   lit = lit + ")";
-  console.log(`Converted ${hexString} to ${lit}`);
+  // console.log(`Converted ${hexString} to ${lit}`);
   return lit;
 }
 
@@ -340,10 +365,18 @@ export function convertHexToLiteralString(hexString: string): string {
  * Convert any image file supported by the NPM module "sharp" to an Image XObject 
  * as an ASCII-85-compressed JPEG (i.e. `[ /ASCII85Decode /DCTDecode ]` filter pipeline).
  * The PDF Image XObject is returned as `string[]` without `\n`.
+ * 
+ * @param objNum - the object ID object number 
+ * @param genNum - the object ID generation number
+ * @param eol - current editor EOL setting for calculating lengths
  */ 
-export async function convertImageToAscii85DCT(): Promise<string[]> {
+export async function convertImageToAscii85DCT(
+  objNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine): Promise<string[]> 
+{
   try {
-    const imgFile = await window.showOpenDialog({
+    const imgFile = await vscode.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
@@ -354,7 +387,7 @@ export async function convertImageToAscii85DCT(): Promise<string[]> {
     
     if (imgFile === null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
     }
 
@@ -372,7 +405,6 @@ export async function convertImageToAscii85DCT(): Promise<string[]> {
     await img.jpeg()
       .toBuffer()
       .then((data) => {
-        console.log(data);
         const extras: string[] = [];
         extras.push(`  /Type /XObject`);
         extras.push(`  /Subtype /Image`);
@@ -385,15 +417,15 @@ export async function convertImageToAscii85DCT(): Promise<string[]> {
         extras.push(`  ]`);
         extras.push(`  /Width ${width}`);
         extras.push(`  /Height ${height}`);
-        pdfObj = convertDataToAscii85Stream(data, 1, 0, '/DCTDecode', extras);
-        console.log(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]:\n${pdfObj}`);
-        window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]`);
+        pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum, '/DCTDecode', extras);
+        console.log(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]`);
     });
     return pdfObj;
   }
   catch (error) {
       console.error(`Failed to convert image to [ /ASCII85Decode /DCTDecode ]. Error: ${error}`);
-      window.showErrorMessage(`Failed to convert to [ /ASCII85Decode /DCTDecode ]. Error: ${error}`);
+      vscode.window.showErrorMessage(`Failed to convert to [ /ASCII85Decode /DCTDecode ]. Error: ${error}`);
       return [];
   }
 }
@@ -403,10 +435,18 @@ export async function convertImageToAscii85DCT(): Promise<string[]> {
  * Convert any image file supported by the NPM module "sharp" to an Image XObject 
  * as an ASCII-Hex-compressed JPEG (i.e. `[ /ASCIIHexDecode /DCTDecode ]` filter pipeline).
  * The PDF Image XObject is returned as `string[]` without `\n`.
+ * 
+ * @param objNum - the object ID object number 
+ * @param genNum - the object ID generation number
+ * @param eol - current editor EOL setting for calculating lengths
  */ 
-export async function convertImageToAsciiHexDCT(): Promise<string[]> {
+export async function convertImageToAsciiHexDCT(
+  objNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine): Promise<string[]> 
+{
   try {
-    const imgFile = await window.showOpenDialog({
+    const imgFile = await vscode.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
@@ -417,7 +457,7 @@ export async function convertImageToAsciiHexDCT(): Promise<string[]> {
     
     if (imgFile === null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
     }
 
@@ -446,15 +486,16 @@ export async function convertImageToAsciiHexDCT(): Promise<string[]> {
         extras.push(`  ]`);
         extras.push(`  /Width ${width}`);
         extras.push(`  /Height ${height}`);
-        pdfObj = convertDataToAsciiHexStream(data, 1, 0, '/DCTDecode', extras);
-        console.log(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]:\n${pdfObj}`);
-        window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]`);
+        pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum, '/DCTDecode', extras);
+        extras.push(`endobj`);
+        console.log(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]`);
     });
     return pdfObj;
   }
   catch (error) {
       console.error(`Failed to convert image to [ /ASCIIHexDecode /DCTDecode ]. Error: ${error}`);
-      window.showErrorMessage(`Failed to convert to [ /ASCIIHexDecode /DCTDecode ]. Error: ${error}`);
+      vscode.window.showErrorMessage(`Failed to convert to [ /ASCIIHexDecode /DCTDecode ]. Error: ${error}`);
       return [];
   }
 }
@@ -465,9 +506,13 @@ export async function convertImageToAsciiHexDCT(): Promise<string[]> {
  * as an ASCII-85 compressed raw pixels (i.e. just `/ASCII85Decode` filter),
  * The PDF Image XObject is returned as `string[]` without `\n`.
  */ 
-export async function convertImageToRawAscii85(): Promise<string[]> {
+export async function convertImageToRawAscii85(
+  objNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine): Promise<string[]> 
+{
   try {
-    const imgFile = await window.showOpenDialog({
+    const imgFile = await vscode.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
@@ -478,7 +523,7 @@ export async function convertImageToRawAscii85(): Promise<string[]> {
     
     if (imgFile === null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
     }
 
@@ -515,15 +560,15 @@ export async function convertImageToRawAscii85(): Promise<string[]> {
         extras.push(`  /BitsPerComponent 8`);
         extras.push(`  /Width ${width}`);
         extras.push(`  /Height ${height}`);
-        pdfObj = convertDataToAscii85Stream(data, 1, 0, '', extras);
-        console.log(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode:\n${pdfObj}`);
-        window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode`);
+        pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum, '', extras);
+        console.log(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode`);
     });
     return pdfObj;
   }
   catch (error) {
       console.error(`Failed to convert image to /ASCII85Decode. Error: ${error}`);
-      window.showErrorMessage(`Failed to convert to /ASCII85Decode. Error: ${error}`);
+      vscode.window.showErrorMessage(`Failed to convert to /ASCII85Decode. Error: ${error}`);
       return [];
   }
 }
@@ -534,9 +579,13 @@ export async function convertImageToRawAscii85(): Promise<string[]> {
  * as ASCII-Hex compressed raw pixels (i.e. just `/ASCIIHexDecode` filter).
  * The PDF Image XObject is returned as `string[]` without `\n`.
  */ 
-export async function convertImageToRawAsciiHex(): Promise<string[]> {
+export async function convertImageToRawAsciiHex(
+  objNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine): Promise<string[]> 
+{
   try {
-    const imgFile = await window.showOpenDialog({
+    const imgFile = await vscode.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
@@ -547,7 +596,7 @@ export async function convertImageToRawAsciiHex(): Promise<string[]> {
     
     if (imgFile === null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
     }    
 
@@ -584,15 +633,15 @@ export async function convertImageToRawAsciiHex(): Promise<string[]> {
         extras.push(`  /BitsPerComponent 8`);
         extras.push(`  /Width ${width}`);
         extras.push(`  /Height ${height}`);
-        pdfObj = convertDataToAsciiHexStream(data, 1, 0, '', extras);
-        console.log(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode:\n${pdfObj}`);
-        window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode`);
+        pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum, '', extras);
+        console.log(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode`);
     });
     return pdfObj;
   }
   catch (error) {
       console.error(`Failed to convert image to /ASCIIHexDecode. Error: ${error}`);
-      window.showErrorMessage(`Failed to convert to /ASCIIHexDecode. Error: ${error}`);
+      vscode.window.showErrorMessage(`Failed to convert to /ASCIIHexDecode. Error: ${error}`);
       return [];
   }
 }
@@ -602,9 +651,13 @@ export async function convertImageToRawAsciiHex(): Promise<string[]> {
  * Convert arbitary binary data loaded directly from a file to `/ASCII85Decode`
  * compressed stream object. The PDF stream object is returned as `string[]` without `\n`.
  */
-export async function convertDataToAscii85(): Promise<string[]> {
+export async function convertDataToAscii85(
+  objNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine): Promise<string[]> 
+{
   try {
-    const dataFile = await window.showOpenDialog({
+    const dataFile = await vscode.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
@@ -615,7 +668,7 @@ export async function convertDataToAscii85(): Promise<string[]> {
 
     if (dataFile === null || dataFile.length < 1) {
       console.error(`Valid data file not selected!`);
-      window.showErrorMessage(`Valid data file not selected!`);
+      vscode.window.showErrorMessage(`Valid data file not selected!`);
       return [];
     }
 
@@ -623,16 +676,16 @@ export async function convertDataToAscii85(): Promise<string[]> {
     let pdfObj: string[];
     await readFile(dataFile[0].fsPath)
       .then((data) => {
-        pdfObj = convertDataToAscii85Stream(data, 1);
+        pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum);
         pdfObj.splice(0, 0, `% ${dataFile[0].fsPath}`);
-        console.log(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode:\n${pdfObj}`);
-        window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode`);
+        console.log(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode`);
+        vscode.window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode`);
       });
     return pdfObj;
   }
   catch (error) {
     console.error(`Failed to convert to ASCII-85. Error: ${error}`);
-    window.showErrorMessage(`Failed to convert to ASCII-85. Error: ${error}`);
+    vscode.window.showErrorMessage(`Failed to convert to ASCII-85. Error: ${error}`);
     return [];
   }
 }
@@ -642,9 +695,13 @@ export async function convertDataToAscii85(): Promise<string[]> {
  * Convert arbitary binary data loaded directly from a file to an `/ASCIIHexDecode` 
  * compressed stream object. The PDF stream object is returned as `string[]` without `\n`.
  */
-export async function convertDataToAsciiHex(): Promise<string[]> {
+export async function convertDataToAsciiHex(
+  objNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine): Promise<string[]> 
+{
   try {
-    const dataFile = await window.showOpenDialog({
+    const dataFile = await vscode.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
       canSelectMany: false,
@@ -655,7 +712,7 @@ export async function convertDataToAsciiHex(): Promise<string[]> {
 
     if (dataFile === null || dataFile.length < 1) {
       console.error(`Valid data file not selected!`);
-      window.showErrorMessage(`Valid data file not selected!`);
+      vscode.window.showErrorMessage(`Valid data file not selected!`);
       return [];
     }
 
@@ -663,16 +720,16 @@ export async function convertDataToAsciiHex(): Promise<string[]> {
     let pdfObj: string[];
     await readFile(dataFile[0].fsPath)
       .then((data) => {
-        pdfObj = convertDataToAsciiHexStream(data, 1);
+        pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum);
         pdfObj.splice(0, 0, `% ${dataFile[0].fsPath}`);
-        console.log(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode:\n${pdfObj}`);
-        window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode`);
+        console.log(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode`);
+        vscode.window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode`);
       });
     return pdfObj;
   }
   catch (error) {
     console.error(`Failed to convert to ASCIIHex. Error: ${error}`);
-    window.showErrorMessage(`Failed to convert to ASCIIHex. Error: ${error}`);
+    vscode.window.showErrorMessage(`Failed to convert to ASCIIHex. Error: ${error}`);
     return [];
   }
 }
@@ -686,7 +743,7 @@ export async function convertDataToAsciiHex(): Promise<string[]> {
  * @param inp - lines from input PDF comprising 1 or more full PDF indirect objects
  * @returns the PDF object stream is returned as `string[]` without `\n`.
  */ 
-export function objectsToObjectStream(inp: string[]): string[] {
+export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): string[] {
   const inpLinesLen = inp.length; // number of lines
   const inpString = inp.join('\n'); // input lines as a single string
 
@@ -696,7 +753,7 @@ export function objectsToObjectStream(inp: string[]): string[] {
   const endstream = inpString.match(/[ \t\r\n\f\0]endstream[ \t\r\n\f\0]/g);
   if ((stream && (stream.length > 0)) || (endstream && (endstream.length > 0))) {
     console.error(`Stream objects cannot be converted to object streams!`);
-    window.showErrorMessage(`Stream objects cannot be converted to object streams!`);
+    vscode.window.showErrorMessage(`Stream objects cannot be converted to object streams!`);
     return [];
   }
 
@@ -707,7 +764,7 @@ export function objectsToObjectStream(inp: string[]): string[] {
       (obj.length !== endobj.length)))) 
   {
     console.error(`No or partial objects were found. Cannot convert to an object stream!`);
-    window.showErrorMessage(`No or partial objects were found. Cannot convert to an object stream!`);
+    vscode.window.showErrorMessage(`No or partial objects were found. Cannot convert to an object stream!`);
     return [];
   }
 
@@ -746,11 +803,12 @@ export function objectsToObjectStream(inp: string[]): string[] {
   // Create the object stream without any `\n`
   let out: string[] = [];
   const first: number = firstLine.length + 1;
-  const length: number = first + objStm.join('\n').length;
+  const objStm_lines = objStm.length;
+  const length: number = first + objStm.join('\n').length + (objStm_lines * _EOLtoBytes(eol));
   out.push(`${firstObjectNum} 0 obj`);
   out.push(`<< % UNCOMPRESSED object stream`);
   out.push(`  /Type /ObjStm % required`);
-  out.push(`  /Length ${length} % required`);
+  out.push(`  /Length ${length} % required, ${objStm_lines} lines`);
   out.push(`  /DL ${length}`);
   out.push(`  /Filter null % object stream data is uncompressed`);
   out.push(`  /N ${N} % required: number of objects stored in this object stream`);
@@ -775,7 +833,12 @@ export function objectsToObjectStream(inp: string[]): string[] {
  *              with `xref` keyword up to and including `%%EOF`
  * @returns the PDF cross reference stream is returned as `string[]` without `\n`.
  */ 
-export function xrefToXRefStream(inp: string[]): string[] {
+export function xrefToXRefStream(
+  objStmNum: number, 
+  genNum: number, 
+  eol: vscode.EndOfLine,
+  inp: string[]): string[] 
+{
   const inpLinesLen = inp.length; // number of lines
   const inpString = inp.join('\n'); // input lines as a single string
 
@@ -783,26 +846,26 @@ export function xrefToXRefStream(inp: string[]): string[] {
 
   if (!inp[0].startsWith("xref")) {
     console.error(`Conventional cross reference table must start with 'xref'!`);
-    window.showErrorMessage(`Conventional cross reference table must start with 'xref'!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must start with 'xref'!`);
     return [];
   }
 
   const trailerIdx = inp.findIndex((s) => (s.trim() === 'trailer'));
   if (trailerIdx === -1) {
     console.error(`Conventional cross reference table must include a 'trailer'!`);
-    window.showErrorMessage(`Conventional cross reference table must include a 'trailer'!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must include a 'trailer'!`);
     return [];
   }
 
   if (!inp[inpLinesLen - 3].startsWith("startxref")) {
     console.error(`Conventional cross reference table must include 'startxref' as 3rd last line!`);
-    window.showErrorMessage(`Conventional cross reference table must include 'startxref' as 3rd last line!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must include 'startxref' as 3rd last line!`);
     return [];
   }
 
   if (!inp[inpLinesLen - 1].startsWith("%%EOF")) {
     console.error(`Conventional cross reference table must end with '%%EOF'!`);
-    window.showErrorMessage(`Conventional cross reference table must end with '%%EOF'!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must end with '%%EOF'!`);
     return [];
   }
 
@@ -866,10 +929,12 @@ export function xrefToXRefStream(inp: string[]): string[] {
     }
 
     let xrefStm: string[] = []; // the output cross reference stream
-    xrefStm.push(`0 0 obj`);
+    const xrefEntries_lines = xrefEntries.length;
+    const length = (xrefEntries.join('\n').length + 1) + (xrefEntries_lines * _EOLtoBytes(eol)); // +1 is for EOD '>'
+    xrefStm.push(`${objStmNum} ${genNum} obj`);
     xrefStm.push(`<<`);
     xrefStm.push(`  /Type /XRef % required`);
-    xrefStm.push(`  /Length ${xrefEntries.join('\n').length + 1}`); // +1 is EOD '>'
+    xrefStm.push(`  /Length ${length}`); 
     xrefStm.push(`  /Filter /ASCIIHexDecode`);
     xrefStm.push(`  /Index [ ${indexStr.trim()} ]`);
     xrefStm.push(`  /W [ 1 4 2 ]`);
@@ -877,19 +942,17 @@ export function xrefToXRefStream(inp: string[]): string[] {
     xrefStm = xrefStm.concat(trailerLines);
     xrefStm.push(`>>`);
     xrefStm.push(`stream`);
-    xrefStm = xrefStm.concat(xrefEntries, '>');
+    xrefStm = xrefStm.concat(xrefEntries, '>'); // add ASCII-Hex EOD
     xrefStm.push(`endstream`);
     xrefStm.push(`endobj`);
-    xrefStm.push(``);
     xrefStm.push(`startxref`);
     xrefStm.push(`${startxrefOffset}`);
-    xrefStm.push(``);
     xrefStm.push(`%%EOF`);
     return xrefStm;
   }
   catch (error) {
     console.error(`ERROR: Conventional cross reference table conversion failed: ${error}!`);
-    window.showErrorMessage(`ERROR: Conventional cross reference table conversion failed: ${error}!`);
+    vscode.window.showErrorMessage(`ERROR: Conventional cross reference table conversion failed: ${error}!`);
     return [];
   }
 }

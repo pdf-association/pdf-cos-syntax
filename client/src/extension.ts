@@ -285,29 +285,38 @@ export async function commandHandler(option: string, context: vscode.ExtensionCo
   const editor = vscode.window.activeTextEditor;
   const selection = editor.selection;
   const inp = editor.document.getText(editor.selection); 
+
+  // When inserting new content, need to account for current "editor.eol" setting: \r, \r\n
+  // so length key values can be adjusted accordinly.
+  const eol: vscode.EndOfLine = editor.document.eol;
+
+  /** Pick a random object ID. @todo determine appropriately from PDF... */
+  const objNum = 1;
+  const genNum = 0;
+
   let out: string; 
 
   switch (option) {
-    case "imageA85DCT": await pdf.convertImageToAscii85DCT().then((pdf) => { out = pdf.join('\n'); }); break;
-    case "imageAHexDCT": await pdf.convertImageToAsciiHexDCT().then((pdf) => { out = pdf.join('\n'); }); break;
-    case "imageA85": await pdf.convertImageToRawAscii85().then((pdf) => { out = pdf.join('\n'); }); break;
-    case "imageAHex": await pdf.convertImageToRawAsciiHex().then((pdf) => { out = pdf.join('\n'); }); break;
-    case "dataA85": await pdf.convertDataToAscii85().then((pdf) => { out = pdf.join('\n'); }); break;
-    case "dataAHex": await pdf.convertDataToAsciiHex().then((pdf) => { out = pdf.join('\n'); }); break;
-    case "2objectStream": out = pdf.objectsToObjectStream(inp.split(`\n`)).join('\n'); break;
-    case "2XrefStream": out = pdf.xrefToXRefStream(inp.split(`\n`)).join('\n'); break;
+    case "imageA85DCT": await pdf.convertImageToAscii85DCT(objNum, genNum, eol).then((pdf) => { out = pdf.join('\n'); }); break;
+    case "imageAHexDCT": await pdf.convertImageToAsciiHexDCT(objNum, genNum, eol).then((pdf) => { out = pdf.join('\n'); }); break;
+    case "imageA85": await pdf.convertImageToRawAscii85(objNum, genNum, eol).then((pdf) => { out = pdf.join('\n'); }); break;
+    case "imageAHex": await pdf.convertImageToRawAsciiHex(objNum, genNum, eol).then((pdf) => { out = pdf.join('\n'); }); break;
+    case "dataA85": await pdf.convertDataToAscii85(objNum, genNum, eol).then((pdf) => { out = pdf.join('\n'); }); break;
+    case "dataAHex": await pdf.convertDataToAsciiHex(objNum, genNum, eol).then((pdf) => { out = pdf.join('\n'); }); break;
+    case "2objectStream": out = pdf.objectsToObjectStream(eol, inp.split(`\n`)).join('\n'); break;
+    case "2XrefStream": out = pdf.xrefToXRefStream(objNum, genNum, eol, inp.split(`\n`)).join('\n'); break;
     case "2AsciiHex": out = pdf.convertToAsciiHexFilter(Buffer.from(inp, 'utf8')).join(`\n`); break;
     case "2Ascii85": out = pdf.convertToAscii85Filter(Buffer.from(inp, 'utf8')).join(`\n`); break;
     case "FromAsciiHex": out = pdf.convertFromAsciiHexFilter(inp); break;
     case "FromAscii85": out = pdf.convertFromAscii85Filter(inp); break;
     case "Literal2Hex": {
-      // Need to select a full literal string
+      // Need to select a full literal string incl. `(`/`)`
       if ((inp[0] == "(") && (inp[inp.length - 1] === ")"))
         out = pdf.convertLiteralToHexString(inp); 
       break;
     }
     case "Hex2Literal": {
-      // Need to select a full hex string incl. whitespace
+      // Need to select a full hex string incl. whitespace and `<`/`>`
       if (inp.match(/^<[0-9a-fA-F \t\0\r\n\f]*>$/))
         out = pdf.convertHexToLiteralString(inp); 
       break;
@@ -322,7 +331,7 @@ export async function commandHandler(option: string, context: vscode.ExtensionCo
     });
   }
 
-  // // Test PDF name normalization
+  /** @todo - move to hover. Test PDF name normalization */
   // pdf.normalizedPDFname("/A#42");
   // pdf.normalizedPDFname("/paired#28#29parentheses");
 } 

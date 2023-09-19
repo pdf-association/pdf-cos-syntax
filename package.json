@@ -325,6 +325,7 @@
         "files.trimTrailingWhitespace": false,
         "editor.renderControlCharacters": true,
         "editor.suggest.selectionMode": "whenTriggerCharacter",
+        "files.eol": "\n",
         "editor.quickSuggestions": {
           "other": true,
           "comments": false,
@@ -338,6 +339,7 @@
         "files.trimTrailingWhitespace": false,
         "editor.renderControlCharacters": true,
         "editor.suggest.selectionMode": "whenTriggerCharacter",
+        "files.eol": "\n",
         "editor.quickSuggestions": {
           "other": true,
           "comments": false,
