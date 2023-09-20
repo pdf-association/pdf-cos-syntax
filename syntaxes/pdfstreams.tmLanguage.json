@@ -206,14 +206,282 @@
 			]
 		},
 		{
+			"name": "keyword.operator.graphics.pdf.inline-image.begin",
+			"match": "\\bBI\\b"
+		},
+		{
 			"name": "binary.data.inlineimage.pdf",
 			"begin": "\\bID\\b",
 			"end": "EI\\b",
 			"contentName": "text.plain"
 		},
 		{
-			"name": "keyword.operator.graphics.pdf",
-			"match": "\\b(w|J|j|M|d|ri|i|gs|q|Q|cm|cs|CS|SC|SCN|G|g|RG|rg|K|k|m|l|c|v|y|h|re|S|s|f|F|f\\*|B|B\\*|b|b\\*|n|W|W\\*|sh|BI|Do|Tc|Tw|Tz|TL|Tf|Tr|Ts|Td|TD|Tm|T\\*|do|d1|MP|DP|BMC|BDC|EMC|BX|EX|BT|ET|Tj|TJ|Tf|Tc|Tw|Td|cm|')\\b"
+			"name": "keyword.operator.graphics.pdf.matrix",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){6}cm\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.dash",
+			"match": "\\\\[([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0])*\\]b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]d\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.line-width",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]w\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.line-join",
+			"match": "\\b(0|1|2)[ \\t\\r\\n\\f\\0]j\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.line-cap",
+			"match": "\\b(0|1|2)[ \\t\\r\\n\\f\\0]j\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.miter-limit-ratio",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]M\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.space.stroking",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]CS\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.space.non-stroking",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]cs\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.gray.stroking",
+			"match": "\\b[+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]G\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.gray.non-stroking",
+			"match": "\\b[+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]g\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.rgb.stroking",
+			"match": "\\b([+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){3}RG\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.rgb.non-stroking",
+			"match": "\\b([+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){3}rg\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.cmyk.stroking",
+			"match": "\\b([+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){4}K\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.cmyk.non-stroking",
+			"match": "\\b([+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){4}k\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.cmyk.stroking",
+			"match": "\\b([+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0])+(/[^ \\t\\r\\n\\f\\0><[\\]()/]*)?+SCN\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.cmyk.non-stroking",
+			"match": "\\b([+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0])+(/[^ \\t\\r\\n\\f\\0><[\\]()/]*)?+scn\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.color.render-intent",
+			"match": "\\b(/AbsoluteColorimetric|/RelativeColorimetric|/Perceptual|/Saturation)[ \\t\\r\\n\\f\\0]ri\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.close",
+			"match": "\\bh\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.flatness-tolerance",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]i\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.close-fill-stroke-non-zero",
+			"match": "\\bb\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.fill-stroke-non-zero",
+			"match": "\\bB\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.close-fill-stroke-even-odd",
+			"match": "\\bb\\*\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.fill-stroke-even-odd",
+			"match": "\\bB\\*\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.close-fill-non-zero",
+			"match": "\\b(f|F)\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.fill-even-odd",
+			"match": "\\bf\\*\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.noop",
+			"match": "\\bn\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.close-stroke",
+			"match": "\\bs\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.stroke",
+			"match": "\\bS\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.clip-non-zero",
+			"match": "\\bW\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.clip-even-odd",
+			"match": "\\bW\\*\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.path.moveto",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){2}m\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.path.lineto",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){2}l\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.path.rectangle",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){4}re\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.path.bezier",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){6}c\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.path.bezier.current-point1",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){4}v\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.path.bezier.current-point2",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){4}y\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.graphics-state.push",
+			"match": "\\bq\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.graphics-state.pop",
+			"match": "\\bQ\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.begin",
+			"match": "\\bBT\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.position.next-line",
+			"match": "\\bT\\*\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.position.next-line-offset",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){2}Td\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.position.next-line-offset-leading",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){2}TD\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.paint.string",
+			"match": "\\b(\\([^)]\\)|<[0-9a-fA-F \\t\\r\\n\\f\\0]*>)[ \\t\\r\\n\\f\\0]Tj\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.paint.string-kern",
+			"match": "\\b\\[((\\([^)]\\)|<[0-9a-fA-F \\t\\r\\n\\f\\0]*>)|[-+]?\\d*\\.?\\d+|[ \\t\\r\\n\\f\\0])\\][ \\t\\r\\n\\f\\0]?TJ\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.paint.string-next-line",
+			"match": "\\b(\\([^)]\\)|<[0-9a-fA-F \\t\\r\\n\\f\\0]*>)[ \\t\\r\\n\\f\\0]'\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.paint.string-move",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){2}(\\([^)]\\)|<[0-9a-fA-F \\t\\r\\n\\f\\0]*>)[ \\t\\r\\n\\f\\0]\"\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.character-spacing",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]Tc\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.font-size",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0][-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]Tf\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.leading",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]TL\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.rendering-mode",
+			"match": "\\b[0-7][ \\t\\r\\n\\f\\0]Tr\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.rise",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]Ts\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.word-spacing",
+			"match": "\\b[-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]Tw\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.horizontal-text-scaling",
+			"match": "\\b[+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]Tz\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.text.matrix",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){6}Tm\\b"
+		},	
+		{
+			"name": "keyword.operator.graphics.pdf.type3.shape-color",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){2}d0\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.type3.shape",
+			"match": "\\b([-+]?\\d*\\.?\\d+[ \\t\\r\\n\\f\\0]){6}d1\\b"
+		},		
+		{
+			"name": "keyword.operator.graphics.pdf.text.end",
+			"match": "\\bET\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.compatibility.begin",
+			"match": "\\bBX\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.compatibility.end",
+			"match": "\\bEX\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.marked-content.point.begin",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0](/[^ \\t\\r\\n\\f\\0><[\\]()/]*|<<.*>>)[ \\t\\r\\n\\f\\0]BMC\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.marked-content.end",
+			"match": "\\bEMC\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.marked-content.begin",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]BMC\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.marked-content.point.property",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0](/[^ \\t\\r\\n\\f\\0><[\\]()/]*|<<.*>>)[ \\t\\r\\n\\f\\0]DP\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.marked-content.point",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]MP\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.do",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]Do\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.shading",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]sh\\b"
+		},
+		{
+			"name": "keyword.operator.graphics.pdf.graphics-state.set",
+			"match": "\\b/[^ \\t\\r\\n\\f\\0><[\\]()/]*[ \\t\\r\\n\\f\\0]gs\\b"
 		},
 		{
 			"name": "keyword.operator.postscript-type4-fn.pdf",
