@@ -62,6 +62,7 @@ import PDFParser, { PDFSectionType } from "./parser/PdfParser";
 import { PDSCOSSyntaxSettings, PDFDocumentData } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
 import PDFObject from './models/PdfObject';
+import * as ohmParser from './ohmParser';
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
@@ -87,7 +88,9 @@ const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
 let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
-
+console.log("-------------------------------");
+console.log("Server");
+console.log("-------------------------------");
 documents.onDidChangeContent((change) => {
   const document = change.document;
   if (document) {
@@ -170,9 +173,17 @@ connection.onInitialized(() => {
 connection.onRequest("textDocument/semanticTokens/full", (params) => {
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
-
-  return tokenizeDocument(document);
+  const text = document.getText();
+  console.log("handleSemanticTokensRequest");
+  return handleSemanticTokensRequest(text);
 });
+
+
+// Handle the request to fetch semantic tokens:
+function handleSemanticTokensRequest(text: string) {
+  const tokens = ohmParser.getTokens(text);
+  return tokens;
+}
 
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {

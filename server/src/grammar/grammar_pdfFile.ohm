@@ -1,0 +1,106 @@
+// This material is based upon work supported by the Defense Advanced 
+// Research Projects Agency (DARPA) under Contract No. HR001119C0079. 
+// Any opinions, findings and conclusions or recommendations expressed 
+// in this material are those of the author(s) and do not necessarily 
+// reflect the views of the Defense Advanced Research Projects Agency 
+// (DARPA). Approved for public release.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Original author: Ozzy Kirkby
+// Author: Peter Wyatt
+//
+// Test online at: https://ohmjs.org/editor/
+//
+// https://ohmjs.org/docs/syntax-reference#syntactic-lexical:
+// lowercase = lexical rule - whitespace NOT skipped
+// uppercase = syntactic rule - whitespace IS skipped
+//
+PDFObject {
+  pdf = header binary_marker? original (revision)* -- pdf_file
+  
+  // File header
+  header = "%PDF-" digit "." digit (~eol any)* eol -- header_comment
+  // Binary file marker comment (4 bytes minimum)
+  binary_marker = "%" binary_byte binary_byte binary_byte binary_byte (~eol any)* eol -- binary_marker
+  binary_byte = "\x80".."\xFF" -- binary_byte
+  // Body section needs at least one object to exist
+  body_section = (comment | ws_incl_eol)* indirect_object (indirect_object | comment | ws_incl_eol)* -- body_section
+  // Footer - xref, trailer, startxref and %%EOF 
+  footer_section = (xref trailer)? startxref eof -- footer_section
+  // Original PDF - body section must be non-empty
+  original = body_section footer_section -- original
+  // Revision - body section is optional
+  revision = body_section? footer_section -- revision
+  // Indirect objects - from 'X Y obj' to 'endobj'
+  indirect_object = obj_id "obj" eol? object_body eol? "endobj" ws_incl_eol -- indirect_object
+  object_body = stream | object -- object_body
+  stream = dictionary ws_incl_eol* "stream" eol (~"endstream" any)* "endstream" ws_incl_eol -- stream
+  // PDF dictionary - of key/value pairs
+  dictionary = "<<" key_value_pair* ">>" -- dictionary_object
+  key_value_pair = (ws_incl_eol | &"/") name (ws_incl_eol | &delimiter) object (ws_incl_eol | &delimiter) -- key_value_pair
+  // PDF objects NOT incl. streams (i.e. things allowed as array elements or dict key values)
+  object = dictionary | array | string | name | number | bool | null | indirect_ref | comment -- pdf_object
+  // PDF arrays - empty arrays are valid
+  array = "[" (ws_incl_eol | &delimiter) object (ws_incl_eol | &delimiter) "]" -- array_object
+  
+  // PDF Name - empty name is valid. 2 digit hex codes preceded by '#'.
+  name = "/" (~delimiter (name_hex_escape | any))* -- name
+  name_hex_escape = "#" hex_digit hex_digit -- name_hex_escape
+  // PDF string literal - empty string is valid
+  string = string_literal | hex_string
+  string_literal = "(" (string_literal_escape | any)* ")" -- string_literal
+  string_literal_escape = "\\n" | "\\r" | "\\b" | "\\f" | "\\(" | "\\)" | "\\\\" | octal | escaped_eol -- string_literal_escape
+  octal = "\\" octal_digit octal_digit octal_digit -- octal_escape
+  octal_digit = "0".."7" -- octal_digit
+  escaped_eol = "\\" eol -- escaped_eol
+  // PDF hex string - empty hex string is valid
+  hex_string = "<" (hex_digit | ws_incl_eol)* ">" -- hex_literal
+  hex_digit = digit | "a".."f" | "A".."F" -- hex_digit
+  // Object ID - no leading '+' allowed
+  obj_id = obj_num ws_incl_eol+ obj_gen ws_incl_eol+ -- object_id
+  obj_num = digit+ -- object_number
+  obj_gen = digit+ -- generation_number
+  
+  // indirect reference `<obj-num> <gen-num> R` (e.g. 12 0 R)
+  indirect_ref = obj_id "R" -- indirect_ref
+  // PDF Numeric object - integer or real
+  number = integer | real -- numeric_object
+  integer = ("+" | "-")? digit+ -- integer_object
+  real = ("+" | "-")? ((digit* "."? digit+) | (digit+ "."? digit*)) -- real_object
+  // PDF Boolean
+  bool = "true" | "false" -- boolean_object
+  // PDF null
+  null = "null" -- null_object
+  // Conventional cross reference tables
+  xref = ws_incl_eol* "xref" ws_no_eol* eol xref_subsection+ -- xref
+  xref_subsection = xref_subsection_marker xref_entry* -- xref_subsection
+  xref_subsection_marker = ws_incl_eol* digit+ " " digit+ ws_no_eol* eol -- xref_subsection_marker
+  xref_10entry = digit digit digit digit digit digit digit digit digit digit -- xref_10digit
+  xref_5entry  = digit digit digit digit digit -- xref_5digit
+  xref_entry = xref_10entry " " xref_5entry " " ("f" | "n") ((" \r") | (" \n") | ("\r\n")) -- xref_entry // fixed 20 bytes
+  // trailer, startxref and %%EOF. %%EOF does not need EOL (as could be EOF)
+  trailer = "trailer" ws_no_eol* eol dictionary ws_no_eol* eol -- trailer
+  startxref = "startxref" ws_no_eol* eol ws_no_eol* digit+ ws_no_eol* eol -- startxref
+  eof = "%%EOF" -- end_of_file_marker
+  // PDF comment - up to next EOL. Treat lexically as an object
+  comment = "%" (~eol any)* eol -- comment
+  // Specific PDF EOL sequences. No whitespace or delimiters.
+  eol = "\r\n" | "\n" | "\r" -- eol
+  
+  // PDF delimiters INCLUDING all whitespace and EOLs, but NOT comments.
+  delimiter = ws_incl_eol | "<" | ">" | "[" | "]" | "(" | ")" -- delimiter
+  
+  // PDF whitespace optinally including EOLs. ISO 32000-2 Table 1. DO NOT USE Ohm.js's "space"!
+  ws_incl_eol = " " | "\t" | "\x0C" | "\x00" | "\r" | "\n" -- ws_incl_eol
+  ws_no_eol   = " " | "\t" | "\x0C" | "\x00" -- ws_no_eol
+}

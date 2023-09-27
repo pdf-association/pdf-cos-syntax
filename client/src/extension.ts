@@ -153,7 +153,9 @@ export function activate(context: vscode.ExtensionContext) {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
     },
   };
-
+console.log("==============================");
+console.log("Extension");
+console.log("==============================");
   // Create the language client and start the client.
   client = new LanguageClient(
     "pdfCosSyntax",
@@ -224,17 +226,61 @@ export function activate(context: vscode.ExtensionContext) {
   
   if (vscode.window.registerWebviewPanelSerializer) {
     // Make sure we register a serializer in activation event
-    vscode.window.registerWebviewPanelSerializer(
-      sankey.SankeyPanel.viewType, 
-      {
-        async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, state: any) {
-          console.log(`Got state: ${state}`);
-          // Reset the webview options so we use latest uri for `localResourceRoots`.
-          webviewPanel.webview.options = sankey.getWebviewOptions(context.extensionUri);
-          sankey.SankeyPanel.revive(webviewPanel, context);
-        }
-      });
+    vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
+      async deserializeWebviewPanel(
+        webviewPanel: vscode.WebviewPanel,
+        state: any
+      ) {
+        console.log(`Got state: ${state}`);
+        // Reset the webview options so we use latest uri for `localResourceRoots`.
+        webviewPanel.webview.options = sankey.getWebviewOptions(
+          context.extensionUri
+        );
+        sankey.SankeyPanel.revive(webviewPanel, context);
+      },
+    });
   }
+
+  interface Token {
+    start: number;
+    end: number;
+    type: string;
+  }
+
+  // const semanticProvider =
+  //   vscode.languages.registerDocumentSemanticTokensProvider(
+  //     { language: "pdf" },
+  //     {
+  //       async provideDocumentSemanticTokens(
+  //         document: vscode.TextDocument
+  //       ): Promise<vscode.SemanticTokens> {
+  //         try {
+  //           const tokens = (await client.sendRequest(
+  //             "textDocument/semanticTokens/full",
+  //             {
+  //               textDocument: { uri: document.uri.toString() },
+  //             }
+  //           )) as Token[];
+
+  //           const builder = new vscode.SemanticTokensBuilder();
+  //           tokens.forEach((token) => {
+  //             const startPos = new vscode.Position(0, token.start); // Assuming only one line
+  //             const endPos = new vscode.Position(0, token.end); // Assuming only one line
+  //             const range = new vscode.Range(startPos, endPos);
+
+  //             builder.push(range, token.type);
+  //           });
+
+  //           return builder.build();
+  //         } catch (err) {
+  //           console.error("Failed to fetch semantic tokens:", err);
+  //         }
+  //       },
+  //     },
+  //     null
+  //   );
+
+  // context.subscriptions.push(semanticProvider);
 
   // Start the client. This will also launch the LSP server
   client.start();

@@ -97,18 +97,6 @@
         }
       }
     ],
-    "grammars": [
-      {
-        "language": "pdf",
-        "scopeName": "source.pdf",
-        "path": "./syntaxes/pdf.tmLanguage.json"
-      },
-      {
-        "language": "fdf",
-        "scopeName": "source.fdf",
-        "path": "./syntaxes/fdf.tmLanguage.json"
-      }
-    ],
     "snippets": [
       {
         "language": "pdf",
