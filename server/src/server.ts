@@ -170,20 +170,15 @@ connection.onInitialized(() => {
   }
 });
 
-connection.onRequest("textDocument/semanticTokens/full", (params) => {
+connection.onRequest("textDocument/semanticTokens/full", (params) => { console.log("here textdocument OHM");
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
-  console.log("handleSemanticTokensRequest");
-  return handleSemanticTokensRequest(text);
+  const tokens = ohmParser.getTokens(text);
+  console.log("TOKEN in server: ", tokens);
+  return tokens;
 });
 
-
-// Handle the request to fetch semantic tokens:
-function handleSemanticTokensRequest(text: string) {
-  const tokens = ohmParser.getTokens(text);
-  return tokens;
-}
 
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
@@ -401,8 +396,6 @@ connection.onReferences((params): Location[] | null => {
  *   - on conventional cross reference table entries --> hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
-  // console.log(`onHover for ${params.textDocument.uri}`);
-
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
   if (!docData || !docData.xrefMatrix || !document) return null;
@@ -577,7 +570,7 @@ connection.onDocumentSymbol(
     let revisionName: string = `Incremental Update ${revision}`;
     if (revision === 0)
       revisionName = `Original PDF`;
-    console.group(`Revision ${revision} = ${revisionName}`);
+    // console.group(`Revision ${revision} = ${revisionName}`);
 
     // Top level container for this revision
     r1 = pdfParser.getRevisionRange(revision);
@@ -637,7 +630,7 @@ connection.onDocumentSymbol(
 
         case PDFSectionType.Footer: {
             // Footer section includes one or more of: trailer, startxref and %%EOF
-            console.group(`Footer`);
+            // console.group(`Footer`);
             const subsections = pdfParser.getFooterSubsections(revision);
             // console.log(JSON.stringify(subsections));
             const footerSubSymbols: DocumentSymbol[] = [];

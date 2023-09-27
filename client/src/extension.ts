@@ -153,9 +153,7 @@ export function activate(context: vscode.ExtensionContext) {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
     },
   };
-console.log("==============================");
-console.log("Extension");
-console.log("==============================");
+
   // Create the language client and start the client.
   client = new LanguageClient(
     "pdfCosSyntax",
@@ -247,40 +245,40 @@ console.log("==============================");
     type: string;
   }
 
-  // const semanticProvider =
-  //   vscode.languages.registerDocumentSemanticTokensProvider(
-  //     { language: "pdf" },
-  //     {
-  //       async provideDocumentSemanticTokens(
-  //         document: vscode.TextDocument
-  //       ): Promise<vscode.SemanticTokens> {
-  //         try {
-  //           const tokens = (await client.sendRequest(
-  //             "textDocument/semanticTokens/full",
-  //             {
-  //               textDocument: { uri: document.uri.toString() },
-  //             }
-  //           )) as Token[];
+  const semanticProvider =
+    vscode.languages.registerDocumentSemanticTokensProvider(
+      { language: "pdf" },
+      {
+        async provideDocumentSemanticTokens(
+          document: vscode.TextDocument
+        ): Promise<vscode.SemanticTokens> {
+          try {
+            const tokens = (await client.sendRequest(
+              "textDocument/semanticTokens/full",
+              {
+                textDocument: { uri: document.uri.toString() },
+              }
+            )) as Token[];
+console.log("TOKEN: ", tokens);
+            const builder = new vscode.SemanticTokensBuilder();
+            tokens.forEach((token) => {
+              const startPos = new vscode.Position(0, token.start); // Assuming only one line
+              const endPos = new vscode.Position(0, token.end); // Assuming only one line
+              const range = new vscode.Range(startPos, endPos);
 
-  //           const builder = new vscode.SemanticTokensBuilder();
-  //           tokens.forEach((token) => {
-  //             const startPos = new vscode.Position(0, token.start); // Assuming only one line
-  //             const endPos = new vscode.Position(0, token.end); // Assuming only one line
-  //             const range = new vscode.Range(startPos, endPos);
+              builder.push(range, token.type);
+            });
 
-  //             builder.push(range, token.type);
-  //           });
+            return builder.build();
+          } catch (err) {
+            console.error("Failed to fetch semantic tokens:", err);
+          }
+        },
+      },
+      null
+    );
 
-  //           return builder.build();
-  //         } catch (err) {
-  //           console.error("Failed to fetch semantic tokens:", err);
-  //         }
-  //       },
-  //     },
-  //     null
-  //   );
-
-  // context.subscriptions.push(semanticProvider);
+  context.subscriptions.push(semanticProvider);
 
   // Start the client. This will also launch the LSP server
   client.start();

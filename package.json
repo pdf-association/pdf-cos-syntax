@@ -332,44 +332,21 @@
           "other": true,
           "comments": false,
           "strings": false
-        }        
+        }
       }
     },
     "semanticTokenTypes": [
       {
-        "id": "indirectReference",
-        "superType": "struct",
-        "description": "Represents a PDF indirect reference 'X Y R'"
+        "id": "dictionary",
+        "description": "PDF dictionary"
       },
       {
-        "id": "indirectObject",
-        "superType": "class",
-        "description": "Represents an indirect PDF object in the body section of a PDF file 'X Y obj'"
+        "id": "array",
+        "description": "PDF array"
       },
       {
-        "id": "xrefTableEntry",
-        "superType": "decorator",
-        "description": "Represents an entry in a conventional cross reference table"
-      },
-      {
-        "id": "endobjKeyword",
-        "superType": "keyword",
-        "description": "Represents 'endobj' keyword"
-      },
-      {
-        "id": "endstreamKeyword",
-        "superType": "keyword",
-        "description": "Represents 'endstream' keyword"
-      },
-      {
-        "id": "hexString",
-        "superType": "string",
-        "description": "A PDF hexadecimal string between '<' / '>'"
-      },
-      {
-        "id": "bitMask",
-        "superType": "number",
-        "description": "A PDF key that is a bitmask"
+        "id": "name",
+        "description": "PDF name"
       }
     ],
     "semanticTokenModifiers": [

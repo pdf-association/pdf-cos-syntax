@@ -1,13 +1,11 @@
 import * as ohm from "ohm-js";
 import * as fs from "fs";
-import { URL } from "url";
 import { Token } from './types';
+import * as path from 'path';
 
-const grammarString = fs.readFileSync(
-  new URL("./grammar/grammar_pdfFile.ohm", import.meta.url),
-  "utf-8"
-);
+const grammarPath = path.join(__dirname, '../src/grammar/grammar_pdfFile.ohm');
 
+const grammarString = fs.readFileSync(grammarPath, 'utf-8');
 const grammar = ohm.grammar(grammarString);
 
 interface MatchSuccess {
@@ -33,7 +31,9 @@ function parse(text: string): ParseResult {
 
 function getTokens(text: string): Token[] {
   const matchResult = grammar.match(text);
+  console.log("matchResult: ", matchResult);
   if (!matchResult.succeeded()) {
+    console.log("GETTOKENS->not successed in");
     return []; // Return an empty list if the match failed.
   }
 
