@@ -20,6 +20,7 @@ interface MatchFailure {
 type ParseResult = MatchSuccess | MatchFailure;
 
 function parse(text: string, startRule?: string): ParseResult {
+  console.log(`parse(): ${text} ${startRule}`);
   const matchResult = grammar.match(text, startRule);
   if (matchResult.succeeded()) {
     return { success: true, result: matchResult };
@@ -31,12 +32,14 @@ function parse(text: string, startRule?: string): ParseResult {
 function getTokens(text: string): Token[] {
   const matchResult = grammar.match(text);
   if (!matchResult.succeeded()) {
+    console.log(`getTokens(): match did not succeed!`);
     return [];
   }
 
   const semantics = grammar.createSemantics();
   semantics.addOperation("extract", {
     _terminal() {
+      console.log(`_terminal: ${this.sourceString}`);
       return [
         {
           start: this.source.startIdx,
@@ -46,8 +49,18 @@ function getTokens(text: string): Token[] {
         },
       ];
     },
-    // Implementing dictionary extraction
-    dictionary(_1, keyValues, _2) {
+    pdf(_1, _2, _3) {
+      console.log(`pdf`);
+      return [
+        {
+          start: this.source.startIdx,
+          end: this.source.endIdx,
+          type: "pdf"
+        },
+      ];
+    },
+    dictionary(_1, keyValues, _3, _4, _5) {
+      console.log(`dictionary`);
       return [
         {
           start: this.source.startIdx,
@@ -57,17 +70,19 @@ function getTokens(text: string): Token[] {
         },
       ];
     },
-    key_value_pair(key, value) {
-      return {
+    key_value_pair(_1, key, _3, value) {
+      console.log(`key_value_pair: ${key} ${value}`);
+      return [{
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "key_value",
         key: key.extract(),
         value: value.extract(),
-      };
+      }];
     },
     // Implementing array extraction
-    array(_1, elements, _2) {
+    array(_1, _2, elements, _4, _5, _6) {
+      console.log(`array`);
       return [
         {
           start: this.source.startIdx,
@@ -77,20 +92,19 @@ function getTokens(text: string): Token[] {
         },
       ];
     },
-    // Implementing stream extraction
-    stream(dict, _1, streamContent, _2, _3) {
+    stream(_1, _2, _3, streamContent, _5, _6, _7) {
+      console.log(`stream`);
       return [
         {
           start: this.source.startIdx,
           end: this.source.endIdx,
           type: "stream",
-          dictionary: dict.extract(),
           content: streamContent.sourceString,
         },
       ];
     },
-    // Implementing name extraction
     name(_1, nameContent) {
+      console.log(`name: : "${nameContent.sourceString}"`);
       return [
         {
           start: this.source.startIdx,
@@ -102,6 +116,7 @@ function getTokens(text: string): Token[] {
     },
     // Implementing string extraction
     string(stringContent) {
+      console.log(`string: : "${stringContent.sourceString}"`);
       return [
         {
           start: this.source.startIdx,
@@ -112,7 +127,8 @@ function getTokens(text: string): Token[] {
       ];
     },
     // Implementing number extraction
-    number(_1, _2) {
+    number(_1) {
+      console.log(`number: : "${this.sourceString}"`);
       return [
         {
           start: this.source.startIdx,
@@ -124,6 +140,7 @@ function getTokens(text: string): Token[] {
     },
     // Implementing boolean extraction
     bool(_1) {
+      console.log(`bool: "${this.sourceString}"`);
       return [
         {
           start: this.source.startIdx,
@@ -135,6 +152,7 @@ function getTokens(text: string): Token[] {
     },
     // Implementing null extraction
     null(_1) {
+      console.log(`null`);
       return [
         {
           start: this.source.startIdx,
@@ -143,7 +161,8 @@ function getTokens(text: string): Token[] {
         },
       ];
     },
-    comment(_1, content, _2) {
+    comment(_1, content, _3) {
+      console.log(`comment: "${content.sourceString}"`);
       return [
         {
           start: this.source.startIdx,
@@ -153,21 +172,30 @@ function getTokens(text: string): Token[] {
         },
       ];
     },
-    indirect_object(objID, _1, body, _2, _3, _4) {
+    indirect_object_start(_1, objNum, _3, genNum, _5, _6, _7) {
+      console.log(`indirect_object_start: "${objNum} ${genNum}"`);
       return [
         {
           start: this.source.startIdx,
           end: this.source.endIdx,
-          type: "indirect_object",
-          objectID: objID.extract(),
-          body: body ? body.extract() : null,
+          type: "obj",
+          objectNum: objNum.extract(),
+          generationNum: genNum.extract()
         },
       ];
     },
-    object_body(streamObj, regularObj) {
-      return streamObj ? streamObj.extract() : regularObj.extract();
+    indirect_object_end(_1, _2, _3) {
+      console.log(`indirect_object_end`);
+      return [
+        {
+          start: this.source.startIdx,
+          end: this.source.endIdx,
+          type: "endobj"
+        },
+      ];
     },
-    xref(_1, subsections) {
+    xref(_1, _2, _3, subsections) {
+      console.log(`xref`);
       return [
         {
           start: this.source.startIdx,
@@ -178,25 +206,28 @@ function getTokens(text: string): Token[] {
       ];
     },
     xref_subsection(sectionHeader, entries) {
-      return {
+      console.log(`xref_subsection`);
+      return [{
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "xref_subsection",
         sectionHeader: sectionHeader.extract(),
         entries: entries.extract(),
-      };
+    }];
     },
-    xref_entry(offset, generation, usage) {
-      return {
+    xref_entry(offset, _2, generation, _4, usage, _6) {
+      console.log(`xref_entry`);
+      return [{
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "xref_entry",
         offset: offset.sourceString,
         generation: generation.sourceString,
         usage: usage.sourceString,
-      };
+    }];
     },
-    trailer(_1, dict, _2) {
+    trailer(_1, _2, dict, _4) {
+      console.log(`trailer`);
       return [
         {
           start: this.source.startIdx,
@@ -206,7 +237,8 @@ function getTokens(text: string): Token[] {
         },
       ];
     },
-    eof(_1) {
+    eof(_1, _2) {
+      console.log(`eof`);
       return [
         {
           start: this.source.startIdx,
