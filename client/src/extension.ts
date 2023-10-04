@@ -245,6 +245,33 @@ export function activate(context: vscode.ExtensionContext) {
     type: string;
   }
 
+  const tokenTypes = [
+    'terminal',
+    'pdf',
+    'dictionary',
+    'key_value',
+    'array',
+    'stream',
+    'name',
+    'string',
+    'number',
+    'boolean',
+    'null',
+    'comment',
+    'obj',
+    'endobj',
+    'xref',
+    'xref_subsection',
+    'xref_entry',
+    'trailer',
+    'eof'
+  ];
+  
+  const tokenModifiers = [
+    'error',   
+    'important' 
+  ];
+  const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
   const semanticProvider =
     vscode.languages.registerDocumentSemanticTokensProvider(
       { language: "pdf" },
@@ -260,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
               }
             )) as Token[];
 console.log("TOKEN: ", tokens);
-            const builder = new vscode.SemanticTokensBuilder();
+            const builder = new vscode.SemanticTokensBuilder(legend);
             tokens.forEach((token) => {
               const startPos = new vscode.Position(0, token.start); // Assuming only one line
               const endPos = new vscode.Position(0, token.end); // Assuming only one line
