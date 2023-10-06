@@ -175,7 +175,6 @@ connection.onRequest("textDocument/semanticTokens/full", (params) => { console.l
   if (!document) return null;
   const text = document.getText();
   const tokens = ohmParser.getTokens(text);
-  console.log("TOKEN in server: ", tokens);
   return tokens;
 });
 

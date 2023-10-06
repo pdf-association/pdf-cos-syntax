@@ -29,7 +29,7 @@
 // Just define valid PDF objects and constructs but NOT overall file layout.
 //
 PDFObject {
-  pdf = header binary_marker? revision* 
+  // pdf = header binary_marker? revision* 
     
   // File header
   header = "%PDF-" digit "." digit (~eol any)* eol
