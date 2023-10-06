@@ -59,12 +59,14 @@ PDFObject {
   array = "[" ((ws_incl_eol* | &start_delimiter) object)* ws_incl_eol* "]" (ws_incl_eol* | &delimiter)
   
   // PDF Name - empty name is valid. 2 digit hex codes preceded by '#'.
-  name = "/" (~(delimiter | ws_incl_eol) (name_hex_escape | any))* 
+  name = "/" (~(&delimiter | ws_incl_eol) valid_name_char)* 
+  valid_name_char = name_hex_escape | (~("#" | &delimiter) any) 
   name_hex_escape = "#" hex_digit hex_digit 
 
   // PDF string literal - empty string is valid
   string = string_literal | hex_string
-  string_literal = "(" (~")" (string_literal_escape | any))* ")" 
+  string_literal = "(" (~")" (string_literal_char | any))* ")" 
+  string_literal_char = string_literal_escape | string_literal
   string_literal_escape = "\\n" | "\\r" | "\\b" | "\\f" | "\\(" | "\\)" | "\\\\" | octal | escaped_eol 
   octal = "\\" octal_digit octal_digit octal_digit
   octal_digit = "0".."7"
@@ -112,7 +114,7 @@ PDFObject {
   start_delimiter = "<<" | "<" | "[" | "(" | "%"
   end_delimiter = ">>" | ">" | "]" | ")"
 
-  // PDF whitespace optinally including EOLs and comments. ISO 32000-2 Table 1. DO NOT USE Ohm.js's "space"!
+  // PDF whitespace optionally including EOLs and comments. ISO 32000-2 Table 1. DO NOT USE Ohm.js's "space"!
   ws_incl_eol = (" " | "\t" | "\x0C" | "\x00" | "\r" | "\n" | comment)+
   ws_no_eol   = (" " | "\t" | "\x0C" | "\x00")+
 }
