@@ -1,0 +1,124 @@
+// This material is based upon work supported by the Defense Advanced 
+// Research Projects Agency (DARPA) under Contract No. HR001119C0079. 
+// Any opinions, findings and conclusions or recommendations expressed 
+// in this material are those of the author(s) and do not necessarily 
+// reflect the views of the Defense Advanced Research Projects Agency 
+// (DARPA). Approved for public release.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Author: Peter Wyatt
+//
+// Test online at: https://ohmjs.org/editor/
+//
+// https://ohmjs.org/docs/syntax-reference#syntactic-lexical:
+// lowercase = lexical rule - whitespace NOT skipped
+// uppercase = syntactic rule - whitespace IS skipped
+//
+// ONLY does token detection. THIS IS NOT A FULL PARSER!!!
+// Best run line-by-line
+//
+PDFTokenizer {
+  pdf_token = (header | 
+              eof |
+              bool |
+              null |
+              xref |
+              trailer |
+              startxref |
+              dict_start |
+              dict_end |
+              array_start |
+              array_end |
+              name |
+              xref_entry |
+              indirect_object_start |
+              endobj |
+              indirect_ref |
+              string_literal |
+              hex_string |
+              real |
+              integer |
+              stream |
+              comment |
+              ws_incl_eol)+
+    
+  // File header
+  header = "%PDF-" digit "." digit (~eol any)* 
+    
+  // Parts of indirect objects - allows editing so extra lenient 
+  indirect_object_start = digit+ ws_incl_eol digit+ ws_incl_eol "obj" 
+  endobj = "endobj"  
+
+  /// @todo - Because of tokenization on a line basis, may need to break this down...
+  stream = "stream" ws_incl_eol (~"endstream" any)* ws_incl_eol? "endstream"
+  
+  dict_start  = "<<" 
+  dict_end    = ">>" 
+  array_start = "["  
+  array_end   = "]"  
+  
+  // PDF Name - empty name is valid. 2 digit hex codes preceded by '#'.
+  name = "/" (~(&delimiter | ws_incl_eol) valid_name_char)* 
+  valid_name_char = name_hex_escape | (~("#" | &delimiter) any) 
+  name_hex_escape = "#" hexDigit hexDigit 
+
+  // PDF string literal - empty string is valid
+  string_literal = "(" (~")" (string_literal_char | any))* ")" 
+  string_literal_char = string_literal_escape | string_literal
+  string_literal_escape = "\\n" | "\\r" | "\\b" | "\\f" | "\\(" | "\\)" | "\\\\" | octal | escaped_eol 
+  octal = "\\" octal_digit octal_digit octal_digit
+  octal_digit = "0".."7"
+  escaped_eol = "\\" eol 
+
+  // PDF hex string - empty hex string is valid
+  hex_string = "<" (hexDigit | ws_incl_eol)* ">"
+
+  // indirect reference `<obj-num> <gen-num> R` (e.g. 12 0 R)
+  indirect_ref = digit+ ws_incl_eol digit+ ws_incl_eol "R"
+
+  // PDF Numeric objects - integer and real
+  integer = ("+" | "-")? digit+
+  real = ("+" | "-")? ((digit* "." digit+) | (digit+ "." digit*))
+
+  // PDF Boolean object
+  bool = "true" | "false"
+  
+  // PDF null object
+  null = "null"
+
+  // Conventional cross reference tables
+  xref = "xref"
+  xref_10entry = digit digit digit digit digit digit digit digit digit digit 
+  xref_5entry  = digit digit digit digit digit 
+  xref_entry = xref_10entry " " xref_5entry " " ("f" | "n") 
+  
+  // Footer keywords
+  trailer = "trailer" 
+  startxref = "startxref" 
+  eof = "%%EOF" 
+  
+  // PDF comment - up to next EOL. 
+  comment = "%" (~eol any)* eol
+  
+  // Specific PDF EOL sequences. No whitespace or delimiters.
+  eol = "\r\n" | "\n" | "\r"
+  
+  // PDF delimiters NOT including whitespace, EOLs or comments.
+  delimiter = start_delimiter | end_delimiter
+  start_delimiter = "<<" | "<" | "[" | "(" | "%"
+  end_delimiter = ">>" | ">" | "]" | ")"
+
+  // PDF whitespace optionally including EOLs and comments. ISO 32000-2 Table 1. DO NOT USE Ohm.js's "space"!
+  ws_incl_eol = (" " | "\t" | "\x0C" | "\x00" | "\r" | "\n" | comment)+
+  ws_no_eol   = (" " | "\t" | "\x0C" | "\x00")+
+}
