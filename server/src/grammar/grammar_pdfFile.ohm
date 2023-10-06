@@ -61,7 +61,7 @@ PDFObject {
   // PDF Name - empty name is valid. 2 digit hex codes preceded by '#'.
   name = "/" (~(&delimiter | ws_incl_eol) valid_name_char)* 
   valid_name_char = name_hex_escape | (~("#" | &delimiter) any) 
-  name_hex_escape = "#" hex_digit hex_digit 
+  name_hex_escape = "#" hexDigit hexDigit 
 
   // PDF string literal - empty string is valid
   string = string_literal | hex_string
@@ -73,9 +73,8 @@ PDFObject {
   escaped_eol = "\\" eol 
 
   // PDF hex string - empty hex string is valid
-  hex_string = "<" (hex_digit | ws_incl_eol)* ">"
-  hex_digit = digit | "a".."f" | "A".."F"
-
+  hex_string = "<" (hexDigit | ws_incl_eol)* ">"
+  
   // indirect reference `<obj-num> <gen-num> R` (e.g. 12 0 R)
   indirect_ref = ws_incl_eol* digit+ ws_incl_eol digit+ ws_incl_eol "R"
 
