@@ -170,7 +170,8 @@ connection.onInitialized(() => {
   }
 });
 
-connection.onRequest("textDocument/semanticTokens/full", (params) => { console.log("here textdocument OHM");
+// Entry point for Semantic Token parsing
+connection.onRequest("textDocument/semanticTokens/full", (params) => { 
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
