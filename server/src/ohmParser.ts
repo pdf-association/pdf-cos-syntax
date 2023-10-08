@@ -36,8 +36,17 @@ function getTokens(text: string): Token[] {
 
   semantics.addOperation("extract", {
     _iter(...children) {
-      console.log(children);
-      // return children.map(c => c.myOperation());
+      console.log("Iterating over children:", children);
+      children.forEach((child, index) => {
+        const token: Token = {
+          start: child.source.startIdx,
+          end: child.source.endIdx,
+          type: `type_${index}`,
+          content: child.sourceString || null,
+        };
+        console.log("Generated token: ", token);
+        tokenList.push(token);
+      });
     },
     header(_1, _2, _3, _4, _5) {
       console.log("header rule");
