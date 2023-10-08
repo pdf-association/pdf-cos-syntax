@@ -1,230 +1,222 @@
 import * as ohm from "ohm-js";
 import * as fs from "fs";
-import { Token } from "./types";
+import { PDFToken } from "./types";
 import * as path from "path";
 
 const grammarPath = path.join(__dirname, "../src/grammar/grammar_pdfTokens.ohm");
 const grammarString = fs.readFileSync(grammarPath, "utf-8");
 const grammar = ohm.grammar(grammarString);
 
-interface MatchSuccess {
-  success: true;
-  result: any;
-}
-
-interface MatchFailure {
-  success: false;
-  error: string;
-}
-
-type ParseResult = MatchSuccess | MatchFailure;
-
-function parse(text: string, startRule?: string): ParseResult {
-  console.log(`parse(): ${text} ${startRule}`);
-  const matchResult = grammar.match(text, startRule);
-  if (matchResult.succeeded()) {
-    return { success: true, result: matchResult };
-  } else {
-    return { success: false, error: matchResult.message || "Match failed" };
-  }
-}
-
 // Main entry point to Ohm parser called by LSP server
-function getTokens(text: string): Token[] {
-  const tokenList: Token[] = [];
+function getTokens(text: string): PDFToken[] {
+  let lineNbr: number = 1;
+
   const semantics = grammar.createSemantics();
 
-  semantics.addOperation("extract", {
+  semantics.addOperation('extract()', {
     _iter(...children) {
-      console.log("Iterating over children:", children);
+      let childTokenList: PDFToken[] = [];
       children.forEach((child, index) => {
-        const token: Token = {
-          start: child.source.startIdx,
-          end: child.source.endIdx,
-          type: `type_${index}`,
-          content: child.sourceString || null,
-        };
-        console.log("Generated token: ", token);
-        tokenList.push(token);
+        const childTokens: PDFToken[] = child.extract(); 
+        childTokenList = childTokenList.concat(childTokens);
       });
+      return childTokenList;
     },
-    header(_1, _2, _3, _4, _5) {
-      console.log("header rule");
-      const token = {
+    _terminal() { // ignore
+      return [];
+    },
+    xref_5entry(_1, _2, _3, _4, _5) { // ignore - wait for xref_entry
+      return [];
+    },
+    xref_10entry(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10) { // ignore - wait for xref_entry
+      return [];
+    },
+    header(_1, majorVer, _3, minorVer, _5) {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "%PDF-x.y",
+        type: "header",
+        content: majorVer.sourceString + "." + minorVer.sourceString,
       };
-      tokenList.push(token);
+      return [token];
     },
-    indirect_object_start(objNum, _2, genNum, _4, objectName) {
-      console.log("indirect_object_start rule");
-      const token = {
+    indirect_object_start(objNum, _2, genNum, _4, _5) {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "X Y obj",
+        type: "indirect_object_start",
         objNum: parseInt(objNum.sourceString),
         genNum: parseInt(genNum.sourceString),
       };
-      tokenList.push(token);
+      return [token];
     },
     endobj(_1) {
-      console.log("endobj rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "endobj",
       };
-      tokenList.push(token);
+      return [token];
     },
-    stream(_1, content, _3, _4, _5) {
-      console.log("stream rule");
-      const token = {
+    stream(_1) {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "stream",
-        content: content.sourceString,
       };
-      tokenList.push(token);
+      return [token];
+    },
+    endstream(_1) {
+      const token: PDFToken = {
+        line: lineNbr,
+        start: this.source.startIdx,
+        end: this.source.endIdx,
+        type: "endstream",
+      };
+      return [token];
     },
     dict_start(_1) {
-      console.log("dict_start rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "<<"
+        type: "dict_start"
       };
-      tokenList.push(token);
+      return [token];
     },
     dict_end(_1) {
-      console.log("dict_end rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: ">>"
+        type: "dict_end"
       };
-      tokenList.push(token);
+      return [token];
     },
     array_start(_1) {
-      console.log("array_start rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "["
+        type: "array_start"
       };
-      tokenList.push(token);
+      return [token];
     },
     array_end(_1) {
-      console.log("array_end rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "]"
+        type: "array_end"
       };
-      tokenList.push(token);
+      return [token];
     },
     string_literal(_1, content, _2) {
-      console.log("string_literal rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "string_literal",
         content: content.sourceString,
       };
-      tokenList.push(token);
+      return [token];
     },
     hex_string(_1, content, _2) {
-      console.log("hex_string rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "hex_string",
         content: content.sourceString,
       };
-      tokenList.push(token);
+      return [token];
     },
     indirect_ref(objNum, _2, genNum, _3, _4) {
-      console.log("indirect_ref rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "indirect_ref",
         objNum: parseInt(objNum.sourceString),
         genNum: parseInt(genNum.sourceString),
       };
-      tokenList.push(token);
+      return [token];
     },
     xref(_1) {
-      console.log("xref rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "xref",
       };
-      tokenList.push(token);
+      return [token];
     },
     xref_entry(tenEntry, _1, fiveEntry, _2, status) {
-      console.log("xref_entry rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "xref_entry",
-        tenEntry: tenEntry.extract(),
-        fiveEntry: fiveEntry.extract(),
+        tenEntry: parseInt(tenEntry.sourceString),
+        fiveEntry: parseInt(fiveEntry.sourceString),
         status: status.sourceString,
       };
-      tokenList.push(token);
+      return [token];
     },
     trailer(_1) {
-      console.log("trailer rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "trailer"
       };
-      tokenList.push(token);
+      return [token];
     },
     startxref(_1) {
-      console.log("startxref rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "startxref"
       };
-      tokenList.push(token);
+      return [token];
     },
     eof(_1) {
-      console.log("eof rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "%%EOF",
+        type: "eof"
       };
-      tokenList.push(token);
+      return [token];
     },
     comment(_1, commentText, _2) {
-      console.log("comment rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "comment",
-        content: commentText.sourceString,
+        // content: commentText.sourceString, // no need to keep comment
       };
-      tokenList.push(token);
+      return [token];
     },
     bool(value) {
-      console.log("bool rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "bool",
-        content: value.sourceString === "true",
+        content: (value.sourceString === "true"),
       };
-      tokenList.push(token);
+      return [token];
     },
     integer(sign, digits) {
-      console.log("integer rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "integer",
@@ -232,11 +224,11 @@ function getTokens(text: string): Token[] {
           ? parseInt(sign.sourceString + digits.sourceString)
           : parseInt(digits.sourceString),
       };
-      tokenList.push(token);
+      return [token];
     },
     real(sign, part1, dot, part2) {
-      console.log("real rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "real",
@@ -247,47 +239,61 @@ function getTokens(text: string): Token[] {
             (part2 ? part2.sourceString : "")
         ),
       };
-      tokenList.push(token);
+      return [token];
     },
     null(_1) {
-      console.log("null rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "null",
       };
-      tokenList.push(token);
+      return [token];
     },
     name(_1, characters) {
-      console.log("name rule");
-      const token = {
+      const token: PDFToken = {
+        line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "name",
         content: characters.sourceString,
       };
-      tokenList.push(token);
+      return [token];
     },
   });
 
-  // Tokenize line-by-line
+  // Tokenize line-by-line 
   const lines = text.split('\n');
-  let count: number = 1;
+  let insideStream: boolean = false;
+  let tokenList: PDFToken[] = [];
   for (const line of lines) {
-    console.log(`Line ${count}: "${line}"`);
-    count += 1;
-    const matchResult: ohm.MatchResult = grammar.match(line);
-    if (matchResult.failed()) {
-      console.log(`getTokens() match did not succeed!`);
+    if (insideStream) {
+      // be robust to live editing to re-start parser at end of a stream
+      if ((line.trim().startsWith("endstream")) || 
+          (line.trim().startsWith("endobj")) || 
+          (line.trim().match(/\\d+[ \t\f\0\r\n]+\\d+[ \t\f\0\r\n]+obj/)))
+        insideStream = false; // fallthrough and let Ohm parse this line fully to get token locations
     }
-    else {
-      console.log(`getTokens() match worked! ${matchResult}`);
-      semantics(matchResult).extract();
+
+    if (!insideStream) {
+      const matchResult: ohm.MatchResult = grammar.match(line);
+      if (matchResult.failed()) {
+        console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
+      }
+      else {
+        const lineTokens: PDFToken[] = semantics(matchResult).extract();
+        console.log(`Line ${lineNbr}: tokenized "${line.trim()}": `, lineTokens);
+        // when see "stream" token skip until "endstream"
+        const streamKeyword = lineTokens.findIndex((t: PDFToken) => { return (t.type === "stream"); });
+        if (streamKeyword !== -1)
+          insideStream = true;
+        tokenList = tokenList.concat(lineTokens);
+      }
     }
+    lineNbr += 1;
   }
 
-  console.log("tokenList: ", tokenList);
   return tokenList;
 }
 
-export { parse, getTokens };
+export { getTokens };

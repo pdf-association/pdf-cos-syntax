@@ -239,45 +239,39 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  interface Token {
+  interface PDFToken {
+    line: number,
     start: number;
     end: number;
     type: string;
   }
 
   const tokenTypes = [
-    'pdf',
+    'pdf_token',
     'header',
-    'binary_marker',
-    'revision',
-    'body',
     'indirect_object_start',
-    'indirect_object_end',
+    'endobj',
     'stream',
-    'object',
-    'dictionary',
-    'key_value_pair',
-    'array',
+    'dict_start',
+    'dict_end',
+    'array_start',
+    'array_end',
     'name',
+    'valid_name_char',
     'name_hex_escape',
-    'string',
     'string_literal',
+    'string_literal_char',
     'string_literal_escape',
     'octal',
     'octal_digit',
     'escaped_eol',
     'hex_string',
-    'hex_digit',
-    'endobj',
     'indirect_ref',
-    'number',
     'integer',
     'real',
     'bool',
     'null',
     'xref',
-    'xref_subsection',
-    'xref_subsection_marker',
     'xref_10entry',
     'xref_5entry',
     'xref_entry',
@@ -300,25 +294,27 @@ export function activate(context: vscode.ExtensionContext) {
   const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
   const semanticProvider =
     vscode.languages.registerDocumentSemanticTokensProvider(
-      { language: "pdf" },
+      [ 
+        { language: "pdf" }, 
+        { language: "fdf" } 
+      ],
       {
         async provideDocumentSemanticTokens(
           document: vscode.TextDocument
         ): Promise<vscode.SemanticTokens> {
           try {
-            const tokens = (await client.sendRequest(
+            const pdf_tokens = (await client.sendRequest(
               "textDocument/semanticTokens/full",
               {
                 textDocument: { uri: document.uri.toString() },
               }
-            )) as Token[];
-console.log("TOKEN: ", tokens);
+            )) as PDFToken[];
+console.log("Client TOKEN: ", pdf_tokens);
             const builder = new vscode.SemanticTokensBuilder(legend);
-            tokens.forEach((token) => {
+            pdf_tokens.forEach((token) => {
               const startPos = new vscode.Position(0, token.start); // Assuming only one line
               const endPos = new vscode.Position(0, token.end); // Assuming only one line
               const range = new vscode.Range(startPos, endPos);
-
               builder.push(range, token.type);
             });
 

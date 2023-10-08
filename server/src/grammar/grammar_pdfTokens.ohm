@@ -25,7 +25,8 @@
 // uppercase = syntactic rule - whitespace IS skipped
 //
 // ONLY does token detection. THIS IS NOT A FULL PARSER!!!
-// Best run line-by-line
+// ONLY works if run line-by-line.
+// DOES NOT SUPPORT multi-line tokens (such as literal strings). 
 //
 PDFTokenizer {
   pdf_token = (header | 
@@ -49,6 +50,7 @@ PDFTokenizer {
               real |
               integer |
               stream |
+              endstream |
               comment |
               ws_incl_eol)+
     
@@ -58,9 +60,8 @@ PDFTokenizer {
   // Parts of indirect objects - allows editing so extra lenient 
   indirect_object_start = digit+ ws_incl_eol digit+ ws_incl_eol "obj" 
   endobj = "endobj"  
-
-  /// @todo - Because of tokenization on a line basis, may need to break this down...
-  stream = "stream" ws_incl_eol (~"endstream" any)* ws_incl_eol? "endstream"
+  stream = "stream"
+  endstream = "endstream"
   
   dict_start  = "<<" 
   dict_end    = ">>" 
