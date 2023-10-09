@@ -292,7 +292,7 @@ function getTokens(text: string): PDFToken[] {
         insideStream = false; // fallthrough and let Ohm parse this line fully to get token locations
     }
 
-    if (!insideStream) {
+    if (!insideStream && (line.trim().length > 0)) {
       const matchResult: ohm.MatchResult = grammar.match(line);
       if (matchResult.failed()) {
         console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
