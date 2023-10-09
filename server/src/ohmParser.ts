@@ -293,14 +293,18 @@ function getTokens(text: string): PDFToken[] {
     }
 
     if (!insideStream && (line.trim().length > 0)) {
-      const matchResult: ohm.MatchResult = grammar.match(line + '\n');
+      const matchResult: ohm.MatchResult = grammar.match(line + '\n'); // restore '\n' so parser sees it
       if (matchResult.failed()) {
+        // This will fail for multi-line tokens such as literal and hex strings
+        /// @todo - Could retry by stitching a few lines together, but VSCode SemanticTokens
+        /// cannot span multiple lines: https://github.com/microsoft/vscode/blob/3be5ad240bd78db6892e285cb0c0de205ceab126/src/vs/workbench/api/common/extHostTypes.ts#L3261
         console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
       }
       else {
         const lineTokens: PDFToken[] = semantics(matchResult).extract();
         console.log(`Line ${lineNbr}: tokenized "${line.trim()}": `, lineTokens);
-        // when see "stream" token skip until "endstream"
+        // When encounter a "stream" token, skip until "endstream" (or "endobj" or "X Y obj")
+        /// @todo - try a different Ohm grammar on the stream data! Content Stream, PSType4, CMap, etc. 
         const streamKeyword = lineTokens.findIndex((t: PDFToken) => { return (t.type === "stream"); });
         if (streamKeyword !== -1)
           insideStream = true;
@@ -309,6 +313,17 @@ function getTokens(text: string): PDFToken[] {
     }
     lineNbr += 1;
   }
+
+  /// @todo - How do we mark an error in syntax (what does Ohm do)???
+  ///  - whole line vs after a few tokens and at end-of-a-line vs somewhere in the middle of a line
+
+  /// @todo - processing tokenList array for 
+  ///  - basic file and syntax validation
+  ///  - file layout and structure markers
+  ///  - dictionary key modifier (so can know key or key-value)
+  ///  - array element modifier
+  ///  - streams (that were skipped above) - rely on dict key /Type, etc. and use other Ohm grammars 
+  ///  - folding??
 
   return tokenList;
 }
