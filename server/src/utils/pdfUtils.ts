@@ -17,9 +17,8 @@
  * (DARPA). Approved for public release.
 */
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
-import {  Location, Position, SemanticTokensBuilder } from "vscode-languageserver";
+import { Location, Position } from "vscode-languageserver";
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-import { TOKEN_TYPES } from '../types/constants';
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
 const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
@@ -44,95 +43,6 @@ export function flags32_to_binary(num: number): string {
   return "Bitmask: " + s;
 }
 
-
-/**
- * Process a conventional cross-reference table looking for an in-use entry for object ID.
- *
- * @param  {number} objNum - object number. Should be > 0
- * @param  {number} genNum - object generation number. Should be >= 0.
- * @param {string} xrefTable - a full conventional cross reference table without the "xref" keyword
- *
- * @returns {number} a byte offset for the object or -1 if no such in-use object.
- */
-function getByteOffsetForObj(
-  objNum: number,
-  genNum: number,
-  xrefTable: string
-): number {
-  if (objNum <= 0 || genNum === -1) {
-    return -1;
-  }
-
-  // Normalize line endings so split(), etc work as expected
-  let xref = xrefTable.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
-  xref = xrefTable.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
-  xref = xrefTable.replace("\n\n", "\n"); // remove any blank lines
-  const lines = xref.split("\n");
-
-  let startObjNum = 1;
-  let totalEntries = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(" f") || lines[i].includes(" n")) {
-      // 20-byte entry: in-use (n) or free (f)
-      const parts = lines[i].split(" ");
-      if (objNum === i + startObjNum - 1 && parts.length >= 3) {
-        // Found the object
-        if (parts[2].includes("n") && parseInt(parts[1]) === genNum) {
-          return parseInt(lines[i].split(" ")[0]);
-        } else {
-          return -1; // was a free object
-        }
-      }
-    } else {
-      // cross reference table sub-section line with 2 integers
-      const parts = lines[i].split(" ");
-      if (parts.length < 2) {
-        return -1;
-      }
-      startObjNum = parseInt(parts[0]);
-      totalEntries = parseInt(parts[1]);
-    }
-  }
-
-  return -1;
-}
-
-/**
- * Given a PDF byte offset, work out equivalent VSCode line number.
- *
- * @param {TextDocument} document - the PDF (as text) document
- * @param {number} byteOffset - the PDF file byte offset. Always > 0.
- *
- * @returns {number} VSCode line number or -1 on error
- */
-function getLineFromByteOffset(
-  document: TextDocument,
-  byteOffset: number
-): number {
-  if (byteOffset < 0) {
-    return -1;
-  }
-
-  const text = document.getText();
-  const buffer = Buffer.from(text, "utf8");
-  let count = 0;
-  let lineCount = 0;
-
-  for (const byte of buffer) {
-    if (byte === "\n".charCodeAt(0)) {
-      lineCount++;
-    }
-
-    if (count === byteOffset) {
-      return lineCount;
-    }
-
-    count++;
-  }
-
-  return -1;
-}
 
 /**
  * Find all occurrences of "X Y R" in the text for a given object ID.
@@ -414,31 +324,6 @@ export function getSemanticTokenAtPosition(
   return null;
 }
 
-export function tokenizeDocument(document: TextDocument): any {
-  const tokensBuilder = new SemanticTokensBuilder();
-
-  for (let line = 0; line < document.lineCount; line++) {
-    const currentLine = document.getText({
-      start: { line: line, character: 0 },
-      end: { line: line, character: Number.MAX_VALUE },
-    });
-
-    const pattern = new RegExp(/(\d+ \d+ R)/, "g");
-    let match;
-    while ((match = pattern.exec(currentLine)) !== null) {
-      tokensBuilder.push(
-        line,
-        match.index,
-        match[0].length,
-        TOKEN_TYPES.indexOf("indirectReference"),
-        0 // assuming no modifier
-      );
-    }
-  }
-
-  return tokensBuilder.build();
-}
-
 export function buildXrefMatrix(content: string): XrefInfoMatrix {
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
@@ -477,6 +362,3 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
 
   return xrefMatrix;
 }
-
-
-

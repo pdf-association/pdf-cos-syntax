@@ -47,7 +47,6 @@ import {
   findAllDefinitions,
   findAllReferences,
   findPreviousObjectLineNumber,
-  tokenizeDocument,
   buildXrefMatrix,
 } from "./utils/pdfUtils";
 
@@ -59,7 +58,7 @@ import {
 import { debug } from "console";
 import { TextEncoder } from "util";
 import PDFParser, { PDFSectionType } from "./parser/PdfParser";
-import { PDSCOSSyntaxSettings, PDFDocumentData } from './types';
+import { PDSCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
 import PDFObject from './models/PdfObject';
 import * as ohmParser from './ohmParser';
@@ -88,9 +87,11 @@ const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
 let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
+
 console.log("-------------------------------");
 console.log("Server");
 console.log("-------------------------------");
+
 documents.onDidChangeContent((change) => {
   const document = change.document;
   if (document) {
@@ -139,7 +140,7 @@ connection.onInitialize((params: InitializeParams) => {
           tokenTypes: TOKEN_TYPES,
           tokenModifiers: TOKEN_MODIFIERS,
         },
-        full: true,
+        full: true
       },
       documentSymbolProvider: true,
     },
@@ -172,15 +173,17 @@ connection.onInitialized(() => {
 
 // Entry point for Semantic Token parsing
 connection.onRequest("textDocument/semanticTokens/full", (params) => { 
+  console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
-  const tokens = ohmParser.getTokens(text);
+  const tokens: PDFToken[] = ohmParser.getTokens(text);
   return tokens;
 });
 
 
 connection.onDidChangeConfiguration((change) => {
+  console.log(`Server onDidChangeConfiguration`);
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
@@ -204,12 +207,13 @@ documents.onDidClose((e) => {
  *  Re-validate the PDF.
  */
 documents.onDidChangeContent((change) => {
+  console.log(`Server onDidChangeContent`);
   validateTextDocument(change.document);
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode
-  connection.console.log("We received an file change event");
+  console.log("Server onDidChangeWatchedFiles");
 });
 
 
@@ -247,7 +251,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
-    // console.log(`onDefinition for ${params.textDocument.uri}`);
+    console.log(`onDefinition for ${params.textDocument.uri}`);
 
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
@@ -324,7 +328,7 @@ connection.onDefinition(
  *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
  */
 connection.onReferences((params): Location[] | null => {
-  // console.log(`onReferences for ${params.textDocument.uri}`);
+  console.log(`onReferences for ${params.textDocument.uri}`);
 
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
@@ -679,20 +683,6 @@ documents.listen(connection);
 connection.listen();
 
 
-
-
-// async function getDocumentSettings(resource: string): Promise<PDFDocumentData> {
-//   const currentData = pdfDocumentData.get(resource) || {
-//     settings: globalSettings,
-//   };
-//   const newSettings = await connection.workspace.getConfiguration({
-//     scopeUri: resource,
-//     section: "pdf-cos-syntax",
-//   });
-//   pdfDocumentData.set(resource, { ...currentData, settings: newSettings });
-//   return { ...currentData, settings: newSettings };
-// }
-
 /**
  * Perform basic validation of a conventional PDF:
  * 1. check 1st line for valid "%PDF-x.y" header, including known PDF version
@@ -867,4 +857,3 @@ function updateXrefMatrixForDocument(uri: string, content: string) {
   // Create or update the XrefInfoMatrix for the document content
   docData.xrefMatrix = buildXrefMatrix(content);
 }
-

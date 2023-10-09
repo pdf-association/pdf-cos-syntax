@@ -334,27 +334,7 @@
           "strings": false
         }
       }
-    },
-    "semanticTokenTypes": [
-      {
-        "id": "dictionary",
-        "description": "PDF dictionary"
-      },
-      {
-        "id": "array",
-        "description": "PDF array"
-      },
-      {
-        "id": "name",
-        "description": "PDF name"
-      }
-    ],
-    "semanticTokenModifiers": [
-      {
-        "id": "deprecated",
-        "description": "Marks a token as deprecated"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

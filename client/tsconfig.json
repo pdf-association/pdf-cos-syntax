@@ -4,7 +4,10 @@
 		"target": "es2020",
 		"lib": ["es2020"],
 		"outDir": "out",
-		"rootDir": "src",
+		"rootDirs": [
+			"src",
+			"../../server/src/types/"
+		],
 		"sourceMap": true
 	},
 	"include": ["src"],

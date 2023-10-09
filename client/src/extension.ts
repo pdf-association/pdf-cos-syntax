@@ -23,6 +23,9 @@ import * as path from "path";
 import * as pdf from './pdfClientUtilities';
 import * as sankey from './sankey-webview';
 
+// Import shared definitions from Ohm-based tokenizing parser (server-side!)
+import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken } from '../../server/src/types';
+
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -164,10 +167,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   const provider = new PDFFoldingRangeProvider();
   context.subscriptions.push(
-    vscode.languages.registerFoldingRangeProvider({ scheme: "file", language: "pdf" }, provider),
-    vscode.languages.registerFoldingRangeProvider({ scheme: "file", language: "fdf" }, provider),
-    vscode.languages.registerFoldingRangeProvider({ scheme: "untitled", language: "pdf" }, provider),
-    vscode.languages.registerFoldingRangeProvider({ scheme: "untitled", language: "fdf" }, provider)
+    vscode.languages.registerFoldingRangeProvider({ language: "pdf" }, provider),
+    vscode.languages.registerFoldingRangeProvider({ language: "fdf" }, provider),
   );
   
   // line commenting
@@ -239,69 +240,15 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  interface PDFToken {
-    line: number,
-    start: number;
-    end: number;
-    type: string;
-  }
-
-  const tokenTypes = [
-    'pdf_token',
-    'header',
-    'indirect_object_start',
-    'endobj',
-    'stream',
-    'dict_start',
-    'dict_end',
-    'array_start',
-    'array_end',
-    'name',
-    'valid_name_char',
-    'name_hex_escape',
-    'string_literal',
-    'string_literal_char',
-    'string_literal_escape',
-    'octal',
-    'octal_digit',
-    'escaped_eol',
-    'hex_string',
-    'indirect_ref',
-    'integer',
-    'real',
-    'bool',
-    'null',
-    'xref',
-    'xref_10entry',
-    'xref_5entry',
-    'xref_entry',
-    'trailer',
-    'startxref',
-    'eof',
-    'comment',
-    'eol',
-    'delimiter',
-    'start_delimiter',
-    'end_delimiter',
-    'ws_incl_eol',
-    'ws_no_eol',
-  ];
-  
-  const tokenModifiers = [
-    'error',   
-    'important' 
-  ];
-  const legend = new vscode.SemanticTokensLegend(tokenTypes, tokenModifiers);
+  const legend = new vscode.SemanticTokensLegend(TOKEN_TYPES, TOKEN_MODIFIERS);
   const semanticProvider =
     vscode.languages.registerDocumentSemanticTokensProvider(
-      [ 
-        { language: "pdf" }, 
-        { language: "fdf" } 
-      ],
+      [ { language: "pdf" }, { language: "fdf" } ],
       {
         async provideDocumentSemanticTokens(
           document: vscode.TextDocument
         ): Promise<vscode.SemanticTokens> {
+          console.log(`Client side!!`);
           try {
             const pdf_tokens = (await client.sendRequest(
               "textDocument/semanticTokens/full",
@@ -309,13 +256,25 @@ export function activate(context: vscode.ExtensionContext) {
                 textDocument: { uri: document.uri.toString() },
               }
             )) as PDFToken[];
-console.log("Client TOKEN: ", pdf_tokens);
+            console.log(`Client side got "textDocument/semanticTokens/full" !!`);
             const builder = new vscode.SemanticTokensBuilder(legend);
+
             pdf_tokens.forEach((token) => {
-              const startPos = new vscode.Position(0, token.start); // Assuming only one line
-              const endPos = new vscode.Position(0, token.end); // Assuming only one line
-              const range = new vscode.Range(startPos, endPos);
-              builder.push(range, token.type);
+              const tokenCode: number = TOKEN_TYPES.findIndex((tok: string) => { return tok === token.type; } );
+              const tokenLen = token.end - token.start;
+              console.log(`Client ${token.line}:${token.start}, len=${tokenLen} ${token.type}`);
+              if ((tokenCode !== -1) && (tokenLen > 0)) {
+                builder.push(
+                  token.line, 
+                  token.start, 
+                  tokenLen,
+                  tokenCode,
+                  /// @todo - add modifiers
+                  );
+              }
+              else {
+                console.error(`Client-side token was not sane! `, token);
+              }
             });
 
             return builder.build();
