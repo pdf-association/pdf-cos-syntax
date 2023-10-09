@@ -26,7 +26,8 @@
 //
 // ONLY does token detection. THIS IS NOT A FULL PARSER!!!
 // ONLY works if run line-by-line.
-// DOES NOT SUPPORT multi-line tokens (such as literal strings). 
+// DOES NOT SUPPORT multi-line tokens (such as literal and hex strings). 
+// MUST AVOID attempting to parse stream data after "stream", before "endstream"
 //
 PDFTokenizer {
   pdf_token = (header | 
@@ -116,7 +117,7 @@ PDFTokenizer {
   
   // PDF delimiters NOT including whitespace, EOLs or comments.
   delimiter = start_delimiter | end_delimiter
-  start_delimiter = "<<" | "<" | "[" | "(" | "%"
+  start_delimiter = "<<" | "<" | "[" | "(" | "/" | "%"
   end_delimiter = ">>" | ">" | "]" | ")"
 
   // PDF whitespace optionally including EOLs and comments. ISO 32000-2 Table 1. DO NOT USE Ohm.js's "space"!
