@@ -293,7 +293,7 @@ function getTokens(text: string): PDFToken[] {
     }
 
     if (!insideStream && (line.trim().length > 0)) {
-      const matchResult: ohm.MatchResult = grammar.match(line);
+      const matchResult: ohm.MatchResult = grammar.match(line + '\n');
       if (matchResult.failed()) {
         console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
       }
