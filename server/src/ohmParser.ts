@@ -17,7 +17,7 @@
 
 import * as ohm from "ohm-js";
 import * as fs from "fs";
-import { PDFToken } from "./types";
+import { PDFToken, TOKEN_TYPES } from "./types";
 import * as path from "path";
 
 const grammarPath = path.join(__dirname, "../src/grammar/grammar_pdfTokens.ohm");
@@ -314,6 +314,19 @@ function getTokens(text: string): PDFToken[] {
     lineNbr += 1;
   }
 
+  tokenList.forEach((token) => {
+    console.log(token);
+    if (!TOKEN_TYPES.includes(token.type)) {
+      console.error(`server-Missing token type: ${token.type}`);
+    } else {
+      console.log("all passing");
+    }
+  });
+  tokenList.forEach((token) => {
+    if (token.type === undefined || token.type === null) {
+      console.error(`Undefined or null token type: `, token);
+    }
+  });
   /// @todo - How do we mark an error in syntax (what does Ohm do)???
   ///  - whole line vs after a few tokens and at end-of-a-line vs somewhere in the middle of a line
 
