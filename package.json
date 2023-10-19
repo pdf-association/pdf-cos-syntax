@@ -33,7 +33,13 @@
   "icon": "assets/pdf-light.png",
   "main": "./client/out/client/src/extension",
   "contributes": {
-    
+    "grammars": [
+      {
+        "language": "pdf",
+        "scopeName": "source.pdf",
+        "path": "./syntaxes/pdf.tmLanguage.json"
+      }
+    ],
     "semanticTokenTypes": [
       {
         "id": "header",
