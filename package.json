@@ -43,59 +43,59 @@
     "semanticTokenTypes": [
       {
         "id": "header",
-        "description": "Represents a PDF header"
+        "description": "Represents a PDF header '%PDF_x.y'"
       },
       {
         "id": "endobj",
-        "description": "Represents a PDF endobj"
+        "description": "Represents the PDF 'endobj' keyword"
       },
       {
         "id": "pdf_token",
-        "description": "Represents a PDF pdf_token"
+        "description": "Represents a PDF token"
       },
       {
         "id": "indirect_object_start",
-        "description": "Represents a PDF indirect_object_start"
+        "description": "Represents start of a PDF indirect object 'X Y obj'"
       },
       {
         "id": "stream",
-        "description": "Represents a PDF stream"
+        "description": "Represents PDF 'stream' keyword"
       },
       {
         "id": "endstream",
-        "description": "Represents a PDF endstream"
+        "description": "Represents PDF 'endstream' keyword"
       },
       {
         "id": "dict_start",
-        "description": "Represents a PDF dict_start"
+        "description": "Represents a PDF dictionary start token '<<'"
       },
       {
         "id": "dict_end",
-        "description": "Represents a PDF dict_end"
+        "description": "Represents a PDF dictionary end token '>>'"
       },
       {
         "id": "array_start",
-        "description": "Represents a PDF array_start"
+        "description": "Represents PDF array start token '["
       },
       {
         "id": "array_end",
-        "description": "Represents a PDF array_end"
+        "description": "Represents PDF array end token ']'"
       },
       {
         "id": "name",
-        "description": "Represents a PDF name"
+        "description": "Represents a PDF name object"
       },
       {
         "id": "valid_name_char",
-        "description": "Represents a PDF valid_name_char"
+        "description": "Represents a PDF character that can be in a name object"
       },
       {
         "id": "name_hex_escape",
-        "description": "Represents a PDF name_hex_escape"
+        "description": "Represents a PDF hex escape sequence in name objects"
       },
       {
         "id": "string_literal",
-        "description": "Represents a PDF string_literal"
+        "description": "Represents a PDF string literal '(...)"
       },
       {
         "id": "string_literal_char",
@@ -103,109 +103,109 @@
       },
       {
         "id": "string_literal_escape",
-        "description": "Represents a PDF string_literal_escape"
+        "description": "Represents a PDF literal string escape sequence"
       },
       {
         "id": "octal",
-        "description": "Represents a PDF octal"
+        "description": "Represents a PDF literal string octal escape sequence"
       },
       {
         "id": "octal_digit",
-        "description": "Represents a PDF octal_digit"
+        "description": "Represents a PDF literal string octal digit '0'-'7'"
       },
       {
         "id": "escaped_eol",
-        "description": "Represents a PDF escaped_eol"
+        "description": "Represents a PDF literal string escaped EOL sequence"
       },
       {
         "id": "hex_string",
-        "description": "Represents a PDF hex_string"
+        "description": "Represents a PDF hexadecimal string '<...>'"
       },
       {
         "id": "indirect_ref",
-        "description": "Represents a PDF indirect_ref"
+        "description": "Represents a PDF indirect reference 'X Y R'"
       },
       {
         "id": "integer",
-        "description": "Represents a PDF integer"
+        "description": "Represents a PDF integer object"
       },
       {
         "id": "real",
-        "description": "Represents a PDF real"
+        "description": "Represents a PDF real number object"
       },
       {
         "id": "bool",
-        "description": "Represents a PDF bool"
+        "description": "Represents a PDF boolean: 'true' or 'false'"
       },
       {
         "id": "null",
-        "description": "Represents a PDF null"
+        "description": "Represents the PDF 'null' keyword"
       },
       {
         "id": "xref",
-        "description": "Represents a PDF xref"
+        "description": "Represents the PDF 'xref' keyword"
       },
       {
         "id": "xref_10entry",
-        "description": "Represents a PDF xref_10entry"
+        "description": "Represents a PDF conventional cross reference 10-digit entry"
       },
       {
         "id": "xref_5entry",
-        "description": "Represents a PDF xref_5entry"
+        "description": "Represents a PDF conventional cross reference 5-digit entry"
       },
       {
         "id": "xref_entry",
-        "description": "Represents a PDF xref_entry"
+        "description": "Represents a 20-byte PDF conventional cross reference entry"
       },
       {
         "id": "trailer",
-        "description": "Represents a PDF trailer"
+        "description": "Represents the PDF 'trailer' keyword"
       },
       {
         "id": "eof",
-        "description": "Represents a PDF eof"
+        "description": "Represents the PDF end-of-file marker '%%EOF'"
       },
       {
         "id": "startxref",
-        "description": "Represents a PDF startxref"
+        "description": "Represents the PDF 'startxref' keyword"
       },
       {
         "id": "comment",
-        "description": "Represents a PDF comment"
+        "description": "Represents a PDF comment '%...'"
       },
       {
         "id": "eol",
-        "description": "Represents a PDF eol"
+        "description": "Represents a PDF end-of-line sequence"
       },
       {
         "id": "delimiter",
-        "description": "Represents a PDF delimiter"
+        "description": "Represents a PDF delimiter character"
       },
       {
         "id": "start_delimiter",
-        "description": "Represents a PDF start_delimiter"
+        "description": "Represents a PDF starting delimiter"
       },
       {
         "id": "end_delimiter",
-        "description": "Represents a PDF end_delimiter"
+        "description": "Represents a PDF ending delimiter"
       },
       {
         "id": "ws_incl_eol",
-        "description": "Represents a PDF ws_incl_eol"
+        "description": "Represents PDF whitespace (including EOL)"
       },
       {
         "id": "ws_no_eol",
-        "description": "Represents a PDF ws_no_eol"
+        "description": "Represents PDF whitespace (not EOL)"
       }
     ],
     "semanticTokenModifiers": [
       {
         "id": "isDictKey",
-        "description": "Marks a token as deprecated"
+        "description": "Token is a dictionary key (name object)"
       },
       {
         "id": "isArrayElement",
-        "description": "Marks a token as deprecated"
+        "description": "Token is an element of an array object"
       }
     ],
     "semanticTokenStyleDefaults": [
