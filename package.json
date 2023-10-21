@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.83.1"
   },
   "icon": "assets/pdf-light.png",
   "main": "./client/out/client/src/extension",
@@ -43,6 +43,7 @@
     "semanticTokenTypes": [
       {
         "id": "header",
+        "superType": "comment",
         "description": "Represents a PDF header '%PDF_x.y'"
       },
       {
@@ -59,10 +60,12 @@
       },
       {
         "id": "stream",
+        "superType": "keyword",
         "description": "Represents PDF 'stream' keyword"
       },
       {
         "id": "endstream",
+        "superType": "keyword",
         "description": "Represents PDF 'endstream' keyword"
       },
       {
@@ -127,10 +130,12 @@
       },
       {
         "id": "integer",
+        "superType": "number",
         "description": "Represents a PDF integer object"
       },
       {
         "id": "real",
+        "superType": "number",
         "description": "Represents a PDF real number object"
       },
       {
@@ -139,10 +144,12 @@
       },
       {
         "id": "null",
+        "superType": "keyword",
         "description": "Represents the PDF 'null' keyword"
       },
       {
         "id": "xref",
+        "superType": "keyword",
         "description": "Represents the PDF 'xref' keyword"
       },
       {
@@ -159,18 +166,22 @@
       },
       {
         "id": "trailer",
+        "superType": "keyword",
         "description": "Represents the PDF 'trailer' keyword"
       },
       {
         "id": "eof",
+        "superType": "comment",
         "description": "Represents the PDF end-of-file marker '%%EOF'"
       },
       {
         "id": "startxref",
+        "superType": "keyword",
         "description": "Represents the PDF 'startxref' keyword"
       },
       {
         "id": "comment",
+        "superType": "comment",
         "description": "Represents a PDF comment '%...'"
       },
       {
@@ -547,7 +558,6 @@
     "ascii85": "^1.0.2",
     "ohm-js": "^17.1.0",
     "sharp": "^0.32.5",
-    "vscode": "^1.1.37",
     "vscode-languageserver": "^8.1.0",
     "vscode-languageserver-textdocument": "^1.0.8"
   }
