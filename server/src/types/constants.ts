@@ -21,6 +21,7 @@ export const TOKEN_TYPES = [
   'indirect_object_start',
   'endobj',
   'stream',
+  'endstream',
   'dict_start',
   'dict_end',
   'array_start',
