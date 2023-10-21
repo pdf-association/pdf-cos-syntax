@@ -48,11 +48,163 @@
       {
         "id": "endobj",
         "description": "Represents a PDF endobj"
+      },
+      {
+        "id": "pdf_token",
+        "description": "Represents a PDF pdf_token"
+      },
+      {
+        "id": "indirect_object_start",
+        "description": "Represents a PDF indirect_object_start"
+      },
+      {
+        "id": "stream",
+        "description": "Represents a PDF stream"
+      },
+      {
+        "id": "endstream",
+        "description": "Represents a PDF endstream"
+      },
+      {
+        "id": "dict_start",
+        "description": "Represents a PDF dict_start"
+      },
+      {
+        "id": "dict_end",
+        "description": "Represents a PDF dict_end"
+      },
+      {
+        "id": "array_start",
+        "description": "Represents a PDF array_start"
+      },
+      {
+        "id": "array_end",
+        "description": "Represents a PDF array_end"
+      },
+      {
+        "id": "name",
+        "description": "Represents a PDF name"
+      },
+      {
+        "id": "valid_name_char",
+        "description": "Represents a PDF valid_name_char"
+      },
+      {
+        "id": "name_hex_escape",
+        "description": "Represents a PDF name_hex_escape"
+      },
+      {
+        "id": "string_literal",
+        "description": "Represents a PDF string_literal"
+      },
+      {
+        "id": "string_literal_char",
+        "description": "Represents a PDF string_literal_char"
+      },
+      {
+        "id": "string_literal_escape",
+        "description": "Represents a PDF string_literal_escape"
+      },
+      {
+        "id": "octal",
+        "description": "Represents a PDF octal"
+      },
+      {
+        "id": "octal_digit",
+        "description": "Represents a PDF octal_digit"
+      },
+      {
+        "id": "escaped_eol",
+        "description": "Represents a PDF escaped_eol"
+      },
+      {
+        "id": "hex_string",
+        "description": "Represents a PDF hex_string"
+      },
+      {
+        "id": "indirect_ref",
+        "description": "Represents a PDF indirect_ref"
+      },
+      {
+        "id": "integer",
+        "description": "Represents a PDF integer"
+      },
+      {
+        "id": "real",
+        "description": "Represents a PDF real"
+      },
+      {
+        "id": "bool",
+        "description": "Represents a PDF bool"
+      },
+      {
+        "id": "null",
+        "description": "Represents a PDF null"
+      },
+      {
+        "id": "xref",
+        "description": "Represents a PDF xref"
+      },
+      {
+        "id": "xref_10entry",
+        "description": "Represents a PDF xref_10entry"
+      },
+      {
+        "id": "xref_5entry",
+        "description": "Represents a PDF xref_5entry"
+      },
+      {
+        "id": "xref_entry",
+        "description": "Represents a PDF xref_entry"
+      },
+      {
+        "id": "trailer",
+        "description": "Represents a PDF trailer"
+      },
+      {
+        "id": "eof",
+        "description": "Represents a PDF eof"
+      },
+      {
+        "id": "startxref",
+        "description": "Represents a PDF startxref"
+      },
+      {
+        "id": "comment",
+        "description": "Represents a PDF comment"
+      },
+      {
+        "id": "eol",
+        "description": "Represents a PDF eol"
+      },
+      {
+        "id": "delimiter",
+        "description": "Represents a PDF delimiter"
+      },
+      {
+        "id": "start_delimiter",
+        "description": "Represents a PDF start_delimiter"
+      },
+      {
+        "id": "end_delimiter",
+        "description": "Represents a PDF end_delimiter"
+      },
+      {
+        "id": "ws_incl_eol",
+        "description": "Represents a PDF ws_incl_eol"
+      },
+      {
+        "id": "ws_no_eol",
+        "description": "Represents a PDF ws_no_eol"
       }
     ],
     "semanticTokenModifiers": [
       {
         "id": "isDictKey",
+        "description": "Marks a token as deprecated"
+      },
+      {
+        "id": "isArrayElement",
         "description": "Marks a token as deprecated"
       }
     ],
