@@ -248,7 +248,6 @@ export function activate(context: vscode.ExtensionContext) {
         async provideDocumentSemanticTokens(
           document: vscode.TextDocument
         ): Promise<vscode.SemanticTokens> {
-          console.log(`Client side!!`);
           try {
             const pdf_tokens = (await client.sendRequest(
               "textDocument/semanticTokens/full",
