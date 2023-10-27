@@ -273,7 +273,7 @@ The extension analyzes PDFs for certain keywords and special comments (i.e. `%%P
 
 The extension provides various custom commands via the Command Palette (`CTRL`+`SHIFT`+`P`, or &#8679; &#8984; `P`) or the editor context menu under a new "PDF" category:
 
-![VSCode PDF Command Palette](assets/vscode-command-palette.png)
+![VSCode PDF Command Palette](assets/VSCode-command-palette.png)
 
 * import and conversion of various common image files (such as JPEG, PNG, or GIF) to a new Image XObject at the current cursor position using either ASCII-Hex or ASCII-85 filters. The use of these filters ensures that the binary image data does not get corrupted by VSCode as the output from these filters is always ASCII. The Image XObject can either be raw pixels (with single `/ASCIIHexDecode` or `/ASCII85Decode` filter) or a JPEG (using a chain of filters such as `[ /ASCIIHexDecode /DCTDecode ]` or `[ /ASCII85Decode /DCTDecode ]`).
 
