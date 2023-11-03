@@ -31,7 +31,7 @@
     "vscode": "^1.83.1"
   },
   "icon": "assets/pdf-light.png",
-  "main": "./client/out/client/src/extension",
+  "main": "./client/out/extension",
   "contributes": {
     "grammars": [
       {
@@ -43,7 +43,6 @@
     "semanticTokenTypes": [
       {
         "id": "header",
-        "superType": "comment",
         "description": "Represents a PDF header '%PDF_x.y'"
       },
       {
@@ -51,21 +50,15 @@
         "description": "Represents the PDF 'endobj' keyword"
       },
       {
-        "id": "pdf_token",
-        "description": "Represents a PDF token"
-      },
-      {
         "id": "indirect_object_start",
         "description": "Represents start of a PDF indirect object 'X Y obj'"
       },
       {
         "id": "stream",
-        "superType": "keyword",
         "description": "Represents PDF 'stream' keyword"
       },
       {
         "id": "endstream",
-        "superType": "keyword",
         "description": "Represents PDF 'endstream' keyword"
       },
       {
@@ -89,36 +82,8 @@
         "description": "Represents a PDF name object"
       },
       {
-        "id": "valid_name_char",
-        "description": "Represents a PDF character that can be in a name object"
-      },
-      {
-        "id": "name_hex_escape",
-        "description": "Represents a PDF hex escape sequence in name objects"
-      },
-      {
         "id": "string_literal",
-        "description": "Represents a PDF string literal '(...)"
-      },
-      {
-        "id": "string_literal_char",
-        "description": "Represents a PDF string_literal_char"
-      },
-      {
-        "id": "string_literal_escape",
-        "description": "Represents a PDF literal string escape sequence"
-      },
-      {
-        "id": "octal",
-        "description": "Represents a PDF literal string octal escape sequence"
-      },
-      {
-        "id": "octal_digit",
-        "description": "Represents a PDF literal string octal digit '0'-'7'"
-      },
-      {
-        "id": "escaped_eol",
-        "description": "Represents a PDF literal string escaped EOL sequence"
+        "description": "Represents a PDF string literal"
       },
       {
         "id": "hex_string",
@@ -130,12 +95,10 @@
       },
       {
         "id": "integer",
-        "superType": "number",
         "description": "Represents a PDF integer object"
       },
       {
         "id": "real",
-        "superType": "number",
         "description": "Represents a PDF real number object"
       },
       {
@@ -144,12 +107,10 @@
       },
       {
         "id": "null",
-        "superType": "keyword",
         "description": "Represents the PDF 'null' keyword"
       },
       {
         "id": "xref",
-        "superType": "keyword",
         "description": "Represents the PDF 'xref' keyword"
       },
       {
@@ -166,47 +127,19 @@
       },
       {
         "id": "trailer",
-        "superType": "keyword",
         "description": "Represents the PDF 'trailer' keyword"
       },
       {
         "id": "eof",
-        "superType": "comment",
         "description": "Represents the PDF end-of-file marker '%%EOF'"
       },
       {
         "id": "startxref",
-        "superType": "keyword",
         "description": "Represents the PDF 'startxref' keyword"
       },
       {
         "id": "comment",
-        "superType": "comment",
         "description": "Represents a PDF comment '%...'"
-      },
-      {
-        "id": "eol",
-        "description": "Represents a PDF end-of-line sequence"
-      },
-      {
-        "id": "delimiter",
-        "description": "Represents a PDF delimiter character"
-      },
-      {
-        "id": "start_delimiter",
-        "description": "Represents a PDF starting delimiter"
-      },
-      {
-        "id": "end_delimiter",
-        "description": "Represents a PDF ending delimiter"
-      },
-      {
-        "id": "ws_incl_eol",
-        "description": "Represents PDF whitespace (including EOL)"
-      },
-      {
-        "id": "ws_no_eol",
-        "description": "Represents PDF whitespace (not EOL)"
       }
     ],
     "semanticTokenModifiers": [
@@ -556,6 +489,7 @@
   },
   "dependencies": {
     "ascii85": "^1.0.2",
+    "deasync": "^0.1.29",
     "ohm-js": "^17.1.0",
     "sharp": "^0.32.5",
     "vscode-languageserver": "^8.1.0",
