@@ -362,3 +362,104 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
 
   return xrefMatrix;
 }
+
+
+/**
+ * Consrtuct a PDF hover for Date objects.
+ * 
+ * @param d  PDF date string (literal or hex string)
+ * @returns Human-readable date for the valid parts of the PDF date string
+ */
+function parsePDFDateString(d: string): string {
+  /// @todo - hex strings!
+
+  // Parse a PDF Date string into consistuent fields
+  const PDFDateRegex = /^D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+Z])?(\d{2})?(')?(\d{2})?(')?/gm;
+
+  let errorInFormat: boolean = false;
+  let year: number = -1;
+  let month: number = 1;
+  let day: number = 1;
+  let hour: number = 0;
+  let minute: number = 0;
+  let second: number = 0;
+  let utc_char: string = ''; // Z, + or -
+  let utc_hour: number = 0;
+  let utc_minute: number = 0;
+  let s: string = '';
+
+  const m = PDFDateRegex.exec(d);
+  if (m != null) {
+    try {
+      // console.log(m);
+
+      if ((m.length >= 1) && (m[1] != null)) {
+        year = parseInt(m[1]);
+        if (year < 0) year = 0;
+        s = year.toString().padStart(4, '0');
+      }
+
+      const MonthNames: string[] = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec' ];
+      if ((m.length >= 2) && (m[2] != null)) {
+        month = parseInt(m[2]);
+        if ((month < 1) || (month > 12)) { month = 1; errorInFormat = true; }
+      }
+      s = MonthNames[month - 1] + ' ' + s;
+
+      const DaysInMonth: number[] = [ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]; // Leap years not checked!
+      if ((m.length >= 3) && (m[3] != null) && !errorInFormat) {
+        day = parseInt(m[3]);
+        if ((day < 1) || (day > DaysInMonth[month - 1])) { day = 1; errorInFormat = true; }
+      }
+      s = day + ' ' + s;
+
+      if ((m.length >= 4) && (m[4] != null) && !errorInFormat) {
+        hour = parseInt(m[4]);
+        if ((hour < 0) || (hour > 23)) { hour = 0; errorInFormat = true; }
+      }
+      s = s + ', ' + hour.toString().padStart(2, '0');
+
+      if ((m.length >= 5) && (m[5] != null) && !errorInFormat) {
+        minute = parseInt(m[5]);
+        if ((minute < 0) || (minute > 59)) { minute = 0; errorInFormat = true; }
+      }
+      s = s + ':' + minute.toString().padStart(2, '0');
+
+      if ((m.length >= 6) && (m[6] != null) && !errorInFormat) {
+        second = parseInt(m[6]);
+        if ((second < 0) || (second > 59)) { second = 0; errorInFormat = true; }
+      }
+      s = s + ':' + second.toString().padStart(2, '0');
+
+      if ((m.length >= 7) && (m[7] != null) && !errorInFormat) {
+        utc_char = m[7];
+
+        if ((m.length >= 8) && (m[8] != null) && !errorInFormat) {
+          utc_hour = parseInt(m[8]);
+          if ((utc_hour < 0) || (utc_hour > 23)) { utc_hour = 0; errorInFormat = true; }
+
+          // skip m[9] (apostrophe)
+
+          if ((m.length >= 10) && (m[10] != null) && !errorInFormat) {
+            utc_minute = parseInt(m[10]);
+            if ((utc_minute < 0) || (utc_minute > 59)) { utc_minute = 0; errorInFormat = true; }
+          }
+        }
+        if (utc_char === 'Z')
+          s = s + ' UTC';
+        else // + or -
+          s = s + ' UTC' + utc_char + utc_hour.toString().padStart(2, '0') + ':' + utc_minute.toString().padStart(2, '0');
+      }
+      else {
+        s = s + ' GMT'; // Default as per PDF specification
+      }
+
+    }
+    catch (e: any) {
+      console.log("ERROR: ", e);
+      s = 'ERROR: ' + e + ' - ' + s;
+    }
+  }
+
+  return s;
+}
