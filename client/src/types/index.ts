@@ -1,5 +1,5 @@
 /**
- * @brief Conventional cross reference table and file structure information. Shared between client and server.  
+ * @brief Semantic tokenizing parser interface. Shared between client and server. 
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
@@ -13,15 +13,6 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
-'use strict';
 
-import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-
-export interface PDSCOSSyntaxSettings {
-  maxNumberOfProblems: number;
-}
-
-export type PDFDocumentData = {
-  settings: PDSCOSSyntaxSettings;
-  xrefMatrix?: XrefInfoMatrix;
-};
+export * from './tokenTypes';
+export * from './constants';

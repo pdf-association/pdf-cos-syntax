@@ -28,11 +28,142 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.83.1"
   },
   "icon": "assets/pdf-light.png",
   "main": "./client/out/extension",
   "contributes": {
+    "grammars": [
+      {
+        "language": "pdf",
+        "scopeName": "source.pdf",
+        "path": "./syntaxes/pdf.tmLanguage.json"
+      }
+    ],
+    "semanticTokenTypes": [
+      {
+        "id": "header",
+        "description": "Represents a PDF header '%PDF_x.y'"
+      },
+      {
+        "id": "endobj",
+        "description": "Represents the PDF 'endobj' keyword"
+      },
+      {
+        "id": "indirect_object_start",
+        "description": "Represents start of a PDF indirect object 'X Y obj'"
+      },
+      {
+        "id": "stream",
+        "description": "Represents PDF 'stream' keyword"
+      },
+      {
+        "id": "endstream",
+        "description": "Represents PDF 'endstream' keyword"
+      },
+      {
+        "id": "dict_start",
+        "description": "Represents a PDF dictionary start token '<<'"
+      },
+      {
+        "id": "dict_end",
+        "description": "Represents a PDF dictionary end token '>>'"
+      },
+      {
+        "id": "array_start",
+        "description": "Represents PDF array start token '["
+      },
+      {
+        "id": "array_end",
+        "description": "Represents PDF array end token ']'"
+      },
+      {
+        "id": "name",
+        "description": "Represents a PDF name object"
+      },
+      {
+        "id": "string_literal",
+        "description": "Represents a PDF string literal"
+      },
+      {
+        "id": "hex_string",
+        "description": "Represents a PDF hexadecimal string '<...>'"
+      },
+      {
+        "id": "indirect_ref",
+        "description": "Represents a PDF indirect reference 'X Y R'"
+      },
+      {
+        "id": "integer",
+        "description": "Represents a PDF integer object"
+      },
+      {
+        "id": "real",
+        "description": "Represents a PDF real number object"
+      },
+      {
+        "id": "bool",
+        "description": "Represents a PDF boolean: 'true' or 'false'"
+      },
+      {
+        "id": "null",
+        "description": "Represents the PDF 'null' keyword"
+      },
+      {
+        "id": "xref",
+        "description": "Represents the PDF 'xref' keyword"
+      },
+      {
+        "id": "xref_10entry",
+        "description": "Represents a PDF conventional cross reference 10-digit entry"
+      },
+      {
+        "id": "xref_5entry",
+        "description": "Represents a PDF conventional cross reference 5-digit entry"
+      },
+      {
+        "id": "xref_entry",
+        "description": "Represents a 20-byte PDF conventional cross reference entry"
+      },
+      {
+        "id": "trailer",
+        "description": "Represents the PDF 'trailer' keyword"
+      },
+      {
+        "id": "eof",
+        "description": "Represents the PDF end-of-file marker '%%EOF'"
+      },
+      {
+        "id": "startxref",
+        "description": "Represents the PDF 'startxref' keyword"
+      },
+      {
+        "id": "comment",
+        "description": "Represents a PDF comment '%...'"
+      }
+    ],
+    "semanticTokenModifiers": [
+      {
+        "id": "isDictKey",
+        "description": "Token is a dictionary key (name object)"
+      },
+      {
+        "id": "isArrayElement",
+        "description": "Token is an element of an array object"
+      }
+    ],
+    "semanticTokenStyleDefaults": [
+      {
+        "id": "header",
+        "foreground": "#FF0000",
+        "fontStyle": "bold"
+      },
+      {
+        "id": "endobj",
+        "foreground": "#FF0000",
+        "fontStyle": "bold"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "PDF",
@@ -95,18 +226,6 @@
           "light": "./assets/fdf-light.png",
           "dark": "./assets/fdf-dark.png"
         }
-      }
-    ],
-    "grammars": [
-      {
-        "language": "pdf",
-        "scopeName": "source.pdf",
-        "path": "./syntaxes/pdf.tmLanguage.json"
-      },
-      {
-        "language": "fdf",
-        "scopeName": "source.fdf",
-        "path": "./syntaxes/fdf.tmLanguage.json"
       }
     ],
     "snippets": [
@@ -344,52 +463,9 @@
           "other": true,
           "comments": false,
           "strings": false
-        }        
+        }
       }
-    },
-    "semanticTokenTypes": [
-      {
-        "id": "indirectReference",
-        "superType": "struct",
-        "description": "Represents a PDF indirect reference 'X Y R'"
-      },
-      {
-        "id": "indirectObject",
-        "superType": "class",
-        "description": "Represents an indirect PDF object in the body section of a PDF file 'X Y obj'"
-      },
-      {
-        "id": "xrefTableEntry",
-        "superType": "decorator",
-        "description": "Represents an entry in a conventional cross reference table"
-      },
-      {
-        "id": "endobjKeyword",
-        "superType": "keyword",
-        "description": "Represents 'endobj' keyword"
-      },
-      {
-        "id": "endstreamKeyword",
-        "superType": "keyword",
-        "description": "Represents 'endstream' keyword"
-      },
-      {
-        "id": "hexString",
-        "superType": "string",
-        "description": "A PDF hexadecimal string between '<' / '>'"
-      },
-      {
-        "id": "bitMask",
-        "superType": "number",
-        "description": "A PDF key that is a bitmask"
-      }
-    ],
-    "semanticTokenModifiers": [
-      {
-        "id": "deprecated",
-        "description": "Marks a token as deprecated"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -400,8 +476,10 @@
     "test": "sh ./scripts/e2e.sh"
   },
   "devDependencies": {
+    "@ohm-js/cli": "^2.0.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.5.9",
+    "@types/vscode": "^1.83.1",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
     "eslint": "^8.48.0",
@@ -410,6 +488,8 @@
   },
   "dependencies": {
     "ascii85": "^1.0.2",
+    "deasync": "^0.1.29",
+    "ohm-js": "^17.1.0",
     "sharp": "^0.32.5",
     "vscode-languageserver": "^8.1.0",
     "vscode-languageserver-textdocument": "^1.0.8"

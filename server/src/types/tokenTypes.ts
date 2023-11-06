@@ -1,5 +1,5 @@
 /**
- * @brief Conventional cross reference table and file structure information. Shared between client and server.  
+ * @brief Token from Ohm-based tokenizing parser. Shared between client and server.
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
@@ -15,13 +15,10 @@
  */
 'use strict';
 
-import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-
-export interface PDSCOSSyntaxSettings {
-  maxNumberOfProblems: number;
+export interface PDFToken {
+  line: number,
+  start: number;
+  end: number;
+  type: string;
+  [key: string]: any;
 }
-
-export type PDFDocumentData = {
-  settings: PDSCOSSyntaxSettings;
-  xrefMatrix?: XrefInfoMatrix;
-};

@@ -17,9 +17,8 @@
  * (DARPA). Approved for public release.
 */
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
-import {  Location, Position, SemanticTokensBuilder } from "vscode-languageserver";
+import { Location, Position } from "vscode-languageserver";
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-import { TOKEN_TYPES } from '../types/constants';
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
 const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
@@ -44,95 +43,6 @@ export function flags32_to_binary(num: number): string {
   return "Bitmask: " + s;
 }
 
-
-/**
- * Process a conventional cross-reference table looking for an in-use entry for object ID.
- *
- * @param  {number} objNum - object number. Should be > 0
- * @param  {number} genNum - object generation number. Should be >= 0.
- * @param {string} xrefTable - a full conventional cross reference table without the "xref" keyword
- *
- * @returns {number} a byte offset for the object or -1 if no such in-use object.
- */
-function getByteOffsetForObj(
-  objNum: number,
-  genNum: number,
-  xrefTable: string
-): number {
-  if (objNum <= 0 || genNum === -1) {
-    return -1;
-  }
-
-  // Normalize line endings so split(), etc work as expected
-  let xref = xrefTable.replace("\r\n", " \n"); // CR+LF --> SPACE+LF (byte count unchanged)
-  xref = xrefTable.replace("\r", "\n"); // single CR --> single LF (byte count unchanged)
-  xref = xrefTable.replace("\n\n", "\n"); // remove any blank lines
-  const lines = xref.split("\n");
-
-  let startObjNum = 1;
-  let totalEntries = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(" f") || lines[i].includes(" n")) {
-      // 20-byte entry: in-use (n) or free (f)
-      const parts = lines[i].split(" ");
-      if (objNum === i + startObjNum - 1 && parts.length >= 3) {
-        // Found the object
-        if (parts[2].includes("n") && parseInt(parts[1]) === genNum) {
-          return parseInt(lines[i].split(" ")[0]);
-        } else {
-          return -1; // was a free object
-        }
-      }
-    } else {
-      // cross reference table sub-section line with 2 integers
-      const parts = lines[i].split(" ");
-      if (parts.length < 2) {
-        return -1;
-      }
-      startObjNum = parseInt(parts[0]);
-      totalEntries = parseInt(parts[1]);
-    }
-  }
-
-  return -1;
-}
-
-/**
- * Given a PDF byte offset, work out equivalent VSCode line number.
- *
- * @param {TextDocument} document - the PDF (as text) document
- * @param {number} byteOffset - the PDF file byte offset. Always > 0.
- *
- * @returns {number} VSCode line number or -1 on error
- */
-function getLineFromByteOffset(
-  document: TextDocument,
-  byteOffset: number
-): number {
-  if (byteOffset < 0) {
-    return -1;
-  }
-
-  const text = document.getText();
-  const buffer = Buffer.from(text, "utf8");
-  let count = 0;
-  let lineCount = 0;
-
-  for (const byte of buffer) {
-    if (byte === "\n".charCodeAt(0)) {
-      lineCount++;
-    }
-
-    if (count === byteOffset) {
-      return lineCount;
-    }
-
-    count++;
-  }
-
-  return -1;
-}
 
 /**
  * Find all occurrences of "X Y R" in the text for a given object ID.
@@ -414,31 +324,6 @@ export function getSemanticTokenAtPosition(
   return null;
 }
 
-export function tokenizeDocument(document: TextDocument): any {
-  const tokensBuilder = new SemanticTokensBuilder();
-
-  for (let line = 0; line < document.lineCount; line++) {
-    const currentLine = document.getText({
-      start: { line: line, character: 0 },
-      end: { line: line, character: Number.MAX_VALUE },
-    });
-
-    const pattern = new RegExp(/(\d+ \d+ R)/, "g");
-    let match;
-    while ((match = pattern.exec(currentLine)) !== null) {
-      tokensBuilder.push(
-        line,
-        match.index,
-        match[0].length,
-        TOKEN_TYPES.indexOf("indirectReference"),
-        0 // assuming no modifier
-      );
-    }
-  }
-
-  return tokensBuilder.build();
-}
-
 export function buildXrefMatrix(content: string): XrefInfoMatrix {
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
@@ -479,4 +364,102 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
 }
 
 
+/**
+ * Consrtuct a PDF hover for Date objects.
+ * 
+ * @param d  PDF date string (literal or hex string)
+ * @returns Human-readable date for the valid parts of the PDF date string
+ */
+function parsePDFDateString(d: string): string {
+  /// @todo - hex strings!
 
+  // Parse a PDF Date string into consistuent fields
+  const PDFDateRegex = /^D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+Z])?(\d{2})?(')?(\d{2})?(')?/gm;
+
+  let errorInFormat: boolean = false;
+  let year: number = -1;
+  let month: number = 1;
+  let day: number = 1;
+  let hour: number = 0;
+  let minute: number = 0;
+  let second: number = 0;
+  let utc_char: string = ''; // Z, + or -
+  let utc_hour: number = 0;
+  let utc_minute: number = 0;
+  let s: string = '';
+
+  const m = PDFDateRegex.exec(d);
+  if (m != null) {
+    try {
+      // console.log(m);
+
+      if ((m.length >= 1) && (m[1] != null)) {
+        year = parseInt(m[1]);
+        if (year < 0) year = 0;
+        s = year.toString().padStart(4, '0');
+      }
+
+      const MonthNames: string[] = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec' ];
+      if ((m.length >= 2) && (m[2] != null)) {
+        month = parseInt(m[2]);
+        if ((month < 1) || (month > 12)) { month = 1; errorInFormat = true; }
+      }
+      s = MonthNames[month - 1] + ' ' + s;
+
+      const DaysInMonth: number[] = [ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]; // Leap years not checked!
+      if ((m.length >= 3) && (m[3] != null) && !errorInFormat) {
+        day = parseInt(m[3]);
+        if ((day < 1) || (day > DaysInMonth[month - 1])) { day = 1; errorInFormat = true; }
+      }
+      s = day + ' ' + s;
+
+      if ((m.length >= 4) && (m[4] != null) && !errorInFormat) {
+        hour = parseInt(m[4]);
+        if ((hour < 0) || (hour > 23)) { hour = 0; errorInFormat = true; }
+      }
+      s = s + ', ' + hour.toString().padStart(2, '0');
+
+      if ((m.length >= 5) && (m[5] != null) && !errorInFormat) {
+        minute = parseInt(m[5]);
+        if ((minute < 0) || (minute > 59)) { minute = 0; errorInFormat = true; }
+      }
+      s = s + ':' + minute.toString().padStart(2, '0');
+
+      if ((m.length >= 6) && (m[6] != null) && !errorInFormat) {
+        second = parseInt(m[6]);
+        if ((second < 0) || (second > 59)) { second = 0; errorInFormat = true; }
+      }
+      s = s + ':' + second.toString().padStart(2, '0');
+
+      if ((m.length >= 7) && (m[7] != null) && !errorInFormat) {
+        utc_char = m[7];
+
+        if ((m.length >= 8) && (m[8] != null) && !errorInFormat) {
+          utc_hour = parseInt(m[8]);
+          if ((utc_hour < 0) || (utc_hour > 23)) { utc_hour = 0; errorInFormat = true; }
+
+          // skip m[9] (apostrophe)
+
+          if ((m.length >= 10) && (m[10] != null) && !errorInFormat) {
+            utc_minute = parseInt(m[10]);
+            if ((utc_minute < 0) || (utc_minute > 59)) { utc_minute = 0; errorInFormat = true; }
+          }
+        }
+        if (utc_char === 'Z')
+          s = s + ' UTC';
+        else // + or -
+          s = s + ' UTC' + utc_char + utc_hour.toString().padStart(2, '0') + ':' + utc_minute.toString().padStart(2, '0');
+      }
+      else {
+        s = s + ' GMT'; // Default as per PDF specification
+      }
+
+    }
+    catch (e: any) {
+      console.log("ERROR: ", e);
+      s = 'ERROR: ' + e + ' - ' + s;
+    }
+  }
+
+  return s;
+}
