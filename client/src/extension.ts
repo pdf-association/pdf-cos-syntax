@@ -126,6 +126,38 @@ const fakeDataCSV: string = fakeData.join("\n");
 let client: LanguageClient;
 let pdfStatusBarItem: vscode.StatusBarItem;
 
+// This is global data in the client for a single PDF
+let semantic_doc_uri: vscode.Uri;
+let pdf_tokens: PDFToken[] = [];
+let semanticTokens:vscode.SemanticTokens;
+const legend = new vscode.SemanticTokensLegend(TOKEN_TYPES, TOKEN_MODIFIERS);
+
+ 
+async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
+  console.log(`fetch semantic tokens for ${document.uri}`);
+  const tokens: PDFToken[] = await client
+    .sendRequest("textDocument/semanticTokens/full", {
+      textDocument: { uri: document.uri.toString() },
+  }) as PDFToken[];
+  pdf_tokens = tokens;
+  console.log('fetched', pdf_tokens);
+  const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
+  for (let i = 0; i < pdf_tokens.length; i ++) {
+    const token = pdf_tokens[i];
+    if (TOKEN_TYPES.includes(token.type)) {
+      const range = new vscode.Range(
+        new vscode.Position(token.line - 1, token.start),
+        new vscode.Position(token.line - 1, token.end)
+      );
+
+      tokensBuilder.push(range, token.type);
+    }
+  }
+
+  semanticTokens = tokensBuilder.build();
+  semantic_doc_uri = document.uri;
+}
+
 export async function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
@@ -152,11 +184,11 @@ export async function activate(context: vscode.ExtensionContext) {
       { scheme: "file", language: "fdf" },
       { scheme: "untitled", language: "pdf" },
       { scheme: "untitled", language: "fdf" },
-    ],
-    synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
-    },
+    ]
+    // synchronize: {
+    //   // Notify the server about file changes to '.clientrc files contained in the workspace
+    //   fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
+    // },
   };
 
   
@@ -202,23 +234,29 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     // Command palette custom command / editor context sub-menu options under "PDF"
-    vscode.commands.registerCommand("pdf-cos-syntax.imageA85DCT", (uri) =>
-      commandHandler("imageA85DCT", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageA85DCT", 
+      (uri) => commandHandler("imageA85DCT", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.imageAHexDCT", (uri) =>
-      commandHandler("imageAHexDCT", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageAHexDCT", 
+      (uri) => commandHandler("imageAHexDCT", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.imageA85", (uri) =>
-      commandHandler("imageA85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageA85", 
+      (uri) => commandHandler("imageA85", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.imageAHex", (uri) =>
-      commandHandler("imageAHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageAHex", 
+      (uri) => commandHandler("imageAHex", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.dataA85", (uri) =>
-      commandHandler("dataA85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.dataA85", 
+      (uri) => commandHandler("dataA85", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.dataAHex", (uri) =>
-      commandHandler("dataAHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.dataAHex", 
+      (uri) => commandHandler("dataAHex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.convertLiteral2Hex",
@@ -236,21 +274,26 @@ export async function activate(context: vscode.ExtensionContext) {
       "pdf-cos-syntax.convert2XrefStream",
       (uri) => commandHandler("2XrefStream", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.2AsciiHex", (uri) =>
-      commandHandler("2AsciiHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.2AsciiHex",
+      (uri) => commandHandler("2AsciiHex", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.2Ascii85", (uri) =>
-      commandHandler("2Ascii85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.2Ascii85", 
+      (uri) => commandHandler("2Ascii85", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.FromAsciiHex", (uri) =>
-      commandHandler("FromAsciiHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.FromAsciiHex", 
+      (uri) => commandHandler("FromAsciiHex", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.FromAscii85", (uri) =>
-      commandHandler("FromAscii85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.FromAscii85", 
+      (uri) => commandHandler("FromAscii85", context, uri)
     ),
     // Status bar
-    vscode.commands.registerCommand("pdf-cos-syntax.StatusBarClick", (uri) =>
-      statusBarClick(context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.StatusBarClick", 
+      (uri) => statusBarClick(context, uri)
     ),
     pdfStatusBarItem,
     vscode.window.onDidChangeActiveTextEditor(updateStatusBarItem),
@@ -284,54 +327,29 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     });
   }
-
   
-  let pdf_tokens: PDFToken[] = [];
-  let semanticTokens:vscode.SemanticTokens;
-  const legend = new vscode.SemanticTokensLegend(TOKEN_TYPES, TOKEN_MODIFIERS);
-  
-  async function fetch_semantic_tokens(document) {
-    console.log('fetch semantic tokens');
-    const tokens: PDFToken[] = await client
-    .sendRequest("textDocument/semanticTokens/full", {
-      textDocument: { uri: document.uri.toString() },
-    }) as PDFToken[];
-    pdf_tokens = tokens;
-    console.log('fetched', pdf_tokens);
-    const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-    for(let i = 0; i < pdf_tokens.length; i ++) {
-      const token = pdf_tokens[i];
-      if (TOKEN_TYPES.includes(token.type)) {
-        const range = new vscode.Range(
-          new vscode.Position(token.line - 1, token.start),
-          new vscode.Position(token.line - 1, token.end)
-        );
-
-        tokensBuilder.push(range, token.type);
-      }
-    }
-
-    semanticTokens = tokensBuilder.build();
-
-  }
   // analyze the document and return semantic tokens
   const semanticProvider: vscode.DocumentSemanticTokensProvider = {
     provideDocumentSemanticTokens(
       document: vscode.TextDocument
     ): vscode.ProviderResult<vscode.SemanticTokens> {
-      console.log('token build ...');
+      console.log(`provideDocumentSemanticTokens for ${document.uri}`);
 
-      if(!semanticTokens) {
-        fetch_semantic_tokens(document);
+      // if cached semantic tokens apply to this document URI then reuse 
+      if (!semanticTokens || (document.uri !== semantic_doc_uri)) {
+        fetch_semantic_tokens_from_LSP(document);
       }
       return semanticTokens;
-    },
+    }
   };
 
-  const selector = { language: "pdf", scheme: "file" }; // register for all PDF documents from the local file system
-
-  const semanticTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
-    selector,
+  const semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+    { language: "pdf" },
+    semanticProvider,
+    legend
+  );
+  const semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+    { language: "fdf" },
     semanticProvider,
     legend
   );

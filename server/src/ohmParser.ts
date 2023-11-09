@@ -311,10 +311,10 @@ function getTokens(text: string): PDFToken[] {
         console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
       } else {
         const lineTokens: PDFToken[] = semantics(matchResult).extract();
-        console.log(
-          `Line ${lineNbr}: tokenized "${line.trim()}": `,
-          lineTokens
-        );
+        // console.log(
+        //   `Line ${lineNbr}: tokenized "${line.trim()}": `,
+        //   lineTokens
+        // );
         // When encounter a "stream" token, skip until "endstream" (or "endobj" or "X Y obj")
         /// @todo - try a different Ohm grammar on the stream data! Content Stream, PSType4, CMap, etc.
         const streamKeyword = lineTokens.findIndex((t: PDFToken) => {
@@ -326,20 +326,25 @@ function getTokens(text: string): PDFToken[] {
     }
     lineNbr += 1;
   }
+  console.log(`Finished tokenizing ${lineNbr} lines`);
 
-  tokenList.forEach((token) => {
-    console.log(token);
-    if (!TOKEN_TYPES.includes(token.type)) {
-      console.error(`server-Missing token type: ${token.type}`);
-    } else {
-      console.log("all passing");
-    }
-  });
-  tokenList.forEach((token) => {
-    if (token.type === undefined || token.type === null) {
-      console.error(`Undefined or null token type: `, token);
-    }
-  });
+  // DEBUG ONLY VALIDATION OF TOKENS
+  //
+  // tokenList.forEach((token) => {
+  //   console.log(token);
+  //   if (!TOKEN_TYPES.includes(token.type)) {
+  //     console.error(`server-Missing token type: ${token.type}`);
+  //   } else {
+  //     console.log("all passing");
+  //   }
+  // });
+  //
+  // tokenList.forEach((token) => {
+  //   if (token.type === undefined || token.type === null) {
+  //     console.error(`Undefined or null token type: `, token);
+  //   }
+  // });
+
   /// @todo - How do we mark an error in syntax (what does Ohm do)???
   ///  - whole line vs after a few tokens and at end-of-a-line vs somewhere in the middle of a line
 
