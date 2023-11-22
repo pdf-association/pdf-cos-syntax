@@ -28,7 +28,7 @@ const grammarString = fs.readFileSync(grammarPath, "utf-8");
 const grammar = ohm.grammar(grammarString);
 
 // Main entry point to Ohm parser called by LSP server
-function getTokens(text: string): PDFToken[] {
+function parsePDF(text: string): PDFToken[] {
   let lineNbr: number = 1;
 
   const semantics = grammar.createSemantics();
@@ -359,4 +359,4 @@ function getTokens(text: string): PDFToken[] {
   return tokenList;
 }
 
-export { getTokens };
+export { parsePDF };

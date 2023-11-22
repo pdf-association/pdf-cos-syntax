@@ -1,0 +1,19 @@
+XML {
+  document = element*
+
+  element = openTag content closeTag
+  openTag = "<" tagName attributes ">"
+  closeTag = "</" tagName ">"
+
+  content = (element | charData)*
+  charData = ~("<" | "&") any+
+
+  tagName = letter (letter | digit)*
+  attributes = (space+ attributeName "=" attributeValue)*
+  attributeName = letter (letter | digit)*
+  attributeValue = ('"' charData '"') | ("'" charData "'")
+
+  space = " " | "\t" | "\n" | "\r"
+  letter = "a".."z" | "A".."Z"
+  digit = "0".."9"
+}

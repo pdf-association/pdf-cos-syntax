@@ -18,6 +18,7 @@
 */
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
 import { Location, Position } from "vscode-languageserver";
+import * as vscode from 'vscode';
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
@@ -463,3 +464,10 @@ function parsePDFDateString(d: string): string {
 
   return s;
 }
+
+function convertRangeToVscodeRange(range: { start: { line: number; character: number; }, end: { line: number; character: number; } }): Range {
+  const start: Position = Position.create(range.start.line, range.start.character);
+  const end: Position = Position.create(range.end.line, range.end.character);
+  return Range.create(start, end);
+}
+

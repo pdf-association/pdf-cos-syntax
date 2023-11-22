@@ -22,3 +22,13 @@ export interface PDFToken {
   type: string;
   [key: string]: any;
 }
+
+export enum StreamType {
+  Image,
+  Text,
+  EmbeddedJavaScript,
+  EmbeddedXML,
+  Binary, // For streams that should not be highlighted (compressed, encrypted, etc.)
+  Unknown // Use this for streams where the type can't be determined
+}
+

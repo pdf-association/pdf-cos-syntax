@@ -35,9 +35,10 @@ import {
   DocumentSymbolParams,
   DocumentSymbol,
   SymbolKind,
+  Range,
 } from "vscode-languageserver/node";
 
-import { TextDocument, Range } from "vscode-languageserver-textdocument";
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   isFileFDF,
@@ -174,14 +175,47 @@ connection.onInitialized(() => {
 });
 
 // Entry point for Semantic Token parsing
-connection.onRequest("textDocument/semanticTokens/full", (params) => { 
+connection.onRequest("semanticTokens/full", (params) => { 
   console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
-  const tokens: PDFToken[] = ohmParser.getTokens(text);
+  const tokens: PDFToken[] = ohmParser.parsePDF(text);
   return tokens;
 });
+
+// Inside your server initialization code
+
+// Handle request for semantic tokens for a specific stream
+connection.onRequest("semanticTokens/stream", async (params) => {
+  console.log(`Server onRequest "semanticTokens/stream" for stream at range: ${params.range}`);
+
+  // Retrieve the document and the specified range for the stream
+  const document = documents.get(params.textDocument.uri);
+  if (!document) {
+    console.error(`Document not found for URI: ${params.textDocument.uri}`);
+    return null;
+  }
+
+  // Extract the text for the specified stream range
+  const range = params.range; // Assuming range is { start: { line, character }, end: { line, character } }
+  const text = document.getText(convertRangeToVscodeRange(range));
+
+  // Parse the stream content to get the tokens using Ohm or another appropriate parser
+  const streamTokens = ohmParser.parseStream(text);
+
+  // Return the parsed tokens
+  return streamTokens;
+});
+
+function convertRangeToVscodeRange(lspRange: {
+  start: { line: number; character: number; },
+  end: { line: number; character: number; }
+}): Range {
+  const start: Position = Position.create(lspRange.start.line, lspRange.start.character);
+  const end: Position = Position.create(lspRange.end.line, lspRange.end.character);
+  return Range.create(start, end);
+}
 
 
 connection.onDidChangeConfiguration((change) => {
