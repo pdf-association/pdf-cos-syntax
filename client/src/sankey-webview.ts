@@ -121,7 +121,6 @@ export class SankeyPanel
   public sendDataToWebview() {
     console.log(`sendDataToWebview`);
     // Send a message to the webview 
-    // You can send any JSON serializable data.
     this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' });
   }
 

@@ -485,9 +485,6 @@ export function deactivate(): Thenable<void> | undefined {
   return client.stop();
 }
 
-
-
-
 // Function to request semantic tokens from the server
 async function requestFullSemanticTokens(
   document: vscode.TextDocument
@@ -497,29 +494,6 @@ async function requestFullSemanticTokens(
   })) as PDFToken[];
   return tokens;
 }
-
-// Function to process semantic tokens and detect streams
-// async function processSemanticTokens(document: vscode.TextDocument) {
-//   console.log("here is process semantic tokens function");
-//   const uri = document.uri.toString();
-//   const tokens = await requestFullSemanticTokens(document);
-
-//   for (const token of tokens) {
-//     if (token.type === "stream") {
-//       const streamType = determineStreamType(document, token);
-
-//       // If the stream is of a type that requires additional tokenization
-//       if (
-//         streamType !== StreamType.Binary &&
-//         streamType !== StreamType.EmbeddedJavaScript
-//       ) {
-//         // Request additional tokens for the stream content from the server
-//         const streamTokens = await requestStreamTokens(document, token);
-//         // process these streamTokens to update the syntax highlighting
-//       }
-//     }
-//   }
-// }
 
 // Function to determine the stream type based on the dictionary before the stream keyword
 function determineStreamType(
@@ -591,8 +565,6 @@ function isBinaryStream(dictionary: Record<string, string>): boolean {
   }
   return false;
 }
-
-
 
 const streamTokenTypes = [
   "text",
@@ -669,7 +641,7 @@ function updateSyntaxHighlighting(
 //   const activeEditor = event.textEditor;
 //   const document = activeEditor.document;
 //   const position = event.selections[0].start;
-  
+
 //   // Check if the cursor is within a stream
 //   const tokenAtCursor = getTokenAtPosition(document, position);
 //   if (tokenAtCursor && tokenAtCursor.type === 'stream') {
@@ -693,47 +665,58 @@ function updateSyntaxHighlighting(
 vscode.window.onDidChangeTextEditorSelection(async (event) => {
   console.log("Selection changed in PDF document");
   const activeEditor = vscode.window.activeTextEditor;
-  if (activeEditor && activeEditor.document.languageId === 'pdf') {
+  if (activeEditor && activeEditor.document.languageId === "pdf") {
     const position = event.selections[0].start;
 
     // Fetch the stored semantic tokens for the document
     const tokens = semanticTokens; // Assuming semanticTokens is accessible here
 
     // Determine if the cursor is inside a stream block
-    const streamToken = tokens.find(token =>
-      token.type === 'stream' && position.isAfterOrEqual(token.range.start) && position.isBeforeOrEqual(token.range.end)
+    const streamToken = tokens.find(
+      (token) =>
+        token.type === "stream" &&
+        position.isAfterOrEqual(token.range.start) &&
+        position.isBeforeOrEqual(token.range.end)
     );
 
     if (streamToken) {
       try {
         // Determine the type of the stream content
-        const streamType = determineStreamType(activeEditor.document, streamToken);
+        const streamType = determineStreamType(
+          activeEditor.document,
+          streamToken
+        );
 
         // Request detailed tokens for the stream
-        const detailedTokens = await requestStreamTokens(activeEditor.document, streamToken, streamType);
+        const detailedTokens = await requestStreamTokens(
+          activeEditor.document,
+          streamToken,
+          streamType
+        );
 
         // Apply the detailed tokens for the stream
         applyStreamTokens(activeEditor, detailedTokens, streamToken);
       } catch (error) {
-        console.error('Error fetching or applying stream tokens:', error);
+        console.error("Error fetching or applying stream tokens:", error);
       }
     }
   }
 });
 
-async function requestStreamTokens(document: vscode.TextDocument, streamToken: PDFToken, streamType: StreamType) {
-  const detailedTokens = await client.sendRequest('semanticTokens/stream', {
+async function requestStreamTokens(
+  document: vscode.TextDocument,
+  streamToken: PDFToken,
+  streamType: StreamType
+) {
+  const detailedTokens = await client.sendRequest("semanticTokens/stream", {
     textDocument: document.uri.toString(),
     range: streamToken.range,
-    type: streamType
+    type: streamType,
   });
   return detailedTokens;
 }
 
-
-
 function isCursorInsideStream(position, document) {
-  // Assuming you have a way to access the tokens you've stored
   // const tokens = semanticTokens;
   // // Find if there's a stream token at the cursor's position
   // const streamToken = tokens.find(token => token.type === 'stream' && token.range.contains(position));
@@ -741,29 +724,26 @@ function isCursorInsideStream(position, document) {
   return true;
 }
 
-
-
-
-
-
-
-
 // A global or higher scoped variable to hold detailed stream tokens, keyed by document URI
 const detailedStreamTokensMap = new Map<string, PDFToken[]>();
 
 // This function is called when detailed stream tokens are fetched
-function applyStreamTokens(editor: vscode.TextEditor, detailedTokens: PDFToken[], streamToken: PDFToken) {
+function applyStreamTokens(
+  editor: vscode.TextEditor,
+  detailedTokens: PDFToken[],
+  streamToken: PDFToken
+) {
   // Store the detailed tokens for the stream
   detailedStreamTokensMap.set(editor.document.uri.toString(), detailedTokens);
 
   // Trigger a refresh of the semantic tokens in the editor
-  vscode.commands.executeCommand('editor.action.semanticToken.refresh');
+  vscode.commands.executeCommand("editor.action.semanticToken.refresh");
 }
 
-// Your semantic tokens provider, which should now provide detailed stream tokens when available
 const mySemanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
-  provideDocumentSemanticTokens(document: vscode.TextDocument): vscode.ProviderResult<vscode.SemanticTokens> {
-    // Initialize your builder with the legend you've defined for your tokens
+  provideDocumentSemanticTokens(
+    document: vscode.TextDocument
+  ): vscode.ProviderResult<vscode.SemanticTokens> {
     const builder = new vscode.SemanticTokensBuilder(legend);
 
     // Check if we have detailed stream tokens for this document
@@ -771,7 +751,6 @@ const mySemanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
     if (detailedTokens) {
       // Apply the detailed stream tokens using the builder
       for (const token of detailedTokens) {
-        // Convert your token's range to the necessary line and character for the builder
         const line = token.range.start.line;
         const startIndex = token.range.start.character;
         const length = token.range.end.character - startIndex;
@@ -786,7 +765,7 @@ const mySemanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
       // Tokenize the document initially and fill the builder
       // ... (existing logic)
     }
-    
+
     return builder.build();
-  }
+  },
 };

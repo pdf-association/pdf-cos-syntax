@@ -51,25 +51,28 @@ import {
   buildXrefMatrix,
 } from "./utils/pdfUtils";
 
-import {
-  DictKeyCodeCompletion
-} from "./utils/ArlingtonUtils";
+import { DictKeyCodeCompletion } from "./utils/ArlingtonUtils";
 
 // for server debug.
 import { debug } from "console";
 import { TextEncoder } from "util";
 import PDFParser, { PDFSectionType } from "./parser/PdfParser";
-import { PDSCOSSyntaxSettings, PDFDocumentData, PDFToken, StreamType } from './types';
-import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
-import PDFObject from './models/PdfObject';
-import * as ohmParser from './ohmParser';
+import {
+  PDSCOSSyntaxSettings,
+  PDFDocumentData,
+  PDFToken,
+  StreamType,
+} from "./types";
+import { TOKEN_MODIFIERS, TOKEN_TYPES } from "./types/constants";
+import PDFObject from "./models/PdfObject";
+import * as ohmParser from "./ohmParser";
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
   // require("source-map-support").install();
 }
 
-console.log('server is running');
+console.log("server is running");
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -81,7 +84,6 @@ const documents = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
-
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
@@ -133,7 +135,7 @@ connection.onInitialize((params: InitializeParams) => {
       // Tell the client that this server supports code completion for PDF names
       completionProvider: {
         resolveProvider: false, // change to true so onCompletionResolve() gets called
-        triggerCharacters: [ "/" ]
+        triggerCharacters: ["/"],
       },
       definitionProvider: true,
       referencesProvider: true,
@@ -143,7 +145,7 @@ connection.onInitialize((params: InitializeParams) => {
           tokenTypes: TOKEN_TYPES,
           tokenModifiers: TOKEN_MODIFIERS,
         },
-        full: true
+        full: true,
       },
       documentSymbolProvider: true,
     },
@@ -175,7 +177,7 @@ connection.onInitialized(() => {
 });
 
 // Entry point for Semantic Token parsing
-connection.onRequest("semanticTokens/full", (params) => { 
+connection.onRequest("semanticTokens/full", (params) => {
   console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
@@ -184,11 +186,11 @@ connection.onRequest("semanticTokens/full", (params) => {
   return tokens;
 });
 
-// Inside your server initialization code
-
 // Handle request for semantic tokens for a specific stream
 connection.onRequest("semanticTokens/stream", async (params) => {
-  console.log(`Server onRequest "semanticTokens/stream" for stream at range: ${params.range}`);
+  console.log(
+    `Server onRequest "semanticTokens/stream" for stream at range: ${params.range}`
+  );
 
   // Retrieve the document and the specified range for the stream
   const document = documents.get(params.textDocument.uri);
@@ -202,7 +204,7 @@ connection.onRequest("semanticTokens/stream", async (params) => {
   const text = document.getText(convertRangeToVscodeRange(range));
 
   let tokens;
-  
+
   switch (params.type) {
     case StreamType.JavaScript:
       tokens = ohmParser.parseJavaScriptStream(text);
@@ -218,14 +220,19 @@ connection.onRequest("semanticTokens/stream", async (params) => {
 });
 
 function convertRangeToVscodeRange(lspRange: {
-  start: { line: number; character: number; },
-  end: { line: number; character: number; }
+  start: { line: number; character: number };
+  end: { line: number; character: number };
 }): Range {
-  const start: Position = Position.create(lspRange.start.line, lspRange.start.character);
-  const end: Position = Position.create(lspRange.end.line, lspRange.end.character);
+  const start: Position = Position.create(
+    lspRange.start.line,
+    lspRange.start.character
+  );
+  const end: Position = Position.create(
+    lspRange.end.line,
+    lspRange.end.character
+  );
   return Range.create(start, end);
 }
-
 
 connection.onDidChangeConfiguration((change) => {
   console.log(`Server onDidChangeConfiguration`);
@@ -261,15 +268,14 @@ connection.onDidChangeWatchedFiles((_change) => {
   console.log("Server onDidChangeWatchedFiles");
 });
 
-
-/** 
- * Intellisense code completion on "/" for PDF names.  Items are automatically 
+/**
+ * Intellisense code completion on "/" for PDF names.  Items are automatically
  * sorted alphabetically and will auto-filter as the user types more.
- */ 
+ */
 connection.onCompletion(
   (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
     // The pass parameter contains the position of the text document in
-    // which code-complete got requested. 
+    // which code-complete got requested.
     const cursor = _textDocumentPosition.position;
     const doc = documents.get(_textDocumentPosition.textDocument.uri);
     if (!doc) return [];
@@ -277,14 +283,12 @@ connection.onCompletion(
   }
 );
 
-
 /**
  * NOT USED unless completionProvider: { resolveProvider: false, ... }
- */ 
+ */
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   return item;
 });
-
 
 /**
  *  "Go to definition" capability:
@@ -580,76 +584,75 @@ connection.onHover((params): Hover | null => {
  */
 connection.onDocumentSymbol(
   (params: DocumentSymbolParams): DocumentSymbol[] => {
-  const { textDocument } = params;
-  const document = documents.get(textDocument.uri);
-  if (!document) return [];
+    const { textDocument } = params;
+    const document = documents.get(textDocument.uri);
+    if (!document) return [];
 
-  const pdfParser = new PDFParser(document);
-  const symbols: DocumentSymbol[] = [];
+    const pdfParser = new PDFParser(document);
+    const symbols: DocumentSymbol[] = [];
 
-  // Add PDF Object to the list, with stream sub-object as necessary
-  const addObjectSymbols = (objectList: PDFObject[]): DocumentSymbol[] => {
-    return objectList.map((obj: PDFObject) => {
-      const children: DocumentSymbol[] = [];
-      if (pdfParser.hasObjectStreamInside(obj)) {
-        const r3 = pdfParser.getObjectStreamRange(obj);
-        if (r3)
-          children.push({
-            name: "Stream",
-            kind: SymbolKind.Method,
-            range: r3,
-            selectionRange: r3,
-          });
-      }
-      const r4 = pdfParser.getObjectRange(obj);
-      return {
-        name: `Object ${obj.getObjectID()}`,
-        kind: SymbolKind.Object,
-        range: r4,
-        selectionRange: r4,
-        children: children,
-      };
-    });
-  };
-
-  // For each file revision, build up the Outline based on the order 
-  // discovered in the PDF file. DON'T ASSUME because editing can break things!!
-  let r1: Range;
-  for (let revision = 0; revision < pdfParser.getNumRevisions(); revision++) {
-    let revisionName: string = `Incremental Update ${revision}`;
-    if (revision === 0)
-      revisionName = `Original PDF`;
-    // console.group(`Revision ${revision} = ${revisionName}`);
-
-    // Top level container for this revision
-    r1 = pdfParser.getRevisionRange(revision);
-    const revisionSymbol: DocumentSymbol = {
-      name: revisionName,
-      kind: SymbolKind.Namespace,
-      range: r1,
-      selectionRange: r1,
-      children: [],
+    // Add PDF Object to the list, with stream sub-object as necessary
+    const addObjectSymbols = (objectList: PDFObject[]): DocumentSymbol[] => {
+      return objectList.map((obj: PDFObject) => {
+        const children: DocumentSymbol[] = [];
+        if (pdfParser.hasObjectStreamInside(obj)) {
+          const r3 = pdfParser.getObjectStreamRange(obj);
+          if (r3)
+            children.push({
+              name: "Stream",
+              kind: SymbolKind.Method,
+              range: r3,
+              selectionRange: r3,
+            });
+        }
+        const r4 = pdfParser.getObjectRange(obj);
+        return {
+          name: `Object ${obj.getObjectID()}`,
+          kind: SymbolKind.Object,
+          range: r4,
+          selectionRange: r4,
+          children: children,
+        };
+      });
     };
-  
-    // Add the sections in this revision, in file order
-    const fileOrder = pdfParser.getRevisionSectionOrder(revision);
-    // console.log(JSON.stringify(fileOrder));
 
-    for (const section of fileOrder) {
-      switch (section) {
-        case PDFSectionType.Header: {
+    // For each file revision, build up the Outline based on the order
+    // discovered in the PDF file. DON'T ASSUME because editing can break things!!
+    let r1: Range;
+    for (let revision = 0; revision < pdfParser.getNumRevisions(); revision++) {
+      let revisionName: string = `Incremental Update ${revision}`;
+      if (revision === 0) revisionName = `Original PDF`;
+      // console.group(`Revision ${revision} = ${revisionName}`);
+
+      // Top level container for this revision
+      r1 = pdfParser.getRevisionRange(revision);
+      const revisionSymbol: DocumentSymbol = {
+        name: revisionName,
+        kind: SymbolKind.Namespace,
+        range: r1,
+        selectionRange: r1,
+        children: [],
+      };
+
+      // Add the sections in this revision, in file order
+      const fileOrder = pdfParser.getRevisionSectionOrder(revision);
+      // console.log(JSON.stringify(fileOrder));
+
+      for (const section of fileOrder) {
+        switch (section) {
+          case PDFSectionType.Header: {
             r1 = pdfParser.getHeaderRange(revision);
             revisionSymbol.children?.push({
               name: "Header",
               kind: SymbolKind.Interface,
               range: r1,
-              selectionRange: r1, 
+              selectionRange: r1,
               children: [],
             });
             break;
           }
 
-        case PDFSectionType.Body: {
+          case PDFSectionType.Body: {
             r1 = pdfParser.getBodyRange(revision);
             const bodySectionSymbol: DocumentSymbol = {
               name: "Body",
@@ -664,7 +667,7 @@ connection.onDocumentSymbol(
             break;
           }
 
-        case PDFSectionType.CrossReference: {
+          case PDFSectionType.CrossReference: {
             r1 = pdfParser.getCrossReferenceTableRange(0);
             const crossReferenceSymbol: DocumentSymbol = {
               name: "Cross reference table",
@@ -677,7 +680,7 @@ connection.onDocumentSymbol(
             break;
           }
 
-        case PDFSectionType.Footer: {
+          case PDFSectionType.Footer: {
             // Footer section includes one or more of: trailer, startxref and %%EOF
             // console.group(`Footer`);
             const subsections = pdfParser.getFooterSubsections(revision);
@@ -707,18 +710,19 @@ connection.onDocumentSymbol(
             break;
           }
 
-        default:
-          throw new Error(`Unexpected PDF section ${section.toString()}!`);
+          default:
+            throw new Error(`Unexpected PDF section ${section.toString()}!`);
         }
+      }
+
+      symbols.push(revisionSymbol);
+      console.groupEnd();
     }
 
-    symbols.push(revisionSymbol);
-    console.groupEnd();
+    // console.log(JSON.stringify(symbols, null, 2));
+    return symbols;
   }
-
-  // console.log(JSON.stringify(symbols, null, 2)); 
-  return symbols;
-});
+);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
@@ -726,7 +730,6 @@ documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
-
 
 /**
  * Perform basic validation of a conventional PDF:
@@ -836,7 +839,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   let lastLine = textDocument
     .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
     .trim();
-  while ((lastLine.length === 0) && (i > 0)) {
+  while (lastLine.length === 0 && i > 0) {
     i--;
     lastLine = textDocument
       .getText({ start: Position.create(i, 0), end: Position.create(i, 6) })
