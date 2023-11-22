@@ -59,7 +59,7 @@ import {
 import { debug } from "console";
 import { TextEncoder } from "util";
 import PDFParser, { PDFSectionType } from "./parser/PdfParser";
-import { PDSCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
+import { PDSCOSSyntaxSettings, PDFDocumentData, PDFToken, StreamType } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
 import PDFObject from './models/PdfObject';
 import * as ohmParser from './ohmParser';
@@ -201,11 +201,20 @@ connection.onRequest("semanticTokens/stream", async (params) => {
   const range = params.range; // Assuming range is { start: { line, character }, end: { line, character } }
   const text = document.getText(convertRangeToVscodeRange(range));
 
-  // Parse the stream content to get the tokens using Ohm or another appropriate parser
-  const streamTokens = ohmParser.parseStream(text);
+  let tokens;
+  
+  switch (params.type) {
+    case StreamType.JavaScript:
+      tokens = ohmParser.parseJavaScriptStream(text);
+      break;
+    case StreamType.XML:
+      tokens = ohmParser.parseXMLStream(text);
+      break;
+    default:
+      tokens = ohmParser.parseGenericStream(text);
+  }
 
-  // Return the parsed tokens
-  return streamTokens;
+  return tokens;
 });
 
 function convertRangeToVscodeRange(lspRange: {

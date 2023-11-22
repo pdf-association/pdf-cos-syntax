@@ -535,9 +535,9 @@ function determineStreamType(
     return StreamType.Image;
   } else if (dictionary["/Type"] === "/EmbeddedFile") {
     if (dictionary["/Subtype"] === "/text/javascript") {
-      return StreamType.EmbeddedJavaScript;
+      return StreamType.JavaScript;
     } else if (dictionary["/Subtype"] === "/text/xml") {
-      return StreamType.EmbeddedXML;
+      return StreamType.XML;
     }
   } else if (isBinaryStream(dictionary)) {
     return StreamType.Binary;
@@ -691,13 +691,13 @@ function updateSyntaxHighlighting(
 // });
 
 vscode.window.onDidChangeTextEditorSelection(async (event) => {
-  console.log("abcdegfhijklmnopqrstuvwxyz");
+  console.log("Selection changed in PDF document");
   const activeEditor = vscode.window.activeTextEditor;
   if (activeEditor && activeEditor.document.languageId === 'pdf') {
     const position = event.selections[0].start;
 
     // Fetch the stored semantic tokens for the document
-    const tokens = semanticTokens;
+    const tokens = semanticTokens; // Assuming semanticTokens is accessible here
 
     // Determine if the cursor is inside a stream block
     const streamToken = tokens.find(token =>
@@ -706,7 +706,11 @@ vscode.window.onDidChangeTextEditorSelection(async (event) => {
 
     if (streamToken) {
       try {
-        const detailedTokens = await requestStreamTokens(activeEditor.document, streamToken);
+        // Determine the type of the stream content
+        const streamType = determineStreamType(activeEditor.document, streamToken);
+
+        // Request detailed tokens for the stream
+        const detailedTokens = await requestStreamTokens(activeEditor.document, streamToken, streamType);
 
         // Apply the detailed tokens for the stream
         applyStreamTokens(activeEditor, detailedTokens, streamToken);
@@ -717,13 +721,16 @@ vscode.window.onDidChangeTextEditorSelection(async (event) => {
   }
 });
 
-async function requestStreamTokens(document: vscode.TextDocument, streamToken: PDFToken) {
+async function requestStreamTokens(document: vscode.TextDocument, streamToken: PDFToken, streamType: StreamType) {
   const detailedTokens = await client.sendRequest('semanticTokens/stream', {
     textDocument: document.uri.toString(),
-    range: streamToken.range 
+    range: streamToken.range,
+    type: streamType
   });
   return detailedTokens;
 }
+
+
 
 function isCursorInsideStream(position, document) {
   // Assuming you have a way to access the tokens you've stored

@@ -20,15 +20,14 @@ import * as fs from "fs";
 import { PDFToken, TOKEN_TYPES } from "./types";
 import * as path from "path";
 
-const grammarPath = path.join(
-  __dirname,
-  "../src/grammar/grammar_pdfTokens.ohm"
-);
-const grammarString = fs.readFileSync(grammarPath, "utf-8");
-const grammar = ohm.grammar(grammarString);
-
 // Main entry point to Ohm parser called by LSP server
 function parsePDF(text: string): PDFToken[] {
+  const grammarPath = path.join(
+    __dirname,
+    "../src/grammar/grammar_pdfTokens.ohm"
+  );
+  const grammarString = fs.readFileSync(grammarPath, "utf-8");
+  const grammar = ohm.grammar(grammarString);
   let lineNbr: number = 1;
 
   const semantics = grammar.createSemantics();
@@ -359,4 +358,138 @@ function parsePDF(text: string): PDFToken[] {
   return tokenList;
 }
 
-export { parsePDF };
+function parseJavaScriptStream(text: string): PDFToken[] {
+  const grammarPath = path.join(
+    __dirname,
+    "../src/grammar/grammar_JavaScript.ohm"
+  );
+  const grammarString = fs.readFileSync(grammarPath, "utf-8");
+  const jsGrammar = ohm.grammar(grammarString);
+
+  const jsSemantics = jsGrammar.createSemantics();
+  jsSemantics.addOperation('extract()', {
+    // Define operations for each rule in the grammar
+    // ...
+  });
+
+  const matchResult = jsGrammar.match(text);
+  if (matchResult.succeeded()) {
+    return jsSemantics(matchResult).extract();
+  } else {
+    console.error(jsGrammar.match(text).message);
+    return [];
+  }
+}
+
+function parseXMLStream(text: string): PDFToken[] {
+  const grammarPath = path.join(
+    __dirname,
+    "../src/grammar/grammar_XML.ohm"
+  );
+  const grammarString = fs.readFileSync(grammarPath, "utf-8");
+  const xmlGrammar = ohm.grammar(grammarString);
+  const lineNbr: number = 1;
+
+  const xmlSemantics = xmlGrammar.createSemantics();
+  xmlSemantics.addOperation('extract()', {
+    document(elements) {
+      return elements.children.map(child => child.extract()).join("");
+    },
+    element(open, content, close) {
+      const openTagToken = open.extract();
+      const contentTokens = content.extract();
+      const closeTagToken = close.extract();
+      return [openTagToken, ...contentTokens, closeTagToken].join("");
+    },
+    openTag(_lt, tagName, attributes, _gt) {
+      const token = {
+        type: 'openTag',
+        name: tagName.extract(),
+        attributes: attributes.extract(),
+        line: lineNbr,  
+        start: _lt.source.startIdx,
+        end: _gt.source.endIdx
+      };
+      return JSON.stringify(token);
+    },
+    closeTag(_lt, _slash, tagName, _gt) {
+      const token = {
+        type: 'closeTag',
+        name: tagName.extract(),
+        line: lineNbr,  
+        start: _lt.source.startIdx,
+        end: _gt.source.endIdx
+      };
+      return JSON.stringify(token);
+    },
+    content(elements) {
+      return elements.children.map(child => child.extract()).flat().join("");
+    },
+    charData(chars) {
+      const token = {
+        type: 'charData',
+        content: chars.sourceString,
+        line: lineNbr,  
+        start: chars.source.startIdx,
+        end: chars.source.endIdx
+      };
+      return JSON.stringify(token);
+    },
+    tagName(firstChar, otherChars) {
+      return firstChar.sourceString + otherChars.sourceString;
+    },
+    attributes(attributeList) {
+      return JSON.stringify(attributeList.children.map(attr => attr.extract()));
+    },
+    attributeName(name) {
+      return name.sourceString;
+    },
+    attributeValue(_quote, value, _quote2) {
+      const token = {
+        type: 'attributeValue',
+        value: value.sourceString,
+        line: lineNbr,  
+        start: _quote.source.startIdx,
+        end: _quote2.source.endIdx
+      };
+      return JSON.stringify(token);
+    },
+    _terminal() {
+      return this.sourceString;
+    },
+  });
+  
+
+  const matchResult = xmlGrammar.match(text);
+  if (matchResult.succeeded()) {
+    return xmlSemantics(matchResult).extract();
+  } else {
+    console.error(xmlGrammar.match(text).message);
+    return [];
+  }
+}
+
+function parseGenericStream(text: string): PDFToken[] {
+  const grammarPath = path.join(
+    __dirname,
+    "../src/grammar/grammar_generic.ohm"
+  );
+  const grammarString = fs.readFileSync(grammarPath, "utf-8");
+  const genericGrammar = ohm.grammar(grammarString);
+
+  const genericSemantics = genericGrammar.createSemantics();
+  genericSemantics.addOperation('extract()', {
+    // Define operations for each rule in the grammar
+    // ...
+  });
+
+  const matchResult = genericGrammar.match(text);
+  if (matchResult.succeeded()) {
+    return genericSemantics(matchResult).extract();
+  } else {
+    console.error(genericGrammar.match(text).message);
+    return [];
+  }
+}
+
+export { parsePDF, parseJavaScriptStream, parseXMLStream, parseGenericStream };

@@ -22,3 +22,13 @@ export interface PDFToken {
   type: string;
   [key: string]: any;
 }
+
+export enum StreamType {
+  Image,
+  Text,
+  JavaScript,
+  XML,
+  Binary, 
+  Unknown
+}
+
