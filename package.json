@@ -38,6 +38,11 @@
         "language": "pdf",
         "scopeName": "source.pdf",
         "path": "./syntaxes/pdf.tmLanguage.json"
+      },
+      {
+        "language": "fdf",
+        "scopeName": "source.fdf",
+        "path": "./syntaxes/fdf.tmLanguage.json"
       }
     ],
     "semanticTokenTypes": [
@@ -242,7 +247,8 @@
       "editor/context": [
         {
           "submenu": "pdf.submenu",
-          "group": "pdf"
+          "group": "pdf",
+          "when": "(editorLangId == pdf) || (editorLangId == fdf)"
         }
       ],
       "pdf.submenu": [
@@ -311,7 +317,8 @@
     "submenus": [
       {
         "id": "pdf.submenu",
-        "label": "PDF"
+        "label": "PDF",
+        "when": "(editorLangId == pdf) || (editorLangId == fdf)"
       }
     ],
     "commands": [
