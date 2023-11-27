@@ -10,7 +10,7 @@
 		"url": "https://github.com/pdf-association/pdf-cos-syntax"
 	},
 	"engines": {
-		"vscode": "^1.83.1"
+		"vscode": "^1.84.2"
 	},
 	"dependencies": {
 		"vscode-languageclient": "^8.1.0"

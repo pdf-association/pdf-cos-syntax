@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.83.1"
+    "vscode": "^1.84.2"
   },
   "icon": "assets/pdf-light.png",
   "main": "./client/out/extension",
