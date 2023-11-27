@@ -1,5 +1,5 @@
-.vscode
-node_modules
+.vscode/
+node_modules/
 out/
 src/
 tsconfig.json
@@ -8,5 +8,6 @@ webpack.config.js
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md
 Debugging.md
+Testing.md
 testing-resources/
 *.vsix
