@@ -68,7 +68,7 @@ if (process.env.NODE_ENV === "development") {
   // require("source-map-support").install();
 }
 
-console.log('server is running');
+// console.log('server is running');
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -90,9 +90,9 @@ let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
-console.log("-------------------------------");
-console.log("Server");
-console.log("-------------------------------");
+// console.log("-------------------------------");
+// console.log("Server");
+// console.log("-------------------------------");
 
 documents.onDidChangeContent((change) => {
   const document = change.document;
@@ -175,7 +175,7 @@ connection.onInitialized(() => {
 
 // Entry point for Semantic Token parsing
 connection.onRequest("textDocument/semanticTokens/full", (params) => { 
-  console.log(`Server onRequest "textDocument/semanticTokens/full"`);
+  // console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
@@ -185,7 +185,7 @@ connection.onRequest("textDocument/semanticTokens/full", (params) => {
 
 
 connection.onDidChangeConfiguration((change) => {
-  console.log(`Server onDidChangeConfiguration`);
+  // console.log(`Server onDidChangeConfiguration`);
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
@@ -209,13 +209,13 @@ documents.onDidClose((e) => {
  *  Re-validate the PDF.
  */
 documents.onDidChangeContent((change) => {
-  console.log(`Server onDidChangeContent`);
+  // console.log(`Server onDidChangeContent`);
   validateTextDocument(change.document);
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode
-  console.log("Server onDidChangeWatchedFiles");
+  // console.log("Server onDidChangeWatchedFiles");
 });
 
 
@@ -253,7 +253,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
-    console.log(`onDefinition for ${params.textDocument.uri}`);
+    // console.log(`onDefinition for ${params.textDocument.uri}`);
 
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
@@ -330,7 +330,7 @@ connection.onDefinition(
  *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
  */
 connection.onReferences((params): Location[] | null => {
-  console.log(`onReferences for ${params.textDocument.uri}`);
+  // console.log(`onReferences for ${params.textDocument.uri}`);
 
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);

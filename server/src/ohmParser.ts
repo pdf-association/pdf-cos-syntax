@@ -326,7 +326,7 @@ function getTokens(text: string): PDFToken[] {
     }
     lineNbr += 1;
   }
-  console.log(`Finished tokenizing ${lineNbr} lines`);
+  // console.log(`Finished tokenizing ${lineNbr} lines`);
 
   // DEBUG ONLY VALIDATION OF TOKENS
   //

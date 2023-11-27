@@ -270,7 +270,7 @@ const handleExtensionMessages = (event) => {
     const { message, type }= event.data;
     switch (type.type) {
         case "CSV-Data":
-            console.log(`Received CSV-Data`);
+            // console.log(`Received CSV-Data`);
             sankeyCsvText = type.value;
             renderSankeyDiagram();
             break;

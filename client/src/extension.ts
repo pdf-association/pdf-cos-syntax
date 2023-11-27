@@ -134,13 +134,13 @@ const legend = new vscode.SemanticTokensLegend(TOKEN_TYPES, TOKEN_MODIFIERS);
 
  
 async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
-  console.log(`fetch semantic tokens for ${document.uri}`);
+  // console.log(`fetch semantic tokens for ${document.uri}`);
   const tokens: PDFToken[] = await client
     .sendRequest("textDocument/semanticTokens/full", {
       textDocument: { uri: document.uri.toString() },
   }) as PDFToken[];
   pdf_tokens = tokens;
-  console.log('fetched', pdf_tokens);
+  // console.log('fetched', pdf_tokens);
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
   for (let i = 0; i < pdf_tokens.length; i ++) {
     const token = pdf_tokens[i];
@@ -303,56 +303,56 @@ export async function activate(context: vscode.ExtensionContext) {
   // update status bar item once at start
   updateStatusBarItem();
 
-  // Sankey Flow Diagram webview - initiated by Command Palette custom command
-  context.subscriptions.push(
-    vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
-      console.log(`pdf-cos-syntax.sankey`);
-      sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
-    })
-  );
+  // // Sankey Flow Diagram webview - initiated by Command Palette custom command
+  // context.subscriptions.push(
+  //   vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
+  //     // console.log(`pdf-cos-syntax.sankey`);
+  //     sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
+  //   })
+  // );
 
-  if (vscode.window.registerWebviewPanelSerializer) {
-    // Make sure we register a serializer in activation event
-    vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
-      async deserializeWebviewPanel(
-        webviewPanel: vscode.WebviewPanel,
-        state: any
-      ) {
-        console.log(`Got state: ${state}`);
-        // Reset the webview options so we use latest uri for `localResourceRoots`.
-        webviewPanel.webview.options = sankey.getWebviewOptions(
-          context.extensionUri
-        );
-        sankey.SankeyPanel.revive(webviewPanel, context);
-      },
-    });
-  }
+  // if (vscode.window.registerWebviewPanelSerializer) {
+  //   // Make sure we register a serializer in activation event
+  //   vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
+  //     async deserializeWebviewPanel(
+  //       webviewPanel: vscode.WebviewPanel,
+  //       state: any
+  //     ) {
+  //       // console.log(`Got state: ${state}`);
+  //       // Reset the webview options so we use latest uri for `localResourceRoots`.
+  //       webviewPanel.webview.options = sankey.getWebviewOptions(
+  //         context.extensionUri
+  //       );
+  //       sankey.SankeyPanel.revive(webviewPanel, context);
+  //     },
+  //   });
+  // }
   
   // analyze the document and return semantic tokens
-  const semanticProvider: vscode.DocumentSemanticTokensProvider = {
-    provideDocumentSemanticTokens(
-      document: vscode.TextDocument
-    ): vscode.ProviderResult<vscode.SemanticTokens> {
-      console.log(`provideDocumentSemanticTokens for ${document.uri}`);
+  // const semanticProvider: vscode.DocumentSemanticTokensProvider = {
+  //   provideDocumentSemanticTokens(
+  //     document: vscode.TextDocument
+  //   ): vscode.ProviderResult<vscode.SemanticTokens> {
+  //     // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
 
-      // if cached semantic tokens apply to this document URI then reuse 
-      if (!semanticTokens || (document.uri !== semantic_doc_uri)) {
-        fetch_semantic_tokens_from_LSP(document);
-      }
-      return semanticTokens;
-    }
-  };
+  //     // if cached semantic tokens apply to this document URI then reuse 
+  //     if (!semanticTokens || (document.uri !== semantic_doc_uri)) {
+  //       fetch_semantic_tokens_from_LSP(document);
+  //     }
+  //     return semanticTokens;
+  //   }
+  // };
 
-  const semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
-    { language: "pdf" },
-    semanticProvider,
-    legend
-  );
-  const semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
-    { language: "fdf" },
-    semanticProvider,
-    legend
-  );
+  // const semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+  //   { language: "pdf" },
+  //   semanticProvider,
+  //   legend
+  // );
+  // const semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+  //   { language: "fdf" },
+  //   semanticProvider,
+  //   legend
+  // );
 }
 
 /**

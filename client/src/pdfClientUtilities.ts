@@ -396,7 +396,7 @@ export async function convertImageToAscii85DCT(
     const img = await sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
-        console.log(info);
+        // console.log(info);
         width = info.width;
         height = info.height;
       });
@@ -819,7 +819,7 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
   out = out.concat(objStm);
   out.push(`endstream`);
   out.push(`endobj`);
-  console.log(`objectsToObjectStream: ${out}`);
+  // console.log(`objectsToObjectStream: ${out}`);
   return out;
 }
 
