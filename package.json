@@ -316,14 +316,6 @@
     ],
     "commands": [
       {
-        "command": "pdf-cos-syntax.sankey",
-        "title": "Create a Sankey Flow diagram of the current PDF",
-        "shortTitle": "Create a Sankey Flow diagram",
-        "category": "PDF",
-        "icon": "$(zap)",
-        "enablement": "(editorLangId == pdf) || (editorLangId == fdf)"
-      },
-      {
         "command": "pdf-cos-syntax.imageAHex",
         "title": "Insert an Image XObject using /ASCIIHexDecode filter on raw pixels",
         "shortTitle": "Insert an Image XObject (ASCII-Hex only)",
