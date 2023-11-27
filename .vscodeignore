@@ -5,6 +5,7 @@
 Debugging.md
 Testing.md
 testing-resources/
+scripts/
 *.vsix
 **/*.ts
 **/*.map
