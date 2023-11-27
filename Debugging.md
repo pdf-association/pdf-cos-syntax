@@ -68,3 +68,11 @@ Working in VSCode is heavily JS centric, however JS regex special characters are
 
 - due to PDFs with binary data, various "end" symbols can be missed since VSCode sees some of the bytes as part of a UTF-8 multi-byte sequence and thus misses the end symbol. For this reason, some dictionary and object ending sequences also include `endobj` (and possibly other keywords or symbols) in an attempt to isolate the confusion within a single PDF object. Non-capturing of these backups may also be helpful...
 
+## Coping with Sharp across multiple platforms
+
+```
+npm install --platform=win32 --arch=x64 sharp
+npm rebuild --platform=darwin --arch=arm64 sharp
+npm rebuild --platform=darwin --arch=x64 sharp
+npm rebuild --platform=linux --arch=x64 sharp
+```

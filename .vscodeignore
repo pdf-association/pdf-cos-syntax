@@ -7,3 +7,10 @@ Testing.md
 testing-resources/
 *.vsix
 **/*.ts
+**/*.map
+**/*.h
+**/*.cpp
+**/*.cc
+**/*.c
+*.vsix
+*.txt
