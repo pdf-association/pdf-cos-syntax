@@ -9,6 +9,7 @@ testing-resources/
 **/*.ts
 **/*.map
 **/*.h
+**/*.hh
 **/*.cpp
 **/*.cc
 **/*.c
