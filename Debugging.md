@@ -68,10 +68,30 @@ Working in VSCode is heavily JS centric, however JS regex special characters are
 
 - due to PDFs with binary data, various "end" symbols can be missed since VSCode sees some of the bytes as part of a UTF-8 multi-byte sequence and thus misses the end symbol. For this reason, some dictionary and object ending sequences also include `endobj` (and possibly other keywords or symbols) in an attempt to isolate the confusion within a single PDF object. Non-capturing of these backups may also be helpful...
 
-## Coping with Sharp across multiple platforms
+# Node modules
+
+Minimal Node module dependencies are kept below `client` and `server` folders. The `.\package.json` shouldn't have any runtime dependencies:
 
 ```
-npm install --platform=win32 --arch=x64 sharp
+cd client
+npm install
+npm outdated
+cd ..\server
+npm install
+npm outdated
+cd ..
+npm install
+npm outdated
+npm outdated -g
+```
+
+## Supporting Sharp across multiple platforms
+
+Sharp is used to read image files such as JPEG, PNG, PPM, etc. and depends it on `libvips` which is a platform-dependent DLLs, dylibs, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be install locally: 
+
+```
+cd client
+npm rebuild --platform=win32 --arch=x64 sharp
 npm rebuild --platform=darwin --arch=arm64 sharp
 npm rebuild --platform=darwin --arch=x64 sharp
 npm rebuild --platform=linux --arch=x64 sharp

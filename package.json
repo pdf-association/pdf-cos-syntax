@@ -471,26 +471,18 @@
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "test": "sh ./scripts/e2e.sh"
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
   },
   "devDependencies": {
-    "@ohm-js/cli": "^2.0.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.84.2",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.1.0",
     "eslint": "^8.54.0",
     "mocha": "^10.2.0",
     "typescript": "^5.3.2"
   },
   "dependencies": {
-    "ascii85": "^1.0.2",
-    "deasync": "^0.1.29",
-    "ohm-js": "^17.1.0",
-    "sharp": "^0.32.5",
-    "vscode-languageserver": "^8.1.0",
-    "vscode-languageserver-textdocument": "^1.0.8"
   }
 }

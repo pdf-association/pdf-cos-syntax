@@ -1,6 +1,6 @@
 {
 	"name": "pdf-cos-syntax-client",
-	"description": "VSCode part of the PDF COS syntax language server",
+	"description": "VSCode client of the PDF COS syntax language server",
 	"author": "PDF Association",
 	"license": "Apache-2.0",
 	"version": "0.1.5",
@@ -13,10 +13,20 @@
 		"vscode": "^1.84.2"
 	},
 	"dependencies": {
-		"vscode-languageclient": "^8.1.0"
+		"@vscode/test-electron": "^2.3.8",
+		"ascii85": "^1.0.2",
+		"deasync": "^0.1.29",
+		"sharp": "^0.32.5",
+		"vscode-languageclient": "^9.0.1"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.82.0",
-		"@vscode/test-electron": "^2.2.3"
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^20.10.0",
+		"@types/vscode": "^1.84.2",
+		"@typescript-eslint/eslint-plugin": "^6.12.0",
+		"@typescript-eslint/parser": "^6.12.0",
+		"eslint": "^8.54.0",
+		"mocha": "^10.2.0",
+		"typescript": "^5.3.2"
 	}
 }
