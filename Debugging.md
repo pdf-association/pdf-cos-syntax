@@ -85,6 +85,24 @@ npm outdated
 npm outdated -g
 ```
 
+# Packaging
+
+For some reason `vsce package` includes DevDependencies for both `.\client` and `.\server` folders. Work around is to manually prune the dev-only dependences in client and server, then package, and then reinstate:
+
+```
+cd client
+npm prune --omit dev
+cd ..\server
+npm prune --omit dev
+cd ..
+vsce package
+cd client
+npm install
+cd ..\server
+npm install
+cd ..
+```
+
 ## Supporting Sharp across multiple platforms
 
 Sharp is used to read image files such as JPEG, PNG, PPM, etc. and depends it on `libvips` which is a platform-dependent DLLs, dylibs, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be install locally: 
