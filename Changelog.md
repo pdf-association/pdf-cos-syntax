@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.6 - T.B.D.
+- (ADDED) Date string hover
+- (ADDED) Semantic token processing
+- (IMPROVED) Replaced inefficient regex-based parsing with Ohm.js based parser 
+- (CHANGED) moved all processing to LSP server side. Client now calls server via an API
+-
+
 ## 0.1.5 - 2023-11-27
 - (ADDED) Code completion options for PDF names when `/` is pressed (from [Arlington PDF Model](https://github.com/pdf-association/arlington-pdf-model))
 - (FIXED) Support for new (unsaved) PDF/FDF files
