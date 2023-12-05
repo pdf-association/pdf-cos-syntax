@@ -495,60 +495,54 @@ async function requestFullSemanticTokens(
   return tokens;
 }
 
-// Function to determine the stream type based on the dictionary before the stream keyword
 function determineStreamType(
   document: vscode.TextDocument,
-  streamToken: PDFToken
+  streamStartToken: PDFToken
 ): StreamType {
-  // Extract the dictionary content before the streamToken
-  const dictionaryContent = extractDictionary(document, streamToken);
-  // Determine the stream type based on the content of the dictionary
+  const dictionaryContent = extractDictionary(document, streamStartToken);
+
   const dictionary = parseDictionary(dictionaryContent);
-  // Determine the stream type based on the dictionary keys and values
+
   if (dictionary["/Subtype"] === "/Image") {
     return StreamType.Image;
-  } else if (dictionary["/Type"] === "/EmbeddedFile") {
-    if (dictionary["/Subtype"] === "/text/javascript") {
-      return StreamType.JavaScript;
-    } else if (dictionary["/Subtype"] === "/text/xml") {
-      return StreamType.XML;
-    }
-  } else if (isBinaryStream(dictionary)) {
-    return StreamType.Binary;
+  } else if (dictionary["/Subtype"] === "/XML") {
+    return StreamType.XML;
+  } else if (dictionary["/Subtype"] === "/JavaScript") {
+    return StreamType.JavaScript;
   }
 
-  // If the stream type cannot be determined
   return StreamType.Unknown;
 }
 
 function extractDictionary(
   document: vscode.TextDocument,
-  streamToken: PDFToken
+  streamStartToken: PDFToken
 ): string {
-  // Assuming streamToken includes position information to find the dictionary start
-  const startPos = new vscode.Position(streamToken.line, 0); // Line start
-  const endPos = document.positionAt(streamToken.start); // Start of the stream token
-  const textRange = new vscode.Range(startPos, endPos);
+  let dictionaryContent = "";
+  let lineNum = streamStartToken.line - 2;
 
-  // Extract the text of the dictionary from the document
-  const text = document.getText(textRange);
+  // Scan backwards to find the dictionary
+  while (lineNum >= 0) {
+    const lineText = document.lineAt(lineNum).text;
+    dictionaryContent = lineText + "\n" + dictionaryContent;
 
-  const dictionaryStartIndex = text.lastIndexOf("<<");
-  const dictionaryEndIndex = text.lastIndexOf(">>");
+    if (lineText.includes("<<")) {
+      break;
+    }
 
-  if (dictionaryStartIndex !== -1 && dictionaryEndIndex !== -1) {
-    return text.substring(dictionaryStartIndex, dictionaryEndIndex + 2);
+    lineNum--;
   }
 
-  return ""; // Return an empty string if the dictionary is not found
+  return dictionaryContent;
 }
 
 function parseDictionary(dictionaryText: string): Record<string, string> {
   const dictionary: Record<string, string> = {};
 
-  // Regex to match dictionary entries, simplistic and may need refinement
+  // Regex to match dictionary entries
+  // This regex handles simple cases and might need refinement for complex dictionaries
   const entryRegex = /\/(\w+)\s+((?:\/\w+)|(?:\(.*?\))|(?:".*?")|(?:\d+))/g;
-  let match;
+  let match: any[];
 
   while ((match = entryRegex.exec(dictionaryText))) {
     const key = match[1];
@@ -566,138 +560,85 @@ function isBinaryStream(dictionary: Record<string, string>): boolean {
   return false;
 }
 
-const streamTokenTypes = [
-  "text",
-  "embeddedJavaScript",
-  "embeddedXML",
-  "binary",
-  "unknown",
-];
-const streamTokenModifiers = ["readonly", "static"];
-const streamLegend = new vscode.SemanticTokensLegend(
-  streamTokenTypes,
-  streamTokenModifiers
-);
+// const streamTokenTypes = [
+//   "text",
+//   "embeddedJavaScript",
+//   "embeddedXML",
+//   "binary",
+//   "unknown",
+// ];
+// const streamTokenModifiers = ["readonly", "static"];
+// const streamLegend = new vscode.SemanticTokensLegend(
+//   streamTokenTypes,
+//   streamTokenModifiers
+// );
 
-function updateSyntaxHighlighting(
-  editor: vscode.TextEditor,
-  streamTokens: PDFToken[]
-) {
-  const builder = new vscode.SemanticTokensBuilder(streamLegend);
-
-  streamTokens.forEach((token) => {
-    const tokenTypeIndex = streamLegend.tokenTypes.indexOf(token.type);
-    const tokenModifiersIndices = token.modifiers.map((mod: string) =>
-      streamLegend.tokenModifiers.indexOf(mod)
-    );
-
-    const startPos = editor.document.positionAt(token.start);
-    const endPos = editor.document.positionAt(token.end);
-    const range = new vscode.Range(startPos, endPos);
-
-    builder.push(range, token.type, token.modifiers);
-  });
-
-  // Apply the tokens to the editor
-  const semanticTokens = builder.build();
-  vscode.languages.registerDocumentSemanticTokensProvider(
-    { language: "pdf" },
-    {
-      provideDocumentSemanticTokens() {
-        return semanticTokens;
-      },
-    },
-    streamLegend
-  );
-}
-
-// async function processStreamTokens(
-//   document: vscode.TextDocument,
-//   token: PDFToken,
-//   streamType: StreamType
+// function updateSyntaxHighlighting(
+//   editor: vscode.TextEditor,
+//   streamTokens: PDFToken[]
 // ) {
-//   // Request the additional tokens for the stream content from the server
-//   const streamTokens = await requestStreamTokens(
-//     document.uri.toString(),
-//     token,
-//     streamType
-//   );
+//   const builder = new vscode.SemanticTokensBuilder(streamLegend);
 
-//   const editor = vscode.window.activeTextEditor;
-//   if (editor && editor.document === document) {
-//     // Update the syntax highlighting for this stream
-//     updateSyntaxHighlighting(editor, streamTokens);
-//   }
+//   streamTokens.forEach((token) => {
+//     const tokenTypeIndex = streamLegend.tokenTypes.indexOf(token.type);
+//     const tokenModifiersIndices = token.modifiers.map((mod: string) =>
+//       streamLegend.tokenModifiers.indexOf(mod)
+//     );
+
+//     const startPos = editor.document.positionAt(token.start);
+//     const endPos = editor.document.positionAt(token.end);
+//     const range = new vscode.Range(startPos, endPos);
+
+//     builder.push(range, token.type, token.modifiers);
+//   });
+
+//   // Apply the tokens to the editor
+//   const semanticTokens = builder.build();
+//   vscode.languages.registerDocumentSemanticTokensProvider(
+//     { language: "pdf" },
+//     {
+//       provideDocumentSemanticTokens() {
+//         return semanticTokens;
+//       },
+//     },
+//     streamLegend
+//   );
 // }
 
-// This could be triggered by a command or automatically when a PDF document is opened/edited
-// vscode.workspace.onDidOpenTextDocument(async (document) => {
-//   if (document.languageId === "pdf") {
-//     await processSemanticTokens(document);
-//   }
-// });
-
-// vscode.window.onDidChangeTextEditorSelection((event) => {
-//   const activeEditor = event.textEditor;
-//   const document = activeEditor.document;
-//   const position = event.selections[0].start;
-
-//   // Check if the cursor is within a stream
-//   const tokenAtCursor = getTokenAtPosition(document, position);
-//   if (tokenAtCursor && tokenAtCursor.type === 'stream') {
-//     // If within a stream, request detailed stream tokens
-//     fetchAndApplyStreamTokens(document, tokenAtCursor);
-//   }
-// });
-
-// vscode.window.onDidChangeTextEditorSelection((event) => {
-//   console.log("abcdegfhijklmnopqrstuvwxyz");
-//   const activeEditor = vscode.window.activeTextEditor;
-//   if (activeEditor && activeEditor.document.languageId === 'pdf') {
-//     const position = event.selections[0].start;
-//     // Determine if the cursor is inside a stream block
-//     if (isCursorInsideStream(position, activeEditor.document)) {
-//       // Handle the stream content parsing
-//     }
-//   }
-// });
-
 vscode.window.onDidChangeTextEditorSelection(async (event) => {
-  console.log("Selection changed in PDF document");
   const activeEditor = vscode.window.activeTextEditor;
   if (activeEditor && activeEditor.document.languageId === "pdf") {
     const position = event.selections[0].start;
 
-    // Fetch the stored semantic tokens for the document
-    const tokens = semanticTokens; // Assuming semanticTokens is accessible here
+    const tokens = pdf_tokens;
 
-    // Determine if the cursor is inside a stream block
-    const streamToken = tokens.find(
-      (token) =>
-        token.type === "stream" &&
-        position.isAfterOrEqual(token.range.start) &&
-        position.isBeforeOrEqual(token.range.end)
-    );
+    const isInStream = isCursorInStream(tokens, position);
+    if (isInStream) {
+      const streamStartToken = findStreamStartToken(tokens, position);
+      const streamEndToken = findStreamEndToken(tokens, position);
+      if (streamStartToken && streamEndToken) {
+        try {
+          const streamContent = extractStreamContent(
+            activeEditor.document,
+            streamStartToken,
+            streamEndToken
+          );
 
-    if (streamToken) {
-      try {
-        // Determine the type of the stream content
-        const streamType = determineStreamType(
-          activeEditor.document,
-          streamToken
-        );
+          // Process the stream content as needed
+          const streamType = determineStreamType(
+            activeEditor.document,
+            streamStartToken
+          );
 
-        // Request detailed tokens for the stream
-        const detailedTokens = await requestStreamTokens(
-          activeEditor.document,
-          streamToken,
-          streamType
-        );
-
-        // Apply the detailed tokens for the stream
-        applyStreamTokens(activeEditor, detailedTokens, streamToken);
-      } catch (error) {
-        console.error("Error fetching or applying stream tokens:", error);
+          // Request detailed tokens for the stream
+          const detailedTokens = await requestStreamTokens(
+            activeEditor.document,
+            streamContent,
+            streamType
+          );
+        } catch (error) {
+          console.error("Error handling stream content:", error);
+        }
       }
     }
   }
@@ -705,23 +646,104 @@ vscode.window.onDidChangeTextEditorSelection(async (event) => {
 
 async function requestStreamTokens(
   document: vscode.TextDocument,
-  streamToken: PDFToken,
+  streamContent: string,
   streamType: StreamType
 ) {
+  console.log("requestStreamTokens---------");
   const detailedTokens = await client.sendRequest("semanticTokens/stream", {
     textDocument: document.uri.toString(),
-    range: streamToken.range,
+    contents: streamContent,
     type: streamType,
   });
+  console.log("==============");
+  console.log(detailedTokens);
+  console.log("==============");
   return detailedTokens;
 }
 
-function isCursorInsideStream(position, document) {
-  // const tokens = semanticTokens;
-  // // Find if there's a stream token at the cursor's position
-  // const streamToken = tokens.find(token => token.type === 'stream' && token.range.contains(position));
-  // return streamToken !== undefined;
-  return true;
+function isCursorInStream(tokens: PDFToken[], position: vscode.Position) {
+  // Find the 'stream' token that precedes the cursor position
+  let streamToken = null;
+  for (const token of tokens) {
+    if (token.type === "stream") {
+      const startPos = new vscode.Position(token.line, token.start);
+      if (position.isAfter(startPos)) {
+        streamToken = token;
+      }
+    }
+  }
+
+  // If no 'stream' token found before the cursor, the cursor is not in a stream
+  if (!streamToken) return false;
+
+  // Find the corresponding 'endstream' token
+  let endStreamToken = null;
+  for (const token of tokens) {
+    if (token.type === "endstream" && token.line >= streamToken.line) {
+      const endPos = token.endLine
+        ? new vscode.Position(token.endLine, token.end)
+        : new vscode.Position(token.line, token.end);
+      if (endPos.isAfterOrEqual(position)) {
+        endStreamToken = token;
+        break;
+      }
+    }
+  }
+
+  // Check if the cursor is between 'stream' and 'endstream' tokens
+  return endStreamToken !== null;
+}
+
+// Helper function to find the start of the stream
+function findStreamStartToken(
+  tokens: string | any[],
+  position: vscode.Position
+) {
+  // Scan backwards to find the stream token
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const token = tokens[i];
+    if (token.type !== "stream") continue;
+
+    const tokenPosition = new vscode.Position(token.line, token.start);
+    if (position.isAfterOrEqual(tokenPosition)) {
+      return token;
+    }
+  }
+
+  return null;
+}
+
+// Helper function to find the end of the stream
+function findStreamEndToken(tokens: PDFToken[], position: vscode.Position) {
+  // Scan forwards to find the endstream token
+  for (const token of tokens) {
+    if (token.type !== "endstream") continue;
+
+    const tokenPosition = new vscode.Position(token.line, token.start);
+    if (position.isBeforeOrEqual(tokenPosition)) {
+      return token;
+    }
+  }
+
+  return null;
+}
+
+// Helper function to extract the stream content
+function extractStreamContent(
+  document: vscode.TextDocument,
+  startToken: { line: any },
+  endToken: PDFToken
+) {
+  const startLine = startToken.line;
+  const endLine = endToken.endLine || endToken.line;
+  let content = "";
+
+  for (let i = startLine; i <= endLine - 2; i++) {
+    const lineText = document.lineAt(i).text;
+    content += lineText + "\n";
+  }
+
+  return content;
 }
 
 // A global or higher scoped variable to hold detailed stream tokens, keyed by document URI

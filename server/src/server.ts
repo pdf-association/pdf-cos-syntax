@@ -72,8 +72,6 @@ if (process.env.NODE_ENV === "development") {
   // require("source-map-support").install();
 }
 
-console.log("server is running");
-
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -92,10 +90,6 @@ const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
 let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
-
-console.log("-------------------------------");
-console.log("Server");
-console.log("-------------------------------");
 
 documents.onDidChangeContent((change) => {
   const document = change.document;
@@ -178,7 +172,6 @@ connection.onInitialized(() => {
 
 // Entry point for Semantic Token parsing
 connection.onRequest("semanticTokens/full", (params) => {
-  console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
@@ -188,34 +181,21 @@ connection.onRequest("semanticTokens/full", (params) => {
 
 // Handle request for semantic tokens for a specific stream
 connection.onRequest("semanticTokens/stream", async (params) => {
-  console.log(
-    `Server onRequest "semanticTokens/stream" for stream at range: ${params.range}`
-  );
-
-  // Retrieve the document and the specified range for the stream
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    console.error(`Document not found for URI: ${params.textDocument.uri}`);
-    return null;
-  }
-
-  // Extract the text for the specified stream range
-  const range = params.range; // Assuming range is { start: { line, character }, end: { line, character } }
-  const text = document.getText(convertRangeToVscodeRange(range));
+  console.log(`Server onRequest "semanticTokens/stream" for stream at range:`);
 
   let tokens;
 
   switch (params.type) {
     case StreamType.JavaScript:
-      tokens = ohmParser.parseJavaScriptStream(text);
+      tokens = ohmParser.parseXMLStream(params.contents);
       break;
     case StreamType.XML:
-      tokens = ohmParser.parseXMLStream(text);
+      tokens = ohmParser.parseXMLStream(params.contents);
       break;
     default:
-      tokens = ohmParser.parseGenericStream(text);
+      tokens = ohmParser.parseXMLStream(params.contents);
   }
-
+console.log("server-tokens:", tokens);
   return tokens;
 });
 
@@ -235,7 +215,6 @@ function convertRangeToVscodeRange(lspRange: {
 }
 
 connection.onDidChangeConfiguration((change) => {
-  console.log(`Server onDidChangeConfiguration`);
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
@@ -259,13 +238,11 @@ documents.onDidClose((e) => {
  *  Re-validate the PDF.
  */
 documents.onDidChangeContent((change) => {
-  console.log(`Server onDidChangeContent`);
   validateTextDocument(change.document);
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode
-  console.log("Server onDidChangeWatchedFiles");
 });
 
 /**
@@ -300,8 +277,6 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
-    console.log(`onDefinition for ${params.textDocument.uri}`);
-
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
     if (!docData || !docData.xrefMatrix || !document) return null;
@@ -377,8 +352,6 @@ connection.onDefinition(
  *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
  */
 connection.onReferences((params): Location[] | null => {
-  console.log(`onReferences for ${params.textDocument.uri}`);
-
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
   if (!docData || !docData.xrefMatrix || !document) return null;
@@ -636,7 +609,6 @@ connection.onDocumentSymbol(
 
       // Add the sections in this revision, in file order
       const fileOrder = pdfParser.getRevisionSectionOrder(revision);
-      // console.log(JSON.stringify(fileOrder));
 
       for (const section of fileOrder) {
         switch (section) {
@@ -684,7 +656,6 @@ connection.onDocumentSymbol(
             // Footer section includes one or more of: trailer, startxref and %%EOF
             // console.group(`Footer`);
             const subsections = pdfParser.getFooterSubsections(revision);
-            // console.log(JSON.stringify(subsections));
             const footerSubSymbols: DocumentSymbol[] = [];
             for (const sect of subsections) {
               r1 = pdfParser.getFooterSubsectionRange(revision, sect);
@@ -719,7 +690,6 @@ connection.onDocumentSymbol(
       console.groupEnd();
     }
 
-    // console.log(JSON.stringify(symbols, null, 2));
     return symbols;
   }
 );
@@ -740,7 +710,6 @@ connection.listen();
  * 5. check that a conventional cross-reference table is correct for an original PDF
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  // console.log(`validateTextDocument for ${textDocument.uri}`);
   let diagnostics: Diagnostic[] = [];
 
   const text = textDocument.getText();

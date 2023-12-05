@@ -465,9 +465,9 @@ function parsePDFDateString(d: string): string {
   return s;
 }
 
-function convertRangeToVscodeRange(range: { start: { line: number; character: number; }, end: { line: number; character: number; } }): Range {
-  const start: Position = Position.create(range.start.line, range.start.character);
-  const end: Position = Position.create(range.end.line, range.end.character);
-  return Range.create(start, end);
-}
+// function convertRangeToVscodeRange(range: { start: { line: number; character: number; }, end: { line: number; character: number; } }): Range {
+//   const start: Position = Position.create(range.start.line, range.start.character);
+//   const end: Position = Position.create(range.end.line, range.end.character);
+//   return Range.create(start, end);
+// }
 

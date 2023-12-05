@@ -358,28 +358,28 @@ function parsePDF(text: string): PDFToken[] {
   return tokenList;
 }
 
-function parseJavaScriptStream(text: string): PDFToken[] {
-  const grammarPath = path.join(
-    __dirname,
-    "../src/grammar/grammar_JavaScript.ohm"
-  );
-  const grammarString = fs.readFileSync(grammarPath, "utf-8");
-  const jsGrammar = ohm.grammar(grammarString);
+// function parseJavaScriptStream(text: string): PDFToken[] {
+//   const grammarPath = path.join(
+//     __dirname,
+//     "../src/grammar/grammar_JavaScript.ohm"
+//   );
+//   const grammarString = fs.readFileSync(grammarPath, "utf-8");
+//   const jsGrammar = ohm.grammar(grammarString);
 
-  const jsSemantics = jsGrammar.createSemantics();
-  jsSemantics.addOperation('extract()', {
-    // Define operations for each rule in the grammar
-    // ...
-  });
+//   const jsSemantics = jsGrammar.createSemantics();
+//   jsSemantics.addOperation('extract()', {
+//     // Define operations for each rule in the grammar
+//     // ...
+//   });
 
-  const matchResult = jsGrammar.match(text);
-  if (matchResult.succeeded()) {
-    return jsSemantics(matchResult).extract();
-  } else {
-    console.error(jsGrammar.match(text).message);
-    return [];
-  }
-}
+//   const matchResult = jsGrammar.match(text);
+//   if (matchResult.succeeded()) {
+//     return jsSemantics(matchResult).extract();
+//   } else {
+//     console.error(jsGrammar.match(text).message);
+//     return [];
+//   }
+// }
 
 function parseXMLStream(text: string): PDFToken[] {
   const grammarPath = path.join(
@@ -387,10 +387,15 @@ function parseXMLStream(text: string): PDFToken[] {
     "../src/grammar/grammar_XML.ohm"
   );
   const grammarString = fs.readFileSync(grammarPath, "utf-8");
+  
+  console.log(grammarString);
+  console.log("-------------------------");
   const xmlGrammar = ohm.grammar(grammarString);
   const lineNbr: number = 1;
 
   const xmlSemantics = xmlGrammar.createSemantics();
+  console.log(xmlSemantics);
+  console.log("===============================");
   xmlSemantics.addOperation('extract()', {
     document(elements) {
       return elements.children.map(child => child.extract()).join("");
@@ -461,35 +466,38 @@ function parseXMLStream(text: string): PDFToken[] {
   
 
   const matchResult = xmlGrammar.match(text);
+  console.log("matchResult: ", matchResult);
   if (matchResult.succeeded()) {
-    return xmlSemantics(matchResult).extract();
+    return xmlSemantics(matchResult).extract().flat();
   } else {
     console.error(xmlGrammar.match(text).message);
     return [];
   }
 }
 
-function parseGenericStream(text: string): PDFToken[] {
-  const grammarPath = path.join(
-    __dirname,
-    "../src/grammar/grammar_generic.ohm"
-  );
-  const grammarString = fs.readFileSync(grammarPath, "utf-8");
-  const genericGrammar = ohm.grammar(grammarString);
+// function parseGenericStream(text: string): PDFToken[] {
+//   console.log("parsing Generic stream");
+//   const grammarPath = path.join(
+//     __dirname,
+//     "../src/grammar/grammar_generic.ohm"
+//   );
+//   const grammarString = fs.readFileSync(grammarPath, "utf-8");
+//   const genericGrammar = ohm.grammar(grammarString);
 
-  const genericSemantics = genericGrammar.createSemantics();
-  genericSemantics.addOperation('extract()', {
-    // Define operations for each rule in the grammar
-    // ...
-  });
+//   const genericSemantics = genericGrammar.createSemantics();
+//   genericSemantics.addOperation('extract()', {
+//     // Define operations for each rule in the grammar
+//     // ...
+//   });
 
-  const matchResult = genericGrammar.match(text);
-  if (matchResult.succeeded()) {
-    return genericSemantics(matchResult).extract();
-  } else {
-    console.error(genericGrammar.match(text).message);
-    return [];
-  }
-}
+//   const matchResult = genericGrammar.match(text);
+//   if (matchResult.succeeded()) {
+//     return genericSemantics(matchResult).extract();
+//   } else {
+//     console.error(genericGrammar.match(text).message);
+//     return [];
+//   }
+// }
 
-export { parsePDF, parseJavaScriptStream, parseXMLStream, parseGenericStream };
+// export { parsePDF, parseJavaScriptStream, parseXMLStream, parseGenericStream };
+export { parsePDF, parseXMLStream };
