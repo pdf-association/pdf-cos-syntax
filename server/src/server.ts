@@ -92,6 +92,7 @@ let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
 documents.onDidChangeContent((change) => {
+  console.log(`onDidChangeContent(change)`);
   const document = change.document;
   if (document) {
     updateXrefMatrixForDocument(document.uri, document.getText());
@@ -99,6 +100,7 @@ documents.onDidChangeContent((change) => {
 });
 
 connection.onDidOpenTextDocument((params) => {
+  console.log(`onDidOpenTextDocument(${params.textDocument.uri})`);
   const document = documents.get(params.textDocument.uri);
   if (document) {
     updateXrefMatrixForDocument(document.uri, document.getText());
@@ -106,6 +108,7 @@ connection.onDidOpenTextDocument((params) => {
 });
 
 connection.onInitialize((params: InitializeParams) => {
+  console.log(`onInitialize(`, params, `)`);
   const capabilities = params.capabilities;
 
   // Does the client support the `workspace/configuration` request?
@@ -156,6 +159,7 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
+  console.log(`onInitialized()`);
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
     connection.client.register(
@@ -165,15 +169,31 @@ connection.onInitialized(() => {
   }
   if (hasWorkspaceFolderCapability) {
     connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-      connection.console.log("Workspace folder change event received.");
+      console.log("Workspace folder change event received.");
     });
   }
 });
 
 // Entry point for Semantic Token parsing
-connection.onRequest("semanticTokens/full", (params) => {
+connection.onRequest("semanticTokens/full", async (params) => {
+  console.log(`Server onRequest "semanticTokens/full"(`, params, `)`);
   const document = documents.get(params.textDocument.uri);
-  if (!document) return null;
+  if (!document) { 
+    console.log(`Server onRequest "semanticTokens/full" --> returning null!`);
+    return null;
+  }
+  const text = document.getText();
+  const tokens: PDFToken[] = ohmParser.parsePDF(text);
+  return tokens;
+});
+
+connection.onRequest("textDocument/semanticTokens/full", async (params) => {
+  console.log(`Server onRequest "textDocument/semanticTokens/full"(`, params, `)`);
+  const document = documents.get(params.textDocument.uri);
+  if (!document) { 
+    console.log(`Server onRequest "textDocument/semanticTokens/full" --> returning null!`);
+    return null;
+  }
   const text = document.getText();
   const tokens: PDFToken[] = ohmParser.parsePDF(text);
   return tokens;
@@ -181,21 +201,18 @@ connection.onRequest("semanticTokens/full", (params) => {
 
 // Handle request for semantic tokens for a specific stream
 connection.onRequest("semanticTokens/stream", async (params) => {
-  console.log(`Server onRequest "semanticTokens/stream" for stream at range:`);
+  console.log(`Server onRequest "semanticTokens/stream" for stream ${params.type}(...)`);
 
-  let tokens;
+  let tokens: PDFToken[] = [];
 
   switch (params.type) {
-    case StreamType.JavaScript:
-      tokens = ohmParser.parseXMLStream(params.contents);
-      break;
     case StreamType.XML:
       tokens = ohmParser.parseXMLStream(params.contents);
       break;
     default:
-      tokens = ohmParser.parseXMLStream(params.contents);
+      break;
   }
-console.log("server-tokens:", tokens);
+  console.log("Stream server-tokens: ", tokens);
   return tokens;
 });
 
@@ -215,6 +232,7 @@ function convertRangeToVscodeRange(lspRange: {
 }
 
 connection.onDidChangeConfiguration((change) => {
+  console.log(`onDidChangeConfiguration(change)`);
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
@@ -230,19 +248,23 @@ connection.onDidChangeConfiguration((change) => {
 
 // Only keep settings for open documents
 documents.onDidClose((e) => {
+  console.log(`onDidClose(`, e, `)`);
   pdfDocumentData.delete(e.document.uri);
 });
 
-/** The content of a text document has changed. This event is emitted
+/** 
+ *  The content of a text document has changed. This event is emitted
  *  when the text document first opened or when its content has changed.
  *  Re-validate the PDF.
  */
-documents.onDidChangeContent((change) => {
-  validateTextDocument(change.document);
+documents.onDidChangeContent((_change) => {
+  console.log(`onDidChangeContent(_change)`);
+  validateTextDocument(_change.document);
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode
+  console.log(`onDidChangeWatchedFiles(`, _change, `)`);
 });
 
 /**
@@ -251,6 +273,7 @@ connection.onDidChangeWatchedFiles((_change) => {
  */
 connection.onCompletion(
   (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+    console.log(`onCompletion(`, _textDocumentPosition, `)`);
     // The pass parameter contains the position of the text document in
     // which code-complete got requested.
     const cursor = _textDocumentPosition.position;
@@ -264,6 +287,7 @@ connection.onCompletion(
  * NOT USED unless completionProvider: { resolveProvider: false, ... }
  */
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  console.log(`onCompletionResolve(`, item, `)`);
   return item;
 });
 
@@ -277,6 +301,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
+    console.log(`onDefinition(`, params, `)`);
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
     if (!docData || !docData.xrefMatrix || !document) return null;
@@ -352,6 +377,8 @@ connection.onDefinition(
  *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
  */
 connection.onReferences((params): Location[] | null => {
+  console.log(`onReferences(`, params, `)`);
+
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
   if (!docData || !docData.xrefMatrix || !document) return null;
@@ -422,6 +449,7 @@ connection.onReferences((params): Location[] | null => {
  *   - on conventional cross reference table entries --> hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
+  console.log(`onHover(`, params, `)`);
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
   if (!docData || !docData.xrefMatrix || !document) return null;
@@ -557,6 +585,7 @@ connection.onHover((params): Hover | null => {
  */
 connection.onDocumentSymbol(
   (params: DocumentSymbolParams): DocumentSymbol[] => {
+    console.log(`onDocumentSymbol(`, params, `)`);
     const { textDocument } = params;
     const document = documents.get(textDocument.uri);
     if (!document) return [];
@@ -710,6 +739,7 @@ connection.listen();
  * 5. check that a conventional cross-reference table is correct for an original PDF
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+  console.log(`async function validateTextDocument(${textDocument.uri})`);
   let diagnostics: Diagnostic[] = [];
 
   const text = textDocument.getText();

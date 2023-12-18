@@ -319,6 +319,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
+  console.log(`fetch_semantic_tokens_from_LSP()`);
   const tokens = await requestFullSemanticTokens(document);
   pdf_tokens = tokens;
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
@@ -489,9 +490,11 @@ export function deactivate(): Thenable<void> | undefined {
 async function requestFullSemanticTokens(
   document: vscode.TextDocument
 ): Promise<PDFToken[]> {
+  console.log(`requestFullSemanticTokens() start`);
   const tokens: PDFToken[] = (await client.sendRequest("semanticTokens/full", {
     textDocument: { uri: document.uri.toString() },
   })) as PDFToken[];
+  console.log(`requestFullSemanticTokens() finish`);
   return tokens;
 }
 
@@ -606,6 +609,7 @@ function isBinaryStream(dictionary: Record<string, string>): boolean {
 // }
 
 vscode.window.onDidChangeTextEditorSelection(async (event) => {
+  console.log(`onDidChangeTextEditorSelection(event)`);
   const activeEditor = vscode.window.activeTextEditor;
   if (activeEditor && activeEditor.document.languageId === "pdf") {
     const position = event.selections[0].start;
@@ -649,7 +653,7 @@ async function requestStreamTokens(
   streamContent: string,
   streamType: StreamType
 ) {
-  console.log("requestStreamTokens---------");
+  console.log(`requestStreamTokens(${streamType})`);
   const detailedTokens = await client.sendRequest("semanticTokens/stream", {
     textDocument: document.uri.toString(),
     contents: streamContent,

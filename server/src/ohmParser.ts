@@ -27,10 +27,10 @@ function parsePDF(text: string): PDFToken[] {
     "../src/grammar/grammar_pdfTokens.ohm"
   );
   const grammarString = fs.readFileSync(grammarPath, "utf-8");
-  const grammar = ohm.grammar(grammarString);
+  const grammar: ohm.Grammar = ohm.grammar(grammarString);
   let lineNbr: number = 1;
 
-  const semantics = grammar.createSemantics();
+  const semantics: ohm.Semantics = grammar.createSemantics();
 
   semantics.addOperation("extract()", {
     _iter(...children) {
@@ -286,13 +286,12 @@ function parsePDF(text: string): PDFToken[] {
     },
   });
 
-  // Tokenize line-by-line
+  // Tokenize PDF file line-by-line, but skip over all stream contents
   const lines = text.split("\n");
   let insideStream: boolean = false;
   let tokenList: PDFToken[] = [];
   for (const line of lines) {
-    if (insideStream) {
-      // be robust to live editing to re-start parser at end of a stream
+    if (insideStream) { // be robust to live editing to re-start parser at end of a stream
       if (
         line.trim().startsWith("endstream") ||
         line.trim().startsWith("endobj") ||
@@ -307,7 +306,8 @@ function parsePDF(text: string): PDFToken[] {
         // This will fail for multi-line tokens such as literal and hex strings
         /// @todo - Could retry by stitching a few lines together, but VSCode SemanticTokens
         /// cannot span multiple lines: https://github.com/microsoft/vscode/blob/3be5ad240bd78db6892e285cb0c0de205ceab126/src/vs/workbench/api/common/extHostTypes.ts#L3261
-        console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
+        const err: ohm.Interval = matchResult.getInterval(); 
+        console.log(`Line ${lineNbr}: getTokens() failed: ${matchResult.message} on "${line.trim()}" at "${err.contents}"`);
       } else {
         const lineTokens: PDFToken[] = semantics(matchResult).extract();
         // console.log(
@@ -382,6 +382,7 @@ function parsePDF(text: string): PDFToken[] {
 // }
 
 function parseXMLStream(text: string): PDFToken[] {
+  console.log(`parseXMLStream(...)`);
   const grammarPath = path.join(
     __dirname,
     "../src/grammar/grammar_XML.ohm"
