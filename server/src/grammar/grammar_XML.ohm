@@ -10,10 +10,11 @@ XML {
 
   tagName = letter (letter | digit)*
   attributes = (space+ attributeName "=" attributeValue)*
-  attributeName = letter (letter | digit)*
-  attributeValue = ('"' charData '"') | ("'" charData "'")
+  attributeName = letter (letter | digit | symbol)*
+  attributeValue = ("\"" charData "\"") | ("'" charData "'")
 
   space = " " | "\t" | "\n" | "\r"
   letter = "a".."z" | "A".."Z"
+  symbol = "-" | "_"
   digit = "0".."9"
 }
