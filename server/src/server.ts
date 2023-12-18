@@ -91,14 +91,6 @@ let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
-documents.onDidChangeContent((change) => {
-  console.log(`onDidChangeContent(change)`);
-  const document = change.document;
-  if (document) {
-    updateXrefMatrixForDocument(document.uri, document.getText());
-  }
-});
-
 connection.onDidOpenTextDocument((params) => {
   console.log(`onDidOpenTextDocument(${params.textDocument.uri})`);
   const document = documents.get(params.textDocument.uri);
@@ -257,9 +249,9 @@ documents.onDidClose((e) => {
  *  when the text document first opened or when its content has changed.
  *  Re-validate the PDF.
  */
-documents.onDidChangeContent((_change) => {
-  console.log(`onDidChangeContent(_change)`);
-  validateTextDocument(_change.document);
+documents.onDidChangeContent((change) => {
+  console.log(`onDidChangeContent(change)`);
+  validateTextDocument(change.document);
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
