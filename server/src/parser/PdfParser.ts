@@ -406,7 +406,7 @@ export default class PDFParser {
           endObjOffset = startObjOffset + matchEndobj.index + "endobj".length;
         }
         else {
-          console.warn(`"endobj" was not found via regex!`);
+          console.warn(`"endobj" was not found via regex for stream starting at offset ${startStmOffset}!`);
         }
 
         localRegexNotSticly = new RegExp(this._endstreamRegex);

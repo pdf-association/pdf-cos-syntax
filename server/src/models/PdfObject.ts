@@ -53,7 +53,7 @@ export default class PDFObject {
       if ((stmStartOffset >= stmEndOffset) ||
           (stmStartOffset <= start) ||
           (stmEndOffset > this._endOffset)) 
-        throw new Error(`Stream offsets are invalid for object ${this.getObjectID()}}!`);
+        throw new Error(`Stream offsets are invalid for object ${this.getObjectID()} ${start}, ${stmStartOffset}, ${stmEndOffset}!`);
     }
   }
 
