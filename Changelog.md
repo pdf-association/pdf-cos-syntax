@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.1.5 - 2023-09-xx
+## 0.1.6 - T.B.D.
+- (ADDED) Date string hover
+- (ADDED) Semantic token processing
+- (IMPROVED) Replaced inefficient regex-based parsing with Ohm.js based parser 
+- (CHANGED) moved all processing to LSP server side. Client now calls server via an API
+-
+
+## 0.1.5 - 2023-11-27
 - (ADDED) Code completion options for PDF names when `/` is pressed (from [Arlington PDF Model](https://github.com/pdf-association/arlington-pdf-model))
 - (FIXED) Support for new (unsaved) PDF/FDF files
 - (ADDED) Custom commands to import images as new Image XObjects with `/ASCII85Decode`/`/ASCIIHexDecode` on raw pixels
@@ -17,8 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (ADDED) Custom command to conventional cross reference table, trailer, etc. to a cross reference stream
 - (ADDED) Editor context submenu "PDF" with above commands
 - (ADDED) Status bar item showing selected lines
-- (ADDED) Outline tree view and breadcrumbs, based on simple marker-based parser (NOT a full PDF parser as this fails during editing
-- (ADDED) Sankey Flow Diagrams
+- (ADDED) Outline tree view and breadcrumbs, based on simple marker-based parser (NOT a full PDF parser as this fails during editing)
 
 ## 0.1.4 - 2023-09-04
 - (IMPROVED) Hover hints for cross-reference table entries

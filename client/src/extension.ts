@@ -264,13 +264,13 @@ export async function activate(context: vscode.ExtensionContext) {
   // update status bar item once at start
   updateStatusBarItem();
 
-  // Sankey Flow Diagram webview - initiated by Command Palette custom command
-  context.subscriptions.push(
-    vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
-      console.log(`pdf-cos-syntax.sankey`);
-      sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
-    })
-  );
+  // // Sankey Flow Diagram webview - initiated by Command Palette custom command
+  // context.subscriptions.push(
+  //   vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
+  //     // console.log(`pdf-cos-syntax.sankey`);
+  //     sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
+  //   })
+  // );
 
   if (vscode.window.registerWebviewPanelSerializer) {
     // Make sure we register a serializer in activation event
@@ -290,11 +290,11 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // analyze the document and return semantic tokens
-  const semanticProvider: vscode.DocumentSemanticTokensProvider = {
-    provideDocumentSemanticTokens(
-      document: vscode.TextDocument
-    ): vscode.ProviderResult<vscode.SemanticTokens> {
-      console.log(`provideDocumentSemanticTokens for ${document.uri}`);
+  // const semanticProvider: vscode.DocumentSemanticTokensProvider = {
+  //   provideDocumentSemanticTokens(
+  //     document: vscode.TextDocument
+  //   ): vscode.ProviderResult<vscode.SemanticTokens> {
+  //     // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
 
       // if cached semantic tokens apply to this document URI then reuse
       if (!semanticTokens || document.uri !== semantic_doc_uri) {
