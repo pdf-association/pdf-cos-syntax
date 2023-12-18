@@ -418,12 +418,12 @@ function parseXMLStream(text: string): PDFToken[] {
       };
       return JSON.stringify(token);
     },
-    closeTag(_lt, _slash, tagName, _gt) {
+    closeTag(_ltslash, tagName, _gt) {
       const token = {
         type: 'closeTag',
         name: tagName.extract(),
         line: lineNbr,  
-        start: _lt.source.startIdx,
+        start: _ltslash.source.startIdx,
         end: _gt.source.endIdx
       };
       return JSON.stringify(token);
@@ -501,4 +501,4 @@ function parseXMLStream(text: string): PDFToken[] {
 // }
 
 // export { parsePDF, parseJavaScriptStream, parseXMLStream, parseGenericStream };
-export { parsePDF, parseXMLStream };
+export { parsePDF };

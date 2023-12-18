@@ -153,6 +153,7 @@ export class XrefInfoMatrix {
    * keyword (for hybrid reference PDFs). Starts from TOP of the PDF for revision numbers.
    */
   public mergeAllXrefTables(pdfFile: TextDocument) {
+    console.log(`mergeAllXrefTables(...)`);
     let revision = 0;
     let pdf = pdfFile.getText();
 

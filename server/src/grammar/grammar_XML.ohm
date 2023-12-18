@@ -8,13 +8,10 @@ XML {
   content = (element | charData)*
   charData = ~("<" | "&") any+
 
-  tagName = letter (letter | digit)*
+  tagName = letter alnum*
   attributes = (space+ attributeName "=" attributeValue)*
-  attributeName = letter (letter | digit | symbol)*
+  attributeName = letter (alnum | symbol)*
   attributeValue = ("\"" charData "\"") | ("'" charData "'")
 
-  space = " " | "\t" | "\n" | "\r"
-  letter = "a".."z" | "A".."Z"
   symbol = "-" | "_"
-  digit = "0".."9"
 }

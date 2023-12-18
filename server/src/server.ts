@@ -195,11 +195,11 @@ connection.onRequest("textDocument/semanticTokens/full", async (params) => {
 connection.onRequest("semanticTokens/stream", async (params) => {
   console.log(`Server onRequest "semanticTokens/stream" for stream ${params.type}(...)`);
 
-  let tokens: PDFToken[] = [];
+  const tokens: PDFToken[] = [];
 
   switch (params.type) {
     case StreamType.XML:
-      tokens = ohmParser.parseXMLStream(params.contents);
+      // tokens = ohmParser.parseXMLStream(params.contents);
       break;
     default:
       break;
@@ -887,6 +887,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 function updateXrefMatrixForDocument(uri: string, content: string) {
+  console.log(`updateXrefMatrixForDocument(${uri})`);
   let docData = pdfDocumentData.get(uri);
   if (!docData) {
     docData = { settings: globalSettings }; // or fetch default settings
