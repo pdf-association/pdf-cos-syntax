@@ -265,12 +265,12 @@ export async function activate(context: vscode.ExtensionContext) {
   updateStatusBarItem();
 
   // // Sankey Flow Diagram webview - initiated by Command Palette custom command
-  // context.subscriptions.push(
-  //   vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
-  //     // console.log(`pdf-cos-syntax.sankey`);
-  //     sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
-  //   })
-  // );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
+      console.log(`Client: pdf-cos-syntax.sankey`);
+      sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
+    })
+  );
 
   if (vscode.window.registerWebviewPanelSerializer) {
     // Make sure we register a serializer in activation event
@@ -279,7 +279,7 @@ export async function activate(context: vscode.ExtensionContext) {
         webviewPanel: vscode.WebviewPanel,
         state: any
       ) {
-        console.log(`Got state: ${state}`);
+        console.log(`Client: Got state: ${state}`);
         // Reset the webview options so we use latest uri for `localResourceRoots`.
         webviewPanel.webview.options = sankey.getWebviewOptions(
           context.extensionUri
@@ -290,18 +290,17 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // analyze the document and return semantic tokens
-  // const semanticProvider: vscode.DocumentSemanticTokensProvider = {
-  //   provideDocumentSemanticTokens(
-  //     document: vscode.TextDocument
-  //   ): vscode.ProviderResult<vscode.SemanticTokens> {
-  //     // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
-
+  const semanticProvider: vscode.DocumentSemanticTokensProvider = {
+    provideDocumentSemanticTokens(
+      document: vscode.TextDocument
+    ): vscode.ProviderResult<vscode.SemanticTokens> {
+      console.log(`Client: provideDocumentSemanticTokens for ${document.uri}`);
       // if cached semantic tokens apply to this document URI then reuse
       if (!semanticTokens || document.uri !== semantic_doc_uri) {
         fetch_semantic_tokens_from_LSP(document);
       }
       return semanticTokens;
-    },
+    }
   };
 
   const semanticPDFTokenProvider =
@@ -319,7 +318,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
-  console.log(`fetch_semantic_tokens_from_LSP()`);
+  console.log(`Client: fetch_semantic_tokens_from_LSP()`);
   const tokens = await requestFullSemanticTokens(document);
   pdf_tokens = tokens;
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
@@ -490,11 +489,11 @@ export function deactivate(): Thenable<void> | undefined {
 async function requestFullSemanticTokens(
   document: vscode.TextDocument
 ): Promise<PDFToken[]> {
-  console.log(`requestFullSemanticTokens() start`);
+  console.log(`Client: requestFullSemanticTokens() start`);
   const tokens: PDFToken[] = (await client.sendRequest("semanticTokens/full", {
     textDocument: { uri: document.uri.toString() },
   })) as PDFToken[];
-  console.log(`requestFullSemanticTokens() finish`);
+  console.log(`Client: requestFullSemanticTokens() finish`);
   return tokens;
 }
 
@@ -506,13 +505,13 @@ function determineStreamType(
 
   const dictionary = parseDictionary(dictionaryContent);
 
-  if (dictionary["/Subtype"] === "/Image") {
-    return StreamType.Image;
-  } else if (dictionary["/Subtype"] === "/XML") {
-    return StreamType.XML;
-  } else if (dictionary["/Subtype"] === "/JavaScript") {
-    return StreamType.JavaScript;
-  }
+  // if (dictionary["/Subtype"] === "/Image") {
+  //   return StreamType.Image;
+  // } else if (dictionary["/Subtype"] === "/XML") {
+  //   return StreamType.XML;
+  // } else if (dictionary["/Subtype"] === "/JavaScript") {
+  //   return StreamType.JavaScript;
+  // }
 
   return StreamType.Unknown;
 }
@@ -609,7 +608,7 @@ function isBinaryStream(dictionary: Record<string, string>): boolean {
 // }
 
 vscode.window.onDidChangeTextEditorSelection(async (event) => {
-  console.log(`onDidChangeTextEditorSelection(event)`);
+  console.log(`Client: onDidChangeTextEditorSelection(event)`);
   const activeEditor = vscode.window.activeTextEditor;
   if (activeEditor && activeEditor.document.languageId === "pdf") {
     const position = event.selections[0].start;
@@ -653,7 +652,7 @@ async function requestStreamTokens(
   streamContent: string,
   streamType: StreamType
 ) {
-  console.log(`requestStreamTokens(${streamType})`);
+  console.log(`Client: requestStreamTokens(${streamType})`);
   const detailedTokens = await client.sendRequest("semanticTokens/stream", {
     textDocument: document.uri.toString(),
     contents: streamContent,
