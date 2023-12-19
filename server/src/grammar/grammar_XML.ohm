@@ -1,19 +1,29 @@
 XML {
   document = element*
 
-  element = openTag content closeTag
+  element = openTag content* closeTag
+          // | selfClosingTag
+
   openTag = "<" tagName attributes ">"
   closeTag = "</" tagName ">"
+  // selfClosingTag = "<" tagName attributes "/>"
 
-  content = (element | charData)*
-  charData = ~("<" | "&") any+
+  content = element
+  //         | text
+
+  // text = char+
+  // char = ~("<" | ">") any  // Simplified character rule, excluding angle brackets
+
+  attributes = attribute*
+  attribute = attributeName "=" attributeValue
+
+  attributeName = letter
+  attributeValue = (" quotedChar* ") 
+                  // | ("'" quotedChar* "'")
+  // quotedChar = ~('"' | "'") any  // Characters allowed within quotes
 
   tagName = letter (letter | digit)*
-  attributes = (space+ attributeName "=" attributeValue)*
-  attributeName = letter (letter | digit)*
-  attributeValue = ('"' charData '"') | ("'" charData "'")
 
-  space = " " | "\t" | "\n" | "\r"
-  letter = "a".."z" | "A".."Z"
-  digit = "0".."9"
+  // letter = "a".."z" | "A".."Z"
+  // digit = "0".."9"
 }

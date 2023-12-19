@@ -417,29 +417,31 @@ function parseXMLStream(text: string): PDFToken[] {
       };
       return JSON.stringify(token);
     },
-    closeTag(_lt, _slash, tagName, _gt) {
-      const token = {
+    closeTag(_lt, tagName, _gt) {
+      const token=
+       {
         type: 'closeTag',
         name: tagName.extract(),
-        line: lineNbr,  
+        line: lineNbr,
         start: _lt.source.startIdx,
         end: _gt.source.endIdx
-      };
+      }; 
       return JSON.stringify(token);
     },
+    
     content(elements) {
       return elements.children.map(child => child.extract()).flat().join("");
     },
-    charData(chars) {
-      const token = {
-        type: 'charData',
-        content: chars.sourceString,
-        line: lineNbr,  
-        start: chars.source.startIdx,
-        end: chars.source.endIdx
-      };
-      return JSON.stringify(token);
-    },
+    // charData(chars) {
+    //   const token = {
+    //     type: 'charData',
+    //     content: chars.sourceString,
+    //     line: lineNbr,  
+    //     start: chars.source.startIdx,
+    //     end: chars.source.endIdx
+    //   };
+    //   return JSON.stringify(token);
+    // },
     tagName(firstChar, otherChars) {
       return firstChar.sourceString + otherChars.sourceString;
     },
@@ -449,13 +451,13 @@ function parseXMLStream(text: string): PDFToken[] {
     attributeName(name) {
       return name.sourceString;
     },
-    attributeValue(_quote, value, _quote2) {
+    attributeValue(value) {
       const token = {
         type: 'attributeValue',
         value: value.sourceString,
         line: lineNbr,  
-        start: _quote.source.startIdx,
-        end: _quote2.source.endIdx
+        start: value.source.startIdx,
+        end: value.source.endIdx
       };
       return JSON.stringify(token);
     },
