@@ -406,7 +406,7 @@ export default class PDFParser {
           endObjOffset = startObjOffset + matchEndobj.index + "endobj".length;
         }
         else {
-          console.warn(`"endobj" was not found via regex!`);
+          console.warn(`"endobj" was not found via regex for stream starting at offset ${startStmOffset}!`);
         }
 
         localRegexNotSticly = new RegExp(this._endstreamRegex);
@@ -418,8 +418,10 @@ export default class PDFParser {
             startStmOffset = startObjOffset + matchEndstream.index;
           }
         }
-        else if (startStmOffset !== -1)
+        else if (startStmOffset !== -1) {
           console.warn(`"endstream" keyword not found via regex!`);
+          startStmOffset = -1; // ignore stream match
+        }
 
         objects.push(new PDFObject(objData, startObjOffset, startStmOffset, endStmOffset));
       }

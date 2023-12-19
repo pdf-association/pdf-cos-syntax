@@ -35,8 +35,8 @@ export class XrefInfoMatrix {
         for (j =0; j < this.matrix[i].length; j++) {
           if (this.matrix[i][j]) {
             use = (this.matrix[i][j].inUse ? "in-use" : "free  ");
-            console.log(`${i.toString().padStart(5)} ${this.matrix[i][j].generationNumber.toString().padStart(5)} obj: ` +
-                        `rev. ${j} was ${use} @ line ${this.matrix[i][j].lineNbr}`);
+            // console.log(`${i.toString().padStart(5)} ${this.matrix[i][j].generationNumber.toString().padStart(5)} obj: ` +
+            //             `rev. ${j} was ${use} @ line ${this.matrix[i][j].lineNbr}`);
           }
         }
       }
@@ -153,6 +153,7 @@ export class XrefInfoMatrix {
    * keyword (for hybrid reference PDFs). Starts from TOP of the PDF for revision numbers.
    */
   public mergeAllXrefTables(pdfFile: TextDocument) {
+    console.log(`mergeAllXrefTables(...)`);
     let revision = 0;
     let pdf = pdfFile.getText();
 
@@ -224,7 +225,7 @@ export class XrefInfoMatrix {
       }
     }
 
-    console.log(`Found ${revision} conventional cross reference tables`);
+    // console.log(`Found ${revision} conventional cross reference tables`);
     return;
   }
 

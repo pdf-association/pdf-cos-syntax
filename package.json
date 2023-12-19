@@ -1,10 +1,10 @@
 {
   "name": "pdf-cos-syntax",
-  "displayName": "PDF COS syntax support",
-  "description": "PDF and FDF COS syntax extension for PDF developers interested in learning PDF as a page description language syntax",
+  "displayName": "PDF COS syntax",
+  "description": "PDF syntax support by the developers maintaining ISO 32000, the PDF specification.",
   "author": "PDF Association",
   "license": "Apache-2.0",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/pdf-association/pdf-cos-syntax"
@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.83.1"
+    "vscode": "^1.84.2"
   },
   "icon": "assets/pdf-light.png",
   "main": "./client/out/extension",
@@ -38,6 +38,11 @@
         "language": "pdf",
         "scopeName": "source.pdf",
         "path": "./syntaxes/pdf.tmLanguage.json"
+      },
+      {
+        "language": "fdf",
+        "scopeName": "source.fdf",
+        "path": "./syntaxes/fdf.tmLanguage.json"
       }
     ],
     "semanticTokenTypes": [
@@ -242,7 +247,8 @@
       "editor/context": [
         {
           "submenu": "pdf.submenu",
-          "group": "pdf"
+          "group": "pdf",
+          "when": "(editorLangId == pdf) || (editorLangId == fdf)"
         }
       ],
       "pdf.submenu": [
@@ -311,18 +317,11 @@
     "submenus": [
       {
         "id": "pdf.submenu",
-        "label": "PDF"
+        "label": "PDF",
+        "when": "(editorLangId == pdf) || (editorLangId == fdf)"
       }
     ],
     "commands": [
-      {
-        "command": "pdf-cos-syntax.sankey",
-        "title": "Create a Sankey Flow diagram of the current PDF",
-        "shortTitle": "Create a Sankey Flow diagram",
-        "category": "PDF",
-        "icon": "$(zap)",
-        "enablement": "(editorLangId == pdf) || (editorLangId == fdf)"
-      },
       {
         "command": "pdf-cos-syntax.imageAHex",
         "title": "Insert an Image XObject using /ASCIIHexDecode filter on raw pixels",
@@ -472,26 +471,16 @@
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "test": "sh ./scripts/e2e.sh"
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
   },
   "devDependencies": {
-    "@ohm-js/cli": "^2.0.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "^20.5.9",
-    "@types/vscode": "^1.83.1",
-    "@typescript-eslint/eslint-plugin": "^6.5.0",
-    "@typescript-eslint/parser": "^6.5.0",
-    "eslint": "^8.48.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.84.2",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "eslint": "^8.56.0",
     "mocha": "^10.2.0",
-    "typescript": "^5.2.2"
-  },
-  "dependencies": {
-    "ascii85": "^1.0.2",
-    "deasync": "^0.1.29",
-    "ohm-js": "^17.1.0",
-    "sharp": "^0.32.5",
-    "vscode-languageserver": "^8.1.0",
-    "vscode-languageserver-textdocument": "^1.0.8"
+    "typescript": "^5.3.2"
   }
 }

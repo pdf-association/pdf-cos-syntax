@@ -326,6 +326,7 @@ export function getSemanticTokenAtPosition(
 }
 
 export function buildXrefMatrix(content: string): XrefInfoMatrix {
+  console.log(`buildXrefMatrix(...)`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
   const lines = content.split("\n");

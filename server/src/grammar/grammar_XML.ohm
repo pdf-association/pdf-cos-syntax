@@ -6,24 +6,14 @@ XML {
 
   openTag = "<" tagName attributes ">"
   closeTag = "</" tagName ">"
-  // selfClosingTag = "<" tagName attributes "/>"
 
-  content = element
-  //         | text
+  content = (element | charData)*
+  charData = ~("<" | "&") any+
 
-  // text = char+
-  // char = ~("<" | ">") any  // Simplified character rule, excluding angle brackets
+  tagName = letter alnum*
+  attributes = (space+ attributeName "=" attributeValue)*
+  attributeName = letter (alnum | symbol)*
+  attributeValue = ("\"" charData "\"") | ("'" charData "'")
 
-  attributes = attribute*
-  attribute = attributeName "=" attributeValue
-
-  attributeName = letter
-  attributeValue = (" quotedChar* ") 
-                  // | ("'" quotedChar* "'")
-  // quotedChar = ~('"' | "'") any  // Characters allowed within quotes
-
-  tagName = letter (letter | digit)*
-
-  // letter = "a".."z" | "A".."Z"
-  // digit = "0".."9"
+  symbol = "-" | "_"
 }

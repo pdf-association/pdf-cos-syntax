@@ -20,7 +20,7 @@
 import * as vscode from "vscode";
 
 export function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
-  console.log(`getWebviewOptions = ${vscode.Uri.joinPath(extensionUri, 'media')}`);
+  // console.log(`getWebviewOptions = ${vscode.Uri.joinPath(extensionUri, 'media')}`);
   return {
     // Enable JavaScript and forms in the webview
     enableScripts: true,
@@ -43,7 +43,7 @@ export class SankeyPanel
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(context: vscode.ExtensionContext, csvData: string) {
-    console.log(`createOrShow ${context.extensionUri}`);
+    // console.log(`createOrShow ${context.extensionUri}`);
 
     const column = vscode.window.activeTextEditor
       ? vscode.window.activeTextEditor.viewColumn
@@ -79,12 +79,12 @@ export class SankeyPanel
   }
 
   public static revive(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
-    console.log(`revive`);
+    // console.log(`revive`);
     SankeyPanel.currentPanel = new SankeyPanel(panel, context);
   }
 
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
-    console.log(`constructor`);
+    // console.log(`constructor`);
     this._panel = panel;
     this._extensionUri = context.extensionUri;
 
@@ -107,7 +107,7 @@ export class SankeyPanel
       message => {
         switch (message.type) {
           case 'alert':
-            console.log(`onDidReceiveMessage: ${message.type} ${message.value}`); 
+            // console.log(`onDidReceiveMessage: ${message.type} ${message.value}`); 
             return;
         }
       },
@@ -119,13 +119,13 @@ export class SankeyPanel
   }
 
   public sendDataToWebview() {
-    console.log(`sendDataToWebview`);
+    // console.log(`sendDataToWebview`);
     // Send a message to the webview 
     this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' });
   }
 
   public dispose() {
-    console.log(`dispose`);
+    // console.log(`dispose`);
     SankeyPanel.currentPanel = undefined;
 
     // Clean up our resources
@@ -138,7 +138,7 @@ export class SankeyPanel
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
-    console.log(`_getHtmlForWebview`);
+    // console.log(`_getHtmlForWebview`);
 
     // Local path to main script run in the webview
     const scriptPathOnDisk = vscode.Uri.joinPath(this._extensionUri, 'media', 'main.js');
