@@ -3,7 +3,6 @@
 .eslintignore
 *.vsix
 *.txt
-*.vsix
 *.git*
 Debugging.md
 Testing.md
