@@ -1,6 +1,0 @@
-Generic {
-  Content = Token*
-  Token = NonWhitespace+
-  NonWhitespace = ~whitespace any
-  whitespace = " " | "\\t" | "\\n"
-}

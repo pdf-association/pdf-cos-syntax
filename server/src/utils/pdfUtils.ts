@@ -373,7 +373,7 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
  * @returns Human-readable date for the valid parts of the PDF date string
  */
 function parsePDFDateString(d: string): string {
-  /// @todo - hex strings!
+  /** @todo - hex strings! */ 
 
   // Parse a PDF Date string into consistuent fields
   const PDFDateRegex = /^D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+Z])?(\d{2})?(')?(\d{2})?(')?/gm;

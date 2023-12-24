@@ -47,7 +47,7 @@ export class XrefInfoMatrix {
    * Has this Object Number been defined as free or in-use (with any generation number)?
    */
   public isObjectNumberValid(objectNumber: number): boolean {
-    return this.matrix[objectNumber] !== undefined;
+    return this.matrix[objectNumber] != null;
   }
 
   /** 
@@ -55,7 +55,7 @@ export class XrefInfoMatrix {
    * This means a "X Y obj" should exist in PDF.
    */
   public isObjectIDInUse(objectNumber: number, generationNumber: number): boolean {
-    if (this.matrix[objectNumber] !== undefined) {
+    if (this.matrix[objectNumber] != null) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if (e && (generationNumber === e.generationNumber) && e.inUse) {
@@ -95,7 +95,7 @@ export class XrefInfoMatrix {
    * the PDF object "X Y obj" ... "endobj" is approximately located.
    */
   public getByteOffsetOfInuseObjectID(objectNumber: number, generationNumber: number): number {
-    if (this.matrix[objectNumber] !== undefined) {
+    if (this.matrix[objectNumber] != null) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if (e && (generationNumber === e.generationNumber) && e.inUse) {
@@ -111,7 +111,7 @@ export class XrefInfoMatrix {
    * generation number pair, such as from "X Y R" or "X Y obj"). Returns -1 if no match.
    */
   public getFirstLineNumberForObjectID(objectNumber: number, generationNumber: number): number {
-    if (this.matrix[objectNumber] !== undefined) {
+    if (this.matrix[objectNumber] != null) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if (e && (generationNumber === e.generationNumber) && e.inUse) {
@@ -128,7 +128,7 @@ export class XrefInfoMatrix {
    */
   public getInUseEntriesForObjectID(objectNumber: number, generationNumber: number): EntryNode[] {
     const entries: EntryNode[] = [];
-    if (this.matrix[objectNumber] !== undefined) {
+    if (this.matrix[objectNumber] != null) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if (e && (generationNumber === e.generationNumber) && e.inUse) {
@@ -279,7 +279,7 @@ export class XrefInfoMatrix {
       if (entryPatternMatch && (entryPatternMatch.length === 4)) {
         const genNum = parseInt(entryPatternMatch[2]);
         const letter = entryPatternMatch[3];
-        if (currentObjectNum === null || entryCount === null || entryCount < 0 || currentObjectNum < 0) {
+        if (currentObjectNum == null || entryCount == null || entryCount < 0 || currentObjectNum < 0) {
           this.diagnostics.push({
             severity: DiagnosticSeverity.Error,
             message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
