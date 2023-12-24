@@ -18,7 +18,6 @@
 export const TOKEN_TYPES = [
   'header',
   'endobj',
-  // 'pdf_token',
   'indirect_object_start',
   'stream',
   'endstream',
@@ -27,17 +26,7 @@ export const TOKEN_TYPES = [
   'array_start',
   'array_end',
   'name',
-  // 'valid_name_char',
-  // 'name_hex_escape',
-
   'string_literal',
-
-  // 'string_literal_char',
-  // 'string_literal_escape',
-  // 'octal',
-  // 'octal_digit',
-  // 'escaped_eol',
-
   'hex_string',
   'indirect_ref',
   'integer',
@@ -52,13 +41,6 @@ export const TOKEN_TYPES = [
   'eof',
   'startxref',
   'comment',
-
-  // 'eol',
-  // 'delimiter',
-  // 'start_delimiter',
-  // 'end_delimiter',
-  // 'ws_incl_eol',
-  // 'ws_no_eol',
 ];
 
 export const TOKEN_MODIFIERS = [

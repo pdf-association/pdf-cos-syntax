@@ -154,14 +154,14 @@ function renderSankeyDiagram() {
         .attr("fill", d => {
             let c;
             for (const link of d.sourceLinks) {
-                if (c === undefined) 
+                if (c == null) 
                     c = link.color;
                 else if (c !== link.color) 
                     c = null;
             }
-            if (c === undefined) { 
+            if (c == null) { 
                 for (const link of d.targetLinks) {
-                    if (c === undefined) 
+                    if (c == null) 
                         c = link.color;
                     else if (c !== link.color) 
                         c = null;
