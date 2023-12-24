@@ -10,7 +10,6 @@ testing-resources/
 client/testFixture/
 node_modules/
 scripts/
-media/
 **/tsconfig.json
 **/webpack.config.js
 **/*.ts
