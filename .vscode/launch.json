@@ -22,7 +22,7 @@
 			"sourceMaps": true,
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/client/out/test/index",
+				"--extensionTestsPath=${workspaceRoot}/out/client/test/index",
 				"${workspaceRoot}/client/testFixture"
 			]
 		},

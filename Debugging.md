@@ -70,37 +70,12 @@ Working in VSCode is heavily JS centric, however JS regex special characters are
 
 # Node modules
 
-Minimal Node module dependencies are kept below `client` and `server` folders. The `.\package.json` shouldn't have any runtime dependencies:
+All node_modules are now located in the root folder and **NOT** below `client` or `server` folders. This makes for much smaller VSIX packages which are correspondingly much faster to load.
 
+Confirm modules with:
 ```
-cd client
-npm install
-npm outdated
-cd ..\server
-npm install
-npm outdated
-cd ..
-npm install
-npm outdated
-npm outdated -g
-```
-
-# Packaging
-
-For some reason `vsce package` includes DevDependencies for both `.\client` and `.\server` folders. Work around is to manually prune the dev-only dependences in client and server, then package, and then reinstate:
-
-```
-cd client
-npm prune --omit dev
-cd ..\server
-npm prune --omit dev
-cd ..
-vsce package
-cd client
-npm install
-cd ..\server
-npm install
-cd ..
+npm list
+npm list --omit=dev
 ```
 
 ## Supporting Sharp across multiple platforms
@@ -109,8 +84,9 @@ Sharp is used to read image files such as JPEG, PNG, PPM, etc. and depends it on
 
 ```
 cd client
-npm rebuild --platform=win32 --arch=x64 sharp
-npm rebuild --platform=darwin --arch=arm64 sharp
-npm rebuild --platform=darwin --arch=x64 sharp
-npm rebuild --platform=linux --arch=x64 sharp
+npm rebuild --platform=win32 --arch=x64 sharp --include=optional
+npm rebuild --platform=darwin --arch=arm64 sharp --include=optional
+npm rebuild --platform=darwin --arch=x64 sharp --include=optional
+npm rebuild --platform=linux --arch=x64 sharp --include=optional
+npm rebuild --platform=linux --lib=musl --arch=x64 sharp --include=optional
 ```

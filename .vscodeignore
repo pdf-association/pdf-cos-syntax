@@ -8,7 +8,6 @@ Debugging.md
 Testing.md
 testing-resources/
 client/testFixture/
-node_modules/
 scripts/
 **/tsconfig.json
 **/webpack.config.js

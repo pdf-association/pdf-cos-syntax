@@ -164,6 +164,9 @@ connection.onInitialized(() => {
       console.log("Workspace folder change event received.");
     });
   }
+  if (!ohmParser.initializePDFparser()) {
+    console.error(`Initalization of Ohm PDF Parser failed!`);
+  }
 });
 
 // Entry point for Semantic Token parsing

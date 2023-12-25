@@ -28,10 +28,10 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.84.2"
+    "vscode": "^1.85.0"
   },
   "icon": "assets/pdf-light.png",
-  "main": "./client/out/extension",
+  "main": "./out/client/src/extension",
   "contributes": {
     "grammars": [
       {
@@ -471,14 +471,24 @@
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+    "generate": "cd server && npx ohm generateBundles --withTypes ./src/grammar/grammar_pdfTokens.ohm"
+  },
+  "dependencies": {
+    "ascii85": "^1.0.2",
+    "ohm-js": "^17.1.0",
+    "sharp": "^0.33.1",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.5",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-electron": "^2.3.8",
     "eslint": "^8.56.0",
     "mocha": "^10.2.0",
     "typescript": "^5.3.3"

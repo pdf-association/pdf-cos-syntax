@@ -22,7 +22,6 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as pdf from "./pdfClientUtilities";
 import * as sankey from "./sankey-webview";
-import * as deasync from "deasync";
 
 // Import shared definitions from Ohm-based tokenizing parser (server-side!)
 import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken, StreamType } from "./types";
@@ -35,6 +34,7 @@ import {
 } from "vscode-languageclient/node";
 
 import { PDFFoldingRangeProvider } from "./PDFFoldingRangeProvider";
+import { assert } from 'console';
 
 /////////////////////////////////////////////////////////////////////
 // Some fake CSV data for now. NO header row!
@@ -126,16 +126,29 @@ const fakeDataCSV: string = fakeData.join("\n");
 let client: LanguageClient;
 let pdfStatusBarItem: vscode.StatusBarItem;
 
-// This is global data in the client for a single PDF
-let semantic_doc_uri: vscode.Uri;
-let pdf_tokens: PDFToken[] = [];
-let semanticTokens: vscode.SemanticTokens;
+/** Ohm parser semantic tokens and modifiers */
 const legend = new vscode.SemanticTokensLegend(TOKEN_TYPES, TOKEN_MODIFIERS);
+
+class PDFInfo {
+  public _ohmTokens: PDFToken[];
+  public _semTokens: vscode.SemanticTokens;   
+  /** @todo outline tree */
+  /** @tood XRefMatrix */
+
+  constructor(ohm_tokens: PDFToken[], sem_tokens: vscode.SemanticTokens) {
+    this._ohmTokens = ohm_tokens;
+    this._semTokens = sem_tokens;
+  }
+}
+
+// This is global data in the client for all open PDF/FDF, keyed by URI
+const detailedPDFInfoMap = new Map<vscode.Uri, PDFInfo>();
+
 
 export async function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
-    path.join("server", "out", "server.js")
+    path.join("out", "server", "src", "server.js")
   );
 
   // If the extension is launched in debug mode then the debug server options are used
@@ -174,12 +187,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
   await client.start();
 
+  // Folding support
   const provider = new PDFFoldingRangeProvider();
   context.subscriptions.push(
-    vscode.languages.registerFoldingRangeProvider(
-      { language: "pdf" },
-      provider
-    ),
+    vscode.languages.registerFoldingRangeProvider({ language: "pdf" }, provider),
     vscode.languages.registerFoldingRangeProvider({ language: "fdf" }, provider)
   );
 
@@ -206,23 +217,29 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     // Command palette custom command / editor context sub-menu options under "PDF"
-    vscode.commands.registerCommand("pdf-cos-syntax.imageA85DCT", (uri) =>
-      commandHandler("imageA85DCT", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageA85DCT", 
+      (uri) => commandHandler("imageA85DCT", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.imageAHexDCT", (uri) =>
-      commandHandler("imageAHexDCT", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageAHexDCT", 
+      (uri) => commandHandler("imageAHexDCT", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.imageA85", (uri) =>
-      commandHandler("imageA85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageA85", 
+      (uri) => commandHandler("imageA85", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.imageAHex", (uri) =>
-      commandHandler("imageAHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.imageAHex", 
+      (uri) => commandHandler("imageAHex", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.dataA85", (uri) =>
-      commandHandler("dataA85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.dataA85", 
+      (uri) => commandHandler("dataA85", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.dataAHex", (uri) =>
-      commandHandler("dataAHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.dataAHex",
+      (uri) => commandHandler("dataAHex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.convertLiteral2Hex",
@@ -240,21 +257,26 @@ export async function activate(context: vscode.ExtensionContext) {
       "pdf-cos-syntax.convert2XrefStream",
       (uri) => commandHandler("2XrefStream", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.2AsciiHex", (uri) =>
-      commandHandler("2AsciiHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.2AsciiHex", 
+      (uri) => commandHandler("2AsciiHex", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.2Ascii85", (uri) =>
-      commandHandler("2Ascii85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.2Ascii85", 
+      (uri) => commandHandler("2Ascii85", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.FromAsciiHex", (uri) =>
-      commandHandler("FromAsciiHex", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.FromAsciiHex", 
+      (uri) => commandHandler("FromAsciiHex", context, uri)
     ),
-    vscode.commands.registerCommand("pdf-cos-syntax.FromAscii85", (uri) =>
-      commandHandler("FromAscii85", context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.FromAscii85", 
+      (uri) => commandHandler("FromAscii85", context, uri)
     ),
     // Status bar
-    vscode.commands.registerCommand("pdf-cos-syntax.StatusBarClick", (uri) =>
-      statusBarClick(context, uri)
+    vscode.commands.registerCommand(
+      "pdf-cos-syntax.StatusBarClick", 
+      (uri) => statusBarClick(context, uri)
     ),
     pdfStatusBarItem,
     vscode.window.onDidChangeActiveTextEditor(updateStatusBarItem),
@@ -295,11 +317,13 @@ export async function activate(context: vscode.ExtensionContext) {
       document: vscode.TextDocument
     ): vscode.ProviderResult<vscode.SemanticTokens> {
       console.log(`Client: provideDocumentSemanticTokens for ${document.uri}`);
-      // if cached semantic tokens apply to this document URI then reuse
-      if (!semanticTokens || document.uri !== semantic_doc_uri) {
+      let this_pdf = detailedPDFInfoMap.get(document.uri);
+      if (this_pdf == null) {
         fetch_semantic_tokens_from_LSP(document);
+        this_pdf = detailedPDFInfoMap.get(document.uri);
+        if (this_pdf == null) return undefined;
       }
-      return semanticTokens;
+      return this_pdf._semTokens;
     }
   };
 
@@ -317,13 +341,18 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 }
 
+/**
+ * Gets all the data from the LSP server about the specified PDF:
+ *  ohmTokens and vscode.SemanticTokens equivalent.
+ * 
+ * @param document  vscode.uri of the current PDF
+ */
 async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
-  console.log(`Client: fetch_semantic_tokens_from_LSP()`);
-  const tokens = await requestFullSemanticTokens(document);
-  pdf_tokens = tokens;
+  console.log(`Client: fetch_semantic_tokens_from_LSP(${document.uri})`);
+  const ohm_tokens: PDFToken[] = await requestFullSemanticTokens(document);
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-  for (let i = 0; i < pdf_tokens.length; i++) {
-    const token = pdf_tokens[i];
+  for (let i = 0; i < ohm_tokens.length; i++) {
+    const token = ohm_tokens[i];
     if (TOKEN_TYPES.includes(token.type)) {
       const range = new vscode.Range(
         new vscode.Position(token.line - 1, token.start),
@@ -334,8 +363,8 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
     }
   }
 
-  semanticTokens = tokensBuilder.build();
-  semantic_doc_uri = document.uri;
+  const this_pdf = new PDFInfo(ohm_tokens, tokensBuilder.build());
+  detailedPDFInfoMap.set(document.uri, this_pdf);
 }
 
 /**
@@ -388,6 +417,7 @@ export async function commandHandler(
   uri: vscode.Uri
 ) {
   const editor = vscode.window.activeTextEditor;
+  if (editor == null) return;
   const selection = editor.selection;
   const inp = editor.document.getText(editor.selection);
 
@@ -395,11 +425,12 @@ export async function commandHandler(
   // so length key values can be adjusted accordinly.
   const eol: vscode.EndOfLine = editor.document.eol;
 
-  /** Pick a random object ID. @todo determine appropriately from PDF... */
+  /** Pick a random object ID. */
+  /** @todo determine appropriately from PDF... */
   const objNum = 1;
   const genNum = 0;
 
-  let out: string;
+  let out: string | null = null;
 
   switch (option) {
     case "imageA85DCT":
@@ -469,9 +500,9 @@ export async function commandHandler(
   }
 
   // Replace highlighted text with output, if something was returned
-  if (out.trim().length > 0) {
+  if ((typeof out === 'string') && out.trim().length > 0) {
     editor.edit((editBuilder) => {
-      editBuilder.replace(selection, out);
+      editBuilder.replace(selection, out as string);
     });
   }
 
@@ -485,312 +516,24 @@ export function deactivate(): Thenable<void> | undefined {
   return client.stop();
 }
 
-// Function to request semantic tokens from the server
+/** 
+ * Function to request semantic tokens from the server
+ */
 async function requestFullSemanticTokens(
   document: vscode.TextDocument
 ): Promise<PDFToken[]> {
-  console.log(`Client: requestFullSemanticTokens() start`);
+  console.log(`Client: requestFullSemanticTokens(${document.uri}) start`);
   const tokens: PDFToken[] = (await client.sendRequest("semanticTokens/full", {
     textDocument: { uri: document.uri.toString() },
   })) as PDFToken[];
-  console.log(`Client: requestFullSemanticTokens() finish`);
+  console.log(`Client: requestFullSemanticTokens(${document.uri}) finish`);
   return tokens;
 }
-
-function determineStreamType(
-  document: vscode.TextDocument,
-  streamStartToken: PDFToken
-): StreamType {
-  const dictionaryContent = extractDictionary(document, streamStartToken);
-
-  const dictionary = parseDictionary(dictionaryContent);
-
-  // if (dictionary["/Subtype"] === "/Image") {
-  //   return StreamType.Image;
-  // } else if (dictionary["/Subtype"] === "/XML") {
-  //   return StreamType.XML;
-  // } else if (dictionary["/Subtype"] === "/JavaScript") {
-  //   return StreamType.JavaScript;
-  // }
-
-  return StreamType.Unknown;
-}
-
-function extractDictionary(
-  document: vscode.TextDocument,
-  streamStartToken: PDFToken
-): string {
-  let dictionaryContent = "";
-  let lineNum = streamStartToken.line - 2;
-
-  // Scan backwards to find the dictionary
-  while (lineNum >= 0) {
-    const lineText = document.lineAt(lineNum).text;
-    dictionaryContent = lineText + "\n" + dictionaryContent;
-
-    if (lineText.includes("<<")) {
-      break;
-    }
-
-    lineNum--;
-  }
-
-  return dictionaryContent;
-}
-
-function parseDictionary(dictionaryText: string): Record<string, string> {
-  const dictionary: Record<string, string> = {};
-
-  // Regex to match dictionary entries
-  // This regex handles simple cases and might need refinement for complex dictionaries
-  const entryRegex = /\/(\w+)\s+((?:\/\w+)|(?:\(.*?\))|(?:".*?")|(?:\d+))/g;
-  let match: any[];
-
-  while ((match = entryRegex.exec(dictionaryText))) {
-    const key = match[1];
-    const value = match[2];
-    dictionary[`/${key}`] = value;
-  }
-
-  return dictionary;
-}
-
-function isBinaryStream(dictionary: Record<string, string>): boolean {
-  if (dictionary["/Filter"]) {
-    return true; // This is a simplistic check and may need more conditions
-  }
-  return false;
-}
-
-// const streamTokenTypes = [
-//   "text",
-//   "embeddedJavaScript",
-//   "embeddedXML",
-//   "binary",
-//   "unknown",
-// ];
-// const streamTokenModifiers = ["readonly", "static"];
-// const streamLegend = new vscode.SemanticTokensLegend(
-//   streamTokenTypes,
-//   streamTokenModifiers
-// );
-
-// function updateSyntaxHighlighting(
-//   editor: vscode.TextEditor,
-//   streamTokens: PDFToken[]
-// ) {
-//   const builder = new vscode.SemanticTokensBuilder(streamLegend);
-
-//   streamTokens.forEach((token) => {
-//     const tokenTypeIndex = streamLegend.tokenTypes.indexOf(token.type);
-//     const tokenModifiersIndices = token.modifiers.map((mod: string) =>
-//       streamLegend.tokenModifiers.indexOf(mod)
-//     );
-
-//     const startPos = editor.document.positionAt(token.start);
-//     const endPos = editor.document.positionAt(token.end);
-//     const range = new vscode.Range(startPos, endPos);
-
-//     builder.push(range, token.type, token.modifiers);
-//   });
-
-//   // Apply the tokens to the editor
-//   const semanticTokens = builder.build();
-//   vscode.languages.registerDocumentSemanticTokensProvider(
-//     { language: "pdf" },
-//     {
-//       provideDocumentSemanticTokens() {
-//         return semanticTokens;
-//       },
-//     },
-//     streamLegend
-//   );
-// }
 
 vscode.window.onDidChangeTextEditorSelection(async (event) => {
   console.log(`Client: onDidChangeTextEditorSelection(event)`);
   const activeEditor = vscode.window.activeTextEditor;
-  if (activeEditor && activeEditor.document.languageId === "pdf") {
+  if ((activeEditor != null) && ((activeEditor.document.languageId === "pdf") || (activeEditor.document.languageId === "fdf"))) {
     const position = event.selections[0].start;
-
-    const tokens = pdf_tokens;
-
-    const isInStream = isCursorInStream(tokens, position);
-    if (isInStream) {
-      const streamStartToken = findStreamStartToken(tokens, position);
-      const streamEndToken = findStreamEndToken(tokens, position);
-      if (streamStartToken && streamEndToken) {
-        try {
-          const streamContent = extractStreamContent(
-            activeEditor.document,
-            streamStartToken,
-            streamEndToken
-          );
-
-          // Process the stream content as needed
-          const streamType = determineStreamType(
-            activeEditor.document,
-            streamStartToken
-          );
-
-          // Request detailed tokens for the stream
-          const detailedTokens = await requestStreamTokens(
-            activeEditor.document,
-            streamContent,
-            streamType
-          );
-        } catch (error) {
-          console.error("Error handling stream content:", error);
-        }
-      }
-    }
-  }
+    /** @todo */   }
 });
-
-async function requestStreamTokens(
-  document: vscode.TextDocument,
-  streamContent: string,
-  streamType: StreamType
-) {
-  console.log(`Client: requestStreamTokens(${streamType})`);
-  const detailedTokens = await client.sendRequest("semanticTokens/stream", {
-    textDocument: document.uri.toString(),
-    contents: streamContent,
-    type: streamType,
-  });
-  console.log("==============");
-  console.log(detailedTokens);
-  console.log("==============");
-  return detailedTokens;
-}
-
-function isCursorInStream(tokens: PDFToken[], position: vscode.Position) {
-  // Find the 'stream' token that precedes the cursor position
-  let streamToken = null;
-  for (const token of tokens) {
-    if (token.type === "stream") {
-      const startPos = new vscode.Position(token.line, token.start);
-      if (position.isAfter(startPos)) {
-        streamToken = token;
-      }
-    }
-  }
-
-  // If no 'stream' token found before the cursor, the cursor is not in a stream
-  if (!streamToken) return false;
-
-  // Find the corresponding 'endstream' token
-  let endStreamToken = null;
-  for (const token of tokens) {
-    if (token.type === "endstream" && token.line >= streamToken.line) {
-      const endPos = token.endLine
-        ? new vscode.Position(token.endLine, token.end)
-        : new vscode.Position(token.line, token.end);
-      if (endPos.isAfterOrEqual(position)) {
-        endStreamToken = token;
-        break;
-      }
-    }
-  }
-
-  // Check if the cursor is between 'stream' and 'endstream' tokens
-  return endStreamToken !== null;
-}
-
-// Helper function to find the start of the stream
-function findStreamStartToken(
-  tokens: string | any[],
-  position: vscode.Position
-) {
-  // Scan backwards to find the stream token
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    const token = tokens[i];
-    if (token.type !== "stream") continue;
-
-    const tokenPosition = new vscode.Position(token.line, token.start);
-    if (position.isAfterOrEqual(tokenPosition)) {
-      return token;
-    }
-  }
-
-  return null;
-}
-
-// Helper function to find the end of the stream
-function findStreamEndToken(tokens: PDFToken[], position: vscode.Position) {
-  // Scan forwards to find the endstream token
-  for (const token of tokens) {
-    if (token.type !== "endstream") continue;
-
-    const tokenPosition = new vscode.Position(token.line, token.start);
-    if (position.isBeforeOrEqual(tokenPosition)) {
-      return token;
-    }
-  }
-
-  return null;
-}
-
-// Helper function to extract the stream content
-function extractStreamContent(
-  document: vscode.TextDocument,
-  startToken: { line: any },
-  endToken: PDFToken
-) {
-  const startLine = startToken.line;
-  const endLine = endToken.endLine || endToken.line;
-  let content = "";
-
-  for (let i = startLine; i <= endLine - 2; i++) {
-    const lineText = document.lineAt(i).text;
-    content += lineText + "\n";
-  }
-
-  return content;
-}
-
-// A global or higher scoped variable to hold detailed stream tokens, keyed by document URI
-const detailedStreamTokensMap = new Map<string, PDFToken[]>();
-
-// This function is called when detailed stream tokens are fetched
-function applyStreamTokens(
-  editor: vscode.TextEditor,
-  detailedTokens: PDFToken[],
-  streamToken: PDFToken
-) {
-  // Store the detailed tokens for the stream
-  detailedStreamTokensMap.set(editor.document.uri.toString(), detailedTokens);
-
-  // Trigger a refresh of the semantic tokens in the editor
-  vscode.commands.executeCommand("editor.action.semanticToken.refresh");
-}
-
-const mySemanticTokensProvider: vscode.DocumentSemanticTokensProvider = {
-  provideDocumentSemanticTokens(
-    document: vscode.TextDocument
-  ): vscode.ProviderResult<vscode.SemanticTokens> {
-    const builder = new vscode.SemanticTokensBuilder(legend);
-
-    // Check if we have detailed stream tokens for this document
-    const detailedTokens = detailedStreamTokensMap.get(document.uri.toString());
-    if (detailedTokens) {
-      // Apply the detailed stream tokens using the builder
-      for (const token of detailedTokens) {
-        const line = token.range.start.line;
-        const startIndex = token.range.start.character;
-        const length = token.range.end.character - startIndex;
-        const tokenType = legend.tokenTypes.indexOf(token.type);
-        const tokenModifiers = 0; // Compute any modifiers if necessary
-
-        builder.push(line, startIndex, length, tokenType, tokenModifiers);
-      }
-      // Remove the detailed tokens from the map after using them
-      detailedStreamTokensMap.delete(document.uri.toString());
-    } else {
-      // Tokenize the document initially and fill the builder
-      // ... (existing logic)
-    }
-
-    return builder.build();
-  },
-};
