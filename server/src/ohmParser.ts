@@ -34,6 +34,26 @@ function getTokens(text: string): PDFToken[] {
   const semantics = grammar.createSemantics();
 
   semantics.addOperation("extract()", {
+    stream(_1, content, _2) {
+      const token = {
+        line: lineNbr,
+        start: this.source.startIdx,
+        end: this.source.endIdx,
+        type: 'stream',
+        content: content.sourceString, // Assumes handling of content extraction
+      };
+      return [token];
+    },
+    // Method to handle multi-line content within streams
+    // This is just a conceptual example. Actual implementation will depend on your grammar and needs.
+    _multiLineStream(...children) {
+      children.forEach((child, index) => {
+        const childTokens: PDFToken[] = child.extract();
+        childTokenList = childTokenList.concat(childTokens);
+      });
+      // Logic to accumulate content across lines
+      return childTokenList;
+    },
     _iter(...children) {
       let childTokenList: PDFToken[] = [];
       children.forEach((child, index) => {
