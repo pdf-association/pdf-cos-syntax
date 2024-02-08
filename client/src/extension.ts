@@ -22,7 +22,6 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as pdf from "./pdfClientUtilities";
 import * as sankey from "./sankey-webview";
-import * as deasync from "deasync";
 
 // Import shared definitions from Ohm-based tokenizing parser (server-side!)
 import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken } from "./types";
