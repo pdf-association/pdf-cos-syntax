@@ -171,7 +171,7 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "PDF",
+      "title": "PDSCOSSyntax",
       "properties": {
         "pdf-cos-syntax.maxNumberOfProblems": {
           "scope": "resource",
@@ -189,6 +189,16 @@
           ],
           "default": "off",
           "description": "Traces the communication between VS Code and the language server."
+        },
+        "pdf-cos-syntax.allowPreambleAndPostamble": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable inclusion of preamble and postamble in diagnostics."
+        },
+        "pdf-cos-syntax.verboseLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose logging for debugging purposes."
         }
       }
     },

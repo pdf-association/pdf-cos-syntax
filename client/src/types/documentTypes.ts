@@ -16,7 +16,7 @@
 'use strict';
 
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-import { Diagnostic } from 'vscode-languageserver';
+import { Diagnostic } from 'vscode-languageserver'; 
 
 export interface PDSCOSSyntaxSettings {
   maxNumberOfProblems: number;

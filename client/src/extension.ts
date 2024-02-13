@@ -25,7 +25,7 @@ import * as sankey from "./sankey-webview";
 import * as deasync from "deasync";
 
 // Import shared definitions from Ohm-based tokenizing parser (server-side!)
-import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken } from "./types";
+import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken, PDSCOSSyntaxSettings } from "./types";
 
 import {
   LanguageClient,
@@ -191,6 +191,28 @@ export async function activate(context: vscode.ExtensionContext) {
     // },
   };
 
+  function getExtensionSettings(): any {
+    const configuration = vscode.workspace.getConfiguration('pdf-cos-syntax');
+    const maxNumberOfProblems = configuration.get<number>('maxNumberOfProblems', 100);
+    const allowPreambleAndPostamble = configuration.get<boolean>('allowPreambleAndPostamble', true);
+    const verboseLogging = configuration.get<boolean>('verboseLogging', false);
+  
+    return {
+      maxNumberOfProblems,
+      allowPreambleAndPostamble,
+      verboseLogging
+    };
+  }
+  
+  vscode.workspace.onDidChangeConfiguration(event => {
+    if (event.affectsConfiguration('pdf-cos-syntax')) {
+      const updatedSettings = getExtensionSettings();
+
+      if (updatedSettings.verboseLogging) {
+        console.log('Verbose logging enabled');
+      }
+    }
+  });
   
   // Create the language client and start the client.
   client = new LanguageClient(

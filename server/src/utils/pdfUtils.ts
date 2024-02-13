@@ -18,6 +18,7 @@
 */
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
 import { Location, Position } from "vscode-languageserver";
+import * as vscode from 'vscode';
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
@@ -325,6 +326,7 @@ export function getSemanticTokenAtPosition(
 }
 
 export function buildXrefMatrix(content: string): XrefInfoMatrix {
+  console.log(`buildXrefMatrix(...)`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
   const lines = content.split("\n");
@@ -371,7 +373,7 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
  * @returns Human-readable date for the valid parts of the PDF date string
  */
 function parsePDFDateString(d: string): string {
-  /// @todo - hex strings!
+  /** @todo - hex strings! */ 
 
   // Parse a PDF Date string into consistuent fields
   const PDFDateRegex = /^D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+Z])?(\d{2})?(')?(\d{2})?(')?/gm;
@@ -463,3 +465,10 @@ function parsePDFDateString(d: string): string {
 
   return s;
 }
+
+// function convertRangeToVscodeRange(range: { start: { line: number; character: number; }, end: { line: number; character: number; } }): Range {
+//   const start: Position = Position.create(range.start.line, range.start.character);
+//   const end: Position = Position.create(range.end.line, range.end.character);
+//   return Range.create(start, end);
+// }
+

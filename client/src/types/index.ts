@@ -14,5 +14,6 @@
  * (DARPA). Approved for public release.
  */
 
+export * from './documentTypes';
 export * from './tokenTypes';
 export * from './constants';

@@ -90,15 +90,29 @@ let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
-// console.log("-------------------------------");
-// console.log("Server");
-// console.log("-------------------------------");
+function getPDFDocumentData(uri: string): PDFDocumentData | undefined {
+  // Assuming you have a map or similar structure to store PDFDocumentData instances by URI
+  return pdfDocumentDataMap.get(uri);
+}
+
+function updatePDFDataBasedOnEdit(document: TextDocument, pdfData: PDFDocumentData): void {
+  // Example: Update the XRefMatrix based on the document's content
+  // This is purely illustrative and depends on your specific implementation needs
+  const newParseResults = parseDocument(document.getText());
+  pdfData.ohmParseResults = newParseResults.ohmParseResults;
+  pdfData.xrefMatrix = newParseResults.xrefMatrix;
+  
+  // Update any other relevant parts of pdfData as necessary
+}
 
 documents.onDidChangeContent((change) => {
+  validateTextDocument(change.document);
   const document = change.document;
   if (document) {
     updateXrefMatrixForDocument(document.uri, document.getText());
   }
+  const pdfData = getPDFDocumentData(change.document.uri);
+  updatePDFDataBasedOnEdit(change.document, pdfData);
 });
 
 connection.onDidOpenTextDocument((params) => {
@@ -189,28 +203,57 @@ connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
+    getDocumentSettings().then((fetchedSettings) => {
+      globalSettings = fetchedSettings;
+      // Revalidate all open text documents with new settings
+      documents.all().forEach(validateTextDocument);
+    });
   } else {
     globalSettings = <PDSCOSSyntaxSettings>(
-      (change.settings.languageServerExample || defaultSettings)
+      (change.settings.pdscosSyntax || defaultSettings)
     );
+    // Revalidate all open text documents with new settings
+    documents.all().forEach(validateTextDocument);
   }
 
   // Revalidate all open text documents
   documents.all().forEach(validateTextDocument);
 });
 
+async function getDocumentSettings(): Promise<PDSCOSSyntaxSettings> {
+  const promise = new Promise<PDSCOSSyntaxSettings>((resolve, reject) => {
+    const settings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 }; 
+    resolve(settings);
+  });
+  return promise;
+}
+
+function generateDiagnostics(document: TextDocument): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const settings = getDocumentSettings(document.uri); // Fetch settings for this document
+
+  // Example logic for limiting diagnostics
+  for (const problem of analyzeDocument(document)) {
+    if (settings.allowPreambleAndPostamble || !problem.isPreambleOrPostamble) {
+      diagnostics.push(createDiagnostic(problem));
+      if (diagnostics.length >= settings.maxNumberOfProblems) break; // Limit reached
+    }
+  }
+
+  return diagnostics;
+}
+
+function log(message: string): void {
+  const settings = getGlobalSettings(); // Assuming a function to fetch global settings
+  if (settings.verboseLogging) {
+    console.log(message); // Only log if verbose logging is enabled
+  }
+}
+
+
 // Only keep settings for open documents
 documents.onDidClose((e) => {
   pdfDocumentData.delete(e.document.uri);
-});
-
-/** The content of a text document has changed. This event is emitted
- *  when the text document first opened or when its content has changed.
- *  Re-validate the PDF.
- */
-documents.onDidChangeContent((change) => {
-  // console.log(`Server onDidChangeContent`);
-  validateTextDocument(change.document);
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
