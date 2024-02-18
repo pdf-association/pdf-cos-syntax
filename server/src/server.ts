@@ -98,11 +98,30 @@ function getPDFDocumentData(uri: string): PDFDocumentData | undefined {
 function updatePDFDataBasedOnEdit(document: TextDocument, pdfData: PDFDocumentData | undefined): void {
   // Example: Update the XRefMatrix based on the document's content
   // This is purely illustrative and depends on your specific implementation needs
-  const newParseResults = parseDocument(document.getText());
-  pdfData.ohmParseResults = newParseResults.ohmParseResults;
-  pdfData.xrefMatrix = newParseResults.xrefMatrix;
-  
-  // Update any other relevant parts of pdfData as necessary
+  if (pdfData) {
+    const newParseResults = parseDocument(document.getText());
+    pdfData.ohmParseResults = newParseResults.ohmParseResults;
+    // pdfData.xrefMatrix = newParseResults.xrefMatrix;
+  }
+}
+
+function parseDocument(documentText: string) {
+  // Your parsing logic here
+  // This is just a placeholder. Replace it with your actual implementation.
+  return {
+    ohmParseResults: {},
+    xrefMatrix: {
+      matrix: {},
+      diagnostics: [],
+      dumpMatrix: function() { /* implementation here */ },
+      isObjectNumberValid: function() { /* implementation here */ },
+      isObjectIDInUse: function() { /* implementation here */ },
+      getObjectNumberBasedOnByteOffset: function() { /* implementation here */ },
+      getByteOffsetOfInuseObjectID: function() { /* implementation here */ },
+      getFirstLineNumberForObjectID: function() { /* implementation here */ },
+      // ... add the rest of the required methods and properties here
+    },
+  };
 }
 
 documents.onDidChangeContent((change) => {
