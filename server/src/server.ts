@@ -92,10 +92,10 @@ const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
 function getPDFDocumentData(uri: string): PDFDocumentData | undefined {
   // Assuming you have a map or similar structure to store PDFDocumentData instances by URI
-  return pdfDocumentDataMap.get(uri);
+  return pdfDocumentData.get(uri);
 }
 
-function updatePDFDataBasedOnEdit(document: TextDocument, pdfData: PDFDocumentData): void {
+function updatePDFDataBasedOnEdit(document: TextDocument, pdfData: PDFDocumentData | undefined): void {
   // Example: Update the XRefMatrix based on the document's content
   // This is purely illustrative and depends on your specific implementation needs
   const newParseResults = parseDocument(document.getText());
@@ -228,27 +228,27 @@ async function getDocumentSettings(): Promise<PDSCOSSyntaxSettings> {
   return promise;
 }
 
-function generateDiagnostics(document: TextDocument): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const settings = getDocumentSettings(document.uri); // Fetch settings for this document
+// function generateDiagnostics(document: TextDocument): Diagnostic[] {
+//   const diagnostics: Diagnostic[] = [];
+//   const settings = getDocumentSettings(document.uri); // Fetch settings for this document
 
-  // Example logic for limiting diagnostics
-  for (const problem of analyzeDocument(document)) {
-    if (settings.allowPreambleAndPostamble || !problem.isPreambleOrPostamble) {
-      diagnostics.push(createDiagnostic(problem));
-      if (diagnostics.length >= settings.maxNumberOfProblems) break; // Limit reached
-    }
-  }
+//   // Example logic for limiting diagnostics
+//   for (const problem of analyzeDocument(document)) {
+//     if (settings.allowPreambleAndPostamble || !problem.isPreambleOrPostamble) {
+//       diagnostics.push(createDiagnostic(problem));
+//       if (diagnostics.length >= settings.maxNumberOfProblems) break; // Limit reached
+//     }
+//   }
 
-  return diagnostics;
-}
+//   return diagnostics;
+// }
 
-function log(message: string): void {
-  const settings = getGlobalSettings(); // Assuming a function to fetch global settings
-  if (settings.verboseLogging) {
-    console.log(message); // Only log if verbose logging is enabled
-  }
-}
+// function log(message: string): void {
+//   const settings = getGlobalSettings(); // Assuming a function to fetch global settings
+//   if (settings.verboseLogging) {
+//     console.log(message); // Only log if verbose logging is enabled
+//   }
+// }
 
 
 // Only keep settings for open documents

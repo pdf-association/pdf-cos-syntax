@@ -15,8 +15,8 @@
  */
 'use strict';
 
-import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-import { Diagnostic } from 'vscode-languageserver'; 
+// import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
+// import { Diagnostic } from 'vscode-languageserver'; 
 
 export interface PDSCOSSyntaxSettings {
   maxNumberOfProblems: number;
@@ -30,11 +30,11 @@ export type OutlineTree = {
   // Define the structure of your outline tree here
 };
 
-export type PDFDocumentData = {
-  settings: PDSCOSSyntaxSettings;
-  xrefMatrix?: XrefInfoMatrix;
-  ohmParseResults?: OhmParseResults; // Add Ohm parse results
-  diagnosticsList?: Diagnostic[]; // Add diagnostics list using LSP Diagnostic type or similar
-  outlineTree?: OutlineTree; // Add outline tree
-  rawPDFBytes?: Uint8Array; // Add raw PDF bytes
-};
+// export type PDFDocumentData = {
+//   settings: PDSCOSSyntaxSettings;
+//   xrefMatrix?: XrefInfoMatrix;
+//   ohmParseResults?: OhmParseResults; // Add Ohm parse results
+//   diagnosticsList?: Diagnostic[]; // Add diagnostics list using LSP Diagnostic type or similar
+//   outlineTree?: OutlineTree; // Add outline tree
+//   rawPDFBytes?: Uint8Array; // Add raw PDF bytes
+// };
