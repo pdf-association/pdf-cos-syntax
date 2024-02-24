@@ -8,31 +8,29 @@ Heavily documented sample code for https://code.visualstudio.com/api/language-ex
 - https://microsoft.github.io/language-server-protocol/
 
 
-## Functionality
-
-This Language Server works for PDFs that are plain text. It has the following language features:
-- Completions
-- Diagnostics regenerated on each file change or configuration change
-
-It also includes an End-to-End test.
-
 ## Structure
 
 ```
 .
-├── client // Language Client
-│   ├── src
-│   │   ├── test // End to End tests for Language Client / Server
-│   │   └── extension.ts // Language Client entry point
 ├── package.json // The extension manifest.
+├── node_modules
+│   └── ... modules needed by BOTH client and server
+├── out 
+├── client // Language Client
+│   └── src
+│       └── extension.ts // Language Client entry point
+|       └── ... other client-side files ...
 └── server // Language Server
     └── src
+        └── grammar 
+            └── Ohm.js grammar files 
         └── server.ts // Language Server entry point
+        └── ... other server-side files ...
 ```
 
 ## Running 
 
-- Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
+- Run `npm install` in this folder. This installs all necessary npm modules 
 - Open VS Code on this folder.
 - Press Ctrl+Shift+B to start compiling the client and server in [watch mode](https://code.visualstudio.com/docs/editor/tasks#:~:text=The%20first%20entry%20executes,the%20HelloWorld.js%20file.).
 - Switch to the Run and Debug View in the Sidebar (Ctrl+Shift+D).
@@ -87,20 +85,41 @@ npm outdated -g
 
 # Packaging
 
-For some reason `vsce package` includes DevDependencies for both `.\client` and `.\server` folders. Work around is to manually prune the dev-only dependences in client and server, then package, and then reinstate:
+There are a number of development-time-only packages which helps keep the VSIX package size down significantly.
+
 
 ```
-cd client
-npm prune --omit dev
-cd ..\server
-npm prune --omit dev
-cd ..
-vsce package
-cd client
-npm install
-cd ..\server
-npm install
-cd ..
+$ npm list
+pdf-cos-syntax@0.1.6 C:\Temp\share\pdf-cos-syntax
++-- @ohm-js/cli@2.0.0
++-- @types/mocha@10.0.6
++-- @types/node@20.11.20
++-- @types/vscode@1.86.0
++-- @vscode/test-electron@2.3.9
++-- @typescript-eslint/eslint-plugin@7.0.2
++-- @typescript-eslint/parser@7.0.2
++-- @vscode/test-electron@2.3.9
++-- ascii85@1.0.2
++-- copyfiles@2.4.1
++-- eslint@8.57.0
++-- install@0.13.0
++-- mocha@10.3.0
++-- npm@10.4.0
++-- ohm-js@17.1.0
++-- sharp@0.33.2
++-- typescript@5.3.3
++-- vscode-languageclient@9.0.1
++-- vscode-languageserver-textdocument@1.0.11
+`-- vscode-languageserver@9.0.1
+
+$ npm list --omit=dev
+pdf-cos-syntax@0.1.6 C:\Temp\share\pdf-cos-syntax
++-- ascii85@1.0.2
++-- ohm-js@17.1.0
++-- sharp@0.33.2
++-- vscode-languageclient@9.0.1
++-- vscode-languageserver-textdocument@1.0.11
+`-- vscode-languageserver@9.0.1
 ```
 
 ## Supporting Sharp across multiple platforms
@@ -108,7 +127,6 @@ cd ..
 Sharp is used to read image files such as JPEG, PNG, PPM, etc. and depends it on `libvips` which is a platform-dependent DLLs, dylibs, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be install locally: 
 
 ```
-cd client
 npm rebuild --platform=win32 --arch=x64 sharp
 npm rebuild --platform=darwin --arch=arm64 sharp
 npm rebuild --platform=darwin --arch=x64 sharp

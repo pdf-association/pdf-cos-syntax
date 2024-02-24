@@ -3,12 +3,10 @@
 .eslintignore
 *.vsix
 *.txt
-*.vsix
 *.git*
 Debugging.md
 Testing.md
 testing-resources/
-node_modules/
 scripts/
 media/
 **/tsconfig.json
