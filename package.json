@@ -477,8 +477,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -b",
+    "vscode:prepublish": "npm run compile ",
+    "compile": "tsc -b && npx copyfiles -V \"./server/src/grammar/*.ohm\" ./out",
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
     "generate": "npx ohm generateBundles --withTypes ./server/src/grammar/grammar_pdfTokens.ohm"
@@ -490,6 +490,7 @@
     "@types/vscode": "^1.84.2",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.57.0",
     "install": "^0.13.0",
     "mocha": "^10.2.0",
