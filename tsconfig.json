@@ -14,7 +14,7 @@
     "strict": true,
     "composite": true,
     "skipLibCheck": true,
-    "allowJs": false,
+    "allowJs": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
     "exactOptionalPropertyTypes": true

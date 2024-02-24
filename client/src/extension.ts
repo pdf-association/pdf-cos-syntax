@@ -160,7 +160,7 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
 export async function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
-    path.join("server", "out", "server.js")
+    path.join("out", "server", "src", "server.js")
   );
 
   // If the extension is launched in debug mode then the debug server options are used
