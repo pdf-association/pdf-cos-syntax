@@ -16,16 +16,17 @@ Heavily documented sample code for https://code.visualstudio.com/api/language-ex
 ├── node_modules
 │   └── ... modules needed by BOTH client and server
 ├── out 
+│   └── ... compiled output for BOTH client and server
 ├── client // Language Client
 │   └── src
 │       └── extension.ts // Language Client entry point
-|       └── ... other client-side files ...
+|       └── ... other client-side files and folders ...
 └── server // Language Server
     └── src
         └── grammar 
-            └── Ohm.js grammar files 
+            └── ... Ohm.js grammar files ...
         └── server.ts // Language Server entry point
-        └── ... other server-side files ...
+        └── ... other server-side files and folders ...
 ```
 
 ## Running 
@@ -42,6 +43,7 @@ Heavily documented sample code for https://code.visualstudio.com/api/language-ex
 ```bash
 npm install -g @vscode/vsce
 vsce package
+vsce publish
 ```
 
 See also https://code.visualstudio.com/api/working-with-extensions/publishing-extension.
@@ -68,24 +70,13 @@ Working in VSCode is heavily JS centric, however JS regex special characters are
 
 # Node modules
 
-Minimal Node module dependencies are kept below `client` and `server` folders. The `.\package.json` shouldn't have any runtime dependencies:
+All Node module are in the root folder `./node_modules`. This ensures that client and server are both using identical modules and keeps VSIX package size as small as possible. 
 
-```
-cd client
-npm install
-npm outdated
-cd ..\server
-npm install
-npm outdated
-cd ..
-npm install
-npm outdated
-npm outdated -g
-```
+There should be no `./client/node_modules` or `./server/node_modules`!  
 
 # Packaging
 
-There are a number of development-time-only packages which helps keep the VSIX package size down significantly.
+Most NPM modules are development-time-only packages and sharing modules between client and server helps keep the VSIX package size down significantly. 
 
 
 ```
@@ -122,13 +113,25 @@ pdf-cos-syntax@0.1.6 C:\Temp\share\pdf-cos-syntax
 `-- vscode-languageserver@9.0.1
 ```
 
+## Ohm grammars
+
+The [Ohm.js](https://ohmjs.org/) files (`*.ohm`) need to be physically included in the VSIX. This is accomplished via `package.josn` using the [copyfiles](https://www.npmjs.com/package/copyfiles) NPM module (as a devDependency only!):
+
+```json
+"compile": "tsc -b && npx copyfiles -V \"./server/src/grammar/*.ohm\" ./out"
+```
+
+
 ## Supporting Sharp across multiple platforms
 
-Sharp is used to read image files such as JPEG, PNG, PPM, etc. and depends it on `libvips` which is a platform-dependent DLLs, dylibs, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be install locally: 
+[Sharp](https://www.npmjs.com/package/sharp) is used to read image files such as JPEG, PNG, PPM, etc. and depends it on `libvips` which is a platform-dependent DLLs, dylibs, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be installed locally - see https://sharp.pixelplumbing.com/install: 
 
 ```
-npm rebuild --platform=win32 --arch=x64 sharp
-npm rebuild --platform=darwin --arch=arm64 sharp
-npm rebuild --platform=darwin --arch=x64 sharp
-npm rebuild --platform=linux --arch=x64 sharp
+npm install --os=win32 --cpu=x64 sharp
+npm install --os=darwin --cpu=arm64 sharp
+npm install --os=darwin --cpu=x64 sharp
+npm install --os=linux --cpu=arm64 sharp
+npm install --os=linux --cpu=x64 sharp
 ```
+
+This makes the VSIX package much bigger as it is multi-platform including `libvips` runtimes!
