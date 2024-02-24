@@ -31,7 +31,7 @@
     "vscode": "^1.84.2"
   },
   "icon": "assets/pdf-light.png",
-  "main": "./client/out/extension",
+  "main": "./out/client/src/extension",
   "contributes": {
     "grammars": [
       {
@@ -480,26 +480,29 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -b",
     "watch": "tsc -b -w",
-    "lint": "eslint ./client/src ./server/src --ext .ts,.tsx"
+    "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
+    "generate": "npx ohm generateBundles --withTypes ./server/src/grammar/grammar_pdfTokens.ohm"
   },
   "devDependencies": {
+    "@ohm-js/cli": "^2.0.0",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.0",
+    "@types/node": "^20.11.20",
     "@types/vscode": "^1.84.2",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-		"@typescript-eslint/parser": "^6.12.0",
-		"eslint": "^8.54.0",
-		"mocha": "^10.2.0",
-		"typescript": "^5.3.2"
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.57.0",
+    "install": "^0.13.0",
+    "mocha": "^10.2.0",
+    "npm": "^10.4.0",
+    "typescript": "^5.3.2"
   },
   "dependencies": {
     "@vscode/test-electron": "^2.3.8",
-		"ascii85": "^1.0.2",
-		"deasync": "^0.1.29",
-		"sharp": "^0.32.5",
-		"vscode-languageclient": "^9.0.1",
+    "ascii85": "^1.0.2",
     "ohm-js": "^17.1.0",
-		"vscode-languageserver": "^8.1.0",
-		"vscode-languageserver-textdocument": "^1.0.11"
+    "sharp": "^0.33.2",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
   }
 }

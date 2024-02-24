@@ -22,7 +22,6 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as pdf from "./pdfClientUtilities";
 import * as sankey from "./sankey-webview";
-import * as deasync from "deasync";
 
 // Import shared definitions from Ohm-based tokenizing parser (server-side!)
 import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken, PDSCOSSyntaxSettings } from "./types";
@@ -427,6 +426,7 @@ export async function commandHandler(
   uri: vscode.Uri
 ) {
   const editor = vscode.window.activeTextEditor;
+  if (editor == undefined) return;
   const selection = editor.selection;
   const inp = editor.document.getText(editor.selection);
 
@@ -438,7 +438,7 @@ export async function commandHandler(
   const objNum = 1;
   const genNum = 0;
 
-  let out: string;
+  let out: string = "";
 
   switch (option) {
     case "imageA85DCT":

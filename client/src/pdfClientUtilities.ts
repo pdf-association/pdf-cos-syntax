@@ -166,6 +166,7 @@ export function normalizedPDFname(name: string): string {
   if (name.indexOf('#') == -1) return name;
 
   const m = name.match(/(#[0-9a-fA-F][0-9a-fA-F])/g);
+  if (m === null) return name;
   let newName: string = name;
   for(let i: number = 0; i < m.length; i++) {
     const hexDigits: string = m[i].slice(1, 3); // get the 2 hex digits
@@ -385,7 +386,7 @@ export async function convertImageToAscii85DCT(
       filters: { 'Images': ['jpg', 'png', 'gif', 'WebP', 'AVIF' ] }
     });
     
-    if (imgFile === null || imgFile.length < 1) {
+    if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
       vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
@@ -397,11 +398,13 @@ export async function convertImageToAscii85DCT(
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        width = info.width;
-        height = info.height;
+        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+          width = info.width;
+          height = info.height;
+        }
       });
 
-    let pdfObj: string[];
+    let pdfObj: string[] = [];
     await img.jpeg()
       .toBuffer()
       .then((data) => {
@@ -455,7 +458,7 @@ export async function convertImageToAsciiHexDCT(
       filters: { 'Images': ['jpg', 'png', 'gif', 'WebP', 'AVIF' ] }
     });
     
-    if (imgFile === null || imgFile.length < 1) {
+    if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
       vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
@@ -466,11 +469,15 @@ export async function convertImageToAsciiHexDCT(
     const img = await sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
-        width = info.width;
-        height = info.height;
+        // console.log(info);
+        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+          width = info.width;
+          height = info.height;
+        }
+
       });
 
-    let pdfObj: string[];
+    let pdfObj: string[] = [];
     await img.jpeg()
       .toBuffer()
       .then((data) => {
@@ -521,7 +528,7 @@ export async function convertImageToRawAscii85(
       filters: { 'Images': ['jpg', 'png', 'gif', 'WebP', 'AVIF' ] }
     });
     
-    if (imgFile === null || imgFile.length < 1) {
+    if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
       vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
@@ -533,8 +540,11 @@ export async function convertImageToRawAscii85(
     const img = await sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
-        width = info.width;
-        height = info.height;
+        // console.log(info);
+        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+          width = info.width;
+          height = info.height;
+        }
         if (info.space) {
           if ((info.space === 'cmyk') && (info.channels === 4)) {
             pdfCS = '/DeviceCMYK';
@@ -548,7 +558,7 @@ export async function convertImageToRawAscii85(
         }
       });
 
-    let pdfObj: string[];
+    let pdfObj: string[] = [];
     await img.raw({ depth: 'uchar' }) // force 8-bit
       .toBuffer()
       .then((data) => {
@@ -594,7 +604,7 @@ export async function convertImageToRawAsciiHex(
       filters: { 'Images': ['jpg', 'png', 'gif', 'WebP', 'AVIF' ] }
     });
     
-    if (imgFile === null || imgFile.length < 1) {
+    if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
       vscode.window.showErrorMessage(`Valid image file not selected!`);
       return [];
@@ -606,8 +616,12 @@ export async function convertImageToRawAsciiHex(
     const img = await sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
-        width = info.width;
-        height = info.height;
+        // console.log(info);
+        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+          width = info.width;
+          height = info.height;
+        }
+
         if (info.space) {
           if ((info.space === 'cmyk') && (info.channels === 4)) {
             pdfCS = '/DeviceCMYK';
@@ -621,7 +635,7 @@ export async function convertImageToRawAsciiHex(
         }
       });
 
-    let pdfObj: string[];
+    let pdfObj: string[] = [];
     await img.raw({ depth: 'uchar' }) // force 8-bit
       .toBuffer()
       .then((data) => {
@@ -666,14 +680,14 @@ export async function convertDataToAscii85(
       filters: { 'All files': ['icc', 'icm', 'bin', '*', ] }
     });
 
-    if (dataFile === null || dataFile.length < 1) {
+    if (dataFile == null || dataFile.length < 1) {
       console.error(`Valid data file not selected!`);
       vscode.window.showErrorMessage(`Valid data file not selected!`);
       return [];
     }
 
     const readFile = util.promisify(fs.readFile);
-    let pdfObj: string[];
+    let pdfObj: string[] = [];
     await readFile(dataFile[0].fsPath)
       .then((data) => {
         pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum);
@@ -710,14 +724,14 @@ export async function convertDataToAsciiHex(
       filters: { 'All files': ['icc', 'icm', 'bin', '*', ] }
     });
 
-    if (dataFile === null || dataFile.length < 1) {
+    if (dataFile == null || dataFile.length < 1) {
       console.error(`Valid data file not selected!`);
       vscode.window.showErrorMessage(`Valid data file not selected!`);
       return [];
     }
 
     const readFile = util.promisify(fs.readFile);
-    let pdfObj: string[];
+    let pdfObj: string[] = [];
     await readFile(dataFile[0].fsPath)
       .then((data) => {
         pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum);
@@ -759,9 +773,9 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
 
   const obj = inpString.match(/[ \t\r\n\f\0]\d+[ \t\r\n\f\0]\d+[ \t\r\n\f\0]obj[ \t\r\n\f\0]/g);
   const endobj = inpString.match(/[ \t\r\n\f\0]endobj[ \t\r\n\f\0]/g);
-  if (((obj && (obj.length === 0)) || 
-      ((endobj && (endobj.length === 0)) || 
-      (obj.length !== endobj.length)))) 
+  if ((((obj && (obj.length === 0)) || 
+      ((endobj && (endobj.length === 0))) || 
+      (obj && endobj && obj.length !== endobj.length)))) 
   {
     console.error(`No or partial objects were found. Cannot convert to an object stream!`);
     vscode.window.showErrorMessage(`No or partial objects were found. Cannot convert to an object stream!`);
@@ -777,7 +791,7 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
   let firstObjectNum: number = -1;
   let i: number;
   let inObj: boolean = false;
-  let m: RegExpMatchArray;
+  let m: RegExpMatchArray | null;
   for (i = 0; i < inpLinesLen; i++) {
     if (inp[i].trim().length === 0) {
       // blank or whitespace-only line --> skip
@@ -879,7 +893,7 @@ export function xrefToXRefStream(
 
     let objNum: number = -1;
     let objCount: number = -1;
-    let m: RegExpMatchArray;
+    let m: RegExpMatchArray | null;
     for (const e of inpXrefEntries) {
       if ((objNum >= 0) && (objCount > 0) && ((m = e.match(/^(\d{10}) (\d{5}) f\b/)))) {
         // free object --> Type 0: 00 <obj:%08x> <gen:%04x>
