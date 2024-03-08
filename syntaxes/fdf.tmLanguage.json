@@ -3,20 +3,24 @@
 	"scopeName": "source.fdf",
 	"patterns": [
 		{
-			"name": "markup.underline.link.pdf",
+			"name": "markup.underline.link",
 			"match": "\\b(http|https|ftp|ftps)://[a-zA-Z0-9\\-.]+(/[a-zA-Z0-9\\-._?,'+&%$#=~]*)*\\b"
 		},
 		{
-			"name": "comment.line.percent.pdf",
+			"name": "comment.line.percentage",
 			"match": "%.*"
 		},
 		{
 			"name": "string.quoted.hex.pdf",
-			"match": "<[0-9a-fA-F \\t\\r\\n\\f\\0]*>"
+			"match": "\\b<[0-9a-fA-F \\t\\r\\n\\f\\0]*>\\b"
 		},
 		{
-			"name": "keyword.control.pdf",
-			"match": "\\b(?:\\d+ \\d+ R|startxref|null|true|false|(^|(\\r?\\n)[ \\t\\r\\n\\f\\0]*)\\d+ \\d+ obj|endobj)\\b"
+			"name": "meta.object.pdf",
+			"match": "\\b(\\d+ \\d+ obj|stream|endstream|endobj)\\b"
+		},
+		{
+			"name": "keyword.other.pdf",
+			"match": "\\b(true|false|null)\\b"
 		},
 		{
 			"name": "variable.other.name.pdf",
@@ -24,16 +28,35 @@
 		},
 		{
 			"name": "constant.numeric.real.pdf",
-			"match": "\\b[-+]?\\d*\\.\\d+\\b"
+			"match": "\\b[-+]?(\\d*?\\.\\d+|\\d+\\.\\d*?)\\b"
 		},
 		{
 			"name": "constant.numeric.integer.pdf",
 			"match": "\\b[+-]?\\d+\\b"
 		},
 		{
+			"name": "keyword.section.xref.pdf",
+			"begin": "\\bxref\\b",
+			"end": "\\btrailer\\b",
+			"patterns": [
+				{
+					"name": "keyword.control.free-object.pdf",
+					"match": "^\\d{10} \\d{5} f\\b"
+				},
+				{
+					"name": "keyword.control.inuse-object.pdf",
+					"match": "^\\d{10} \\d{5} n\\b"
+				},
+				{
+					"name": "keyword.control.xref-subsection.pdf",
+					"match": "^\\d+ \\d+\\b"
+				}
+			]
+		},		
+		{
 			"name": "string.quoted.literal.pdf",
 			"begin": "\\(",
-			"end": "(?<=[^\\\\])\\)",
+			"end": "(?<!\\\\)\\)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 			"patterns": [
 				{
 					"name": "constant.character.escape.linefeed.pdf",
@@ -72,15 +95,15 @@
 		{
 			"name": "punctuation.definition.dictionary.pdf",
 			"begin": "<<",
-			"end": "(>>|(?=stream|endstream|endobj|xref|trailer))",
+			"end": "(>>|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b))",
 			"patterns": [
 				{
-					"name": "comment.line.percent.pdf",
+					"name": "comment.line.percentage",
 					"match": "%.*"
 				},
 				{
-					"name": "keyword.control.pdf",
-					"match": "\\b(?:true|false|null)\\b"
+					"name": "keyword.other.pdf",
+					"match": "\\b(?:(true|false|null))\\b"
 				},
 				{
 					"name": "keyword.control.reference.pdf",
@@ -92,7 +115,7 @@
 				},
 				{
 					"name": "constant.numeric.real.pdf",
-					"match": "\\b[-+]?\\d*\\.\\d+\\b"
+					"match": "\\b[-+]?(\\d*?\\.\\d+|\\d+\\.\\d*?)\\b"
 				},
 				{
 					"name": "constant.numeric.integer.pdf",
@@ -105,7 +128,7 @@
 				{
 					"name": "string.quoted.literal.pdf",
 					"begin": "\\(",
-					"end": "(?<=[^\\\\])\\)",
+					"end": "(?<!\\\\)\\)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 					"patterns": [
 						{
 							"name": "constant.character.escape.linefeed.pdf",
@@ -146,15 +169,15 @@
 		{
 			"name": "punctuation.definition.array.pdf",
 			"begin": "\\[",
-			"end": "(\\]|(?=stream|endstream|endobj|xref|trailer))",
+			"end": "(\\]|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b))",
 			"patterns": [
 				{
-					"name": "comment.line.percent.pdf",
+					"name": "comment.line.percentage",
 					"match": "%.*"
 				},
 				{
-					"name": "keyword.control.pdf",
-					"match": "\\b(?:true|false|null)\\b"
+					"name": "keyword.other.pdf",
+					"match": "\\b(?:(true|false|null))\\b"
 				},
 				{
 					"name": "keyword.control.reference.pdf",
@@ -166,7 +189,7 @@
 				},
 				{
 					"name": "constant.numeric.real.pdf",
-					"match": "\\b[-+]?\\d*\\.\\d+\\b"
+					"match": "\\b[-+]?(\\d*?\\.\\d+|\\d+\\.\\d*?)\\b"
 				},
 				{
 					"name": "constant.numeric.integer.pdf",
@@ -179,7 +202,7 @@
 				{
 					"name": "string.quoted.literal.pdf",
 					"begin": "\\(",
-					"end": "(?<=[^\\\\])\\)",
+					"end": "(?<!\\\\)\\)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 					"patterns": [
 						{
 							"name": "constant.character.escape.linefeed.pdf",
@@ -218,17 +241,17 @@
 			]
 		},
 		{
-			"name": "keyword.section.content-stream.pdf",
+			"contentName": "keyword.section.stream.pdf",
 			"begin": "\\bstream\\b",
-			"end": "\\b(endstream|(?=endobj|xref|trailer))\\b",
+			"end": "\\b(endstream|(?:(endobj|startxref|xref|trailer)))\\b",
 			"patterns": [
 				{
-					"name": "comment.line.percent.pdf",
+					"name": "comment.line.percentage",
 					"match": "%.*"
 				},
 				{
-					"name": "keyword.control.pdf",
-					"match": "\\b(?:true|false|null)\\b"
+					"name": "keyword.other.pdf",
+					"match": "\\b(?:(true|false|null))\\b"
 				},
 				{
 					"name": "variable.other.name.pdf",
@@ -236,7 +259,7 @@
 				},
 				{
 					"name": "constant.numeric.real.pdf",
-					"match": "\\b[-+]?\\d*\\.\\d+\\b"
+					"match": "\\b[-+]?(\\d*?\\.\\d+|\\d+\\.\\d*?)\\b"
 				},
 				{
 					"name": "constant.numeric.integer.pdf",
@@ -249,7 +272,7 @@
 				{
 					"name": "string.quoted.literal.pdf",
 					"begin": "\\(",
-					"end": "(?<=[^\\\\])\\)",
+					"end": "(?<!\\\\)\\)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 					"patterns": [
 						{
 							"name": "constant.character.escape.linefeed.pdf",
@@ -288,15 +311,15 @@
 				{
 					"name": "punctuation.definition.dictionary.pdf",
 					"begin": "<<",
-					"end": "(>>|(?=stream|endstream|endobj|xref|trailer))",
+					"end": "(>>|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b))",
 					"patterns": [
 						{
-							"name": "comment.line.percent.pdf",
+							"name": "comment.line.percentage",
 							"match": "%.*"
 						},
 						{
-							"name": "keyword.control.pdf",
-							"match": "\\b(?:true|false|null)\\b"
+							"name": "keyword.other.pdf",
+							"match": "\\b(?:(true|false|null))\\b"
 						},
 						{
 							"name": "keyword.control.reference.pdf",
@@ -308,7 +331,7 @@
 						},
 						{
 							"name": "constant.numeric.real.pdf",
-							"match": "\\b[-+]?\\d*\\.\\d+\\b"
+							"match": "\\b[-+]?(\\d*?\\.\\d+|\\d+\\.\\d*?)\\b"
 						},
 						{
 							"name": "constant.numeric.integer.pdf",
@@ -321,7 +344,7 @@
 						{
 							"name": "string.quoted.literal.pdf",
 							"begin": "\\(",
-							"end": "(?<=[^\\\\])\\)",
+							"end": "(?<!\\\\)\\)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 							"patterns": [
 								{
 									"name": "constant.character.escape.linefeed.pdf",
@@ -362,15 +385,15 @@
 				{
 					"name": "punctuation.definition.array.pdf",
 					"begin": "\\[",
-					"end": "(\\]|(?=stream|endstream|endobj|xref|trailer))",
+					"end": "\\]|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 					"patterns": [
 						{
-							"name": "comment.line.percent.pdf",
+							"name": "comment.line.percentage",
 							"match": "%.*"
 						},
 						{
-							"name": "keyword.control.pdf",
-							"match": "\\b(?:true|false|null)\\b"
+							"name": "keyword.other.pdf",
+							"match": "\\b(?:(true|false|null))\\b"
 						},
 						{
 							"name": "variable.other.name.pdf",
@@ -378,7 +401,7 @@
 						},
 						{
 							"name": "constant.numeric.real.pdf",
-							"match": "\\b[-+]?\\d*\\.\\d+\\b"
+							"match": "\\b[-+]?(\\d*?\\.\\d+|\\d+\\.\\d*?)\\b"
 						},
 						{
 							"name": "constant.numeric.integer.pdf",
@@ -391,7 +414,7 @@
 						{
 							"name": "string.quoted.literal.pdf",
 							"begin": "\\(",
-							"end": "(?<=[^\\\\])\\)",
+							"end": "(?<!\\\\)\\)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 							"patterns": [
 								{
 									"name": "constant.character.escape.linefeed.pdf",
@@ -432,31 +455,12 @@
 				{
 					"name": "binary.data.inlineimage.pdf",
 					"begin": "\\bID\\b",
-					"end": "((EI\\b)|(?=endstream|endobj|xref|trailer))",
+					"end": "(EI\\b)|(?:\\b(endstream|endobj|stream|startxref|xref|trailer)\\b)",
 					"contentName": "text.plain"
 				},
 				{
 					"name": "keyword.operator.content-stream.pdf",
-					"match": "\\b(w|J|j|M|d|ri|i|gs|q|Q|cm|cs|CS|SC|SCN|G|g|RG|rg|K|k|m|l|c|v|y|h|re|S|s|f|F|f\\*|B|B\\*|b|b\\*|n|W|W\\*|sh|BI|ID|EI|Do|Tc|Tw|Tz|TL|Tf|Tr|Ts|Td|TD|Tm|T\\*|do|d1|MP|DP|BMC|BDC|EMC|BX|EX|BT|ET|Tj|TJ|Tf|Tc|Tw|Td|cm|')\\b"
-				}
-			]
-		},
-		{
-			"name": "keyword.section.xref-trailer.pdf",
-			"begin": "\\bxref\\b",
-			"end": "\\btrailer\\b",
-			"patterns": [
-				{
-					"name": "keyword.control.free-object.pdf",
-					"match": "\\b\\d{10} \\d{5} f\\b"
-				},
-				{
-					"name": "keyword.control.inuse-object.pdf",
-					"match": "\\b\\d{10} \\d{5} n\\b"
-				},
-				{
-					"name": "keyword.control.xref-subsection.pdf",
-					"match": "\\b\\d+ \\d+\\b"
+					"match": "\\b(w|J|j|M|d|ri|i|gs|q|Q|cm|cs|CS|SC|SCN|G|g|RG|rg|K|k|m|l|c|v|y|h|re|S|s|f|F|f\\*|B|B\\*|b|b\\*|n|W|W\\*|sh|BI|ID|EI|Do|Tc|Tw|Tz|TL|Tf|Tr|Ts|Td|TD|Tm|T\\*|do|d1|MP|DP|BMC|BDC|EMC|BX|EX|BT|ET|Tj|TJ|'|\")\\b"
 				}
 			]
 		}
