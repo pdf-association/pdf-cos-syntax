@@ -1,5 +1,5 @@
 /**
- * @brief Conventional cross reference table and file structure information. Shared between client and server.  
+ * @brief Data structures shared between client and server.  
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
@@ -18,8 +18,11 @@
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
 import { Diagnostic } from 'vscode-languageserver';
 
-export interface PDSCOSSyntaxSettings {
+export interface PDFCOSSyntaxSettings {
   maxNumberOfProblems: number;
+  ignorePreambleAndPostamble: boolean;
+  ignoreXRefLineLength: boolean;
+  verboseLogging: boolean;
 }
 
 export type OhmParseResults = {
@@ -31,7 +34,7 @@ export type OutlineTree = {
 };
 
 export type PDFDocumentData = {
-  settings: PDSCOSSyntaxSettings;
+  settings: PDFCOSSyntaxSettings;
   xrefMatrix?: XrefInfoMatrix;
   ohmParseResults?: OhmParseResults; // Add Ohm parse results
   diagnosticsList?: Diagnostic[]; // Add diagnostics list using LSP Diagnostic type or similar

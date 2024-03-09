@@ -177,7 +177,7 @@
           "scope": "resource",
           "type": "number",
           "default": 100,
-          "description": "Controls the maximum number of problems produced by the server."
+          "description": "Maximum number of diagnostic problems reported."
         },
         "pdf-cos-syntax.trace.server": {
           "scope": "window",
@@ -188,12 +188,17 @@
             "verbose"
           ],
           "default": "off",
-          "description": "Traces the communication between VS Code and the language server."
+          "description": "NOT USED!! Traces the communication between VS Code and the language server."
         },
-        "pdf-cos-syntax.allowPreambleAndPostamble": {
+        "pdf-cos-syntax.ignorePreambleAndPostamble": {
           "type": "boolean",
-          "default": true,
-          "description": "Enable/disable inclusion of preamble and postamble in diagnostics."
+          "default": false,
+          "description": "Ignore all preamble and postamble bytes in diagnostics."
+        },
+        "pdf-cos-syntax.ignoreXRefLineLength": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore all length length of cross reference table entries in diagnostics."
         },
         "pdf-cos-syntax.verboseLogging": {
           "type": "boolean",

@@ -1,30 +1,108 @@
+/**
+ * @brief Manages the cross-reference table for a PDF file 
+ *
+ * @copyright
+ * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. 
+ *
+ * @remark
+ * This material is based upon work supported by the Defense Advanced
+ * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
+ * Any opinions, findings and conclusions or recommendations expressed
+ * in this material are those of the author(s) and do not necessarily
+ * reflect the views of the Defense Advanced Research Projects Agency
+ * (DARPA). Approved for public release.
+ * 
+ * TERMINOLOGY
+ * 
+ * - conventional cross reference PDF = only PDF uses `xref` keyword for 
+ *      all cross reference data. Supported by this VSCode extension.
+ * 
+ * - cross reference stream PDF = PDF 1.5 and later files that only use XRefStm streams.
+ *      `xref` keyword does not exist.  NOT supported by this VSCode extension!!!
+ * 
+ * - hybrid reference PDF = PDF uses both `xref` keyword AND XRefStm streams as 
+ *      per subclause 7.5.8.4 in ISO 32000-2. NOT supported by this VSCode extension!!!
+ * 
+ * - Linearized PDF
+ * 
+ * - original PDF = the PDF excluding all revisions (incremental updates)
+ *      Needs to define object 0 as the start of the free list so first
+ *      cross reference subsection marker line should be `0 \d+` where \d+
+ *      are the number of objects in the original PDF  
+ * 
+ * - object number = mostly > 0 (as object 0 is the start of freelist in the original PDF)
+ * 
+ * - generation number = always >= 0
+ * 
+ * - object ID = object number AND generation number pair
+ * 
+ * - revision = PDF as defined by the addition of a single incremental update
+ * 
+ * - object entry = \d{10} \d{5} (f|n) - supposedly 20 byte entries
+ *       Object number is only known by calculating from previous sub-section marker line
+ * 
+ * - sub-section marker line = line with 2 integers demarcating the start of a new subsection \d+ \d+
+ *       1st number = starting object number - should only be ZERO in original PDF
+ *       2nd number = number of objects - can be ZERO in a revision!
+ * 
+ * - sub-section = object entries below each sub-section marker line (\d+ \d+)
+ *       Note that a cross reference sub-section is technically OPTIONAL in a revision 
+ *       as the number of entries in a sub-section can be ZERO. Cannot be ZERO for the
+ *       original PDF.
+ * 
+ * - section = comprises zero or more cross reference sub-sections.
+ * 
+ * - table = the amalgamation of one or more cross reference sections in a PDF
+*/
+
 import { Diagnostic, DiagnosticSeverity, Position } from 'vscode-languageserver';
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 export class EntryNode {
   constructor(
-    public lineNbr: number, // ABSOLUTE line number in VSCode's PDF TextDocument
-    public objectNum: number, // Object number (determined by cross reference subsection lines)
-    public first: number, // \d{10}: in-use = byte offset, free = next object number in free list
-    public generationNumber: number, // \d{5}: generation number
-    public inUse: boolean // (f|n): true iff "n", false if "f"
+    /** ABSOLUTE line number of a cross reference entry in VSCode's `TextDocument`.
+     *  May not match line number in PDF due to binary data!
+     */
+    public lineNbr: number,   
+
+    /** Object number (as determined by number of lines since previous cross reference subsection marker line) */        
+    public objectNum: number,   
+
+    /** \d{10}: if in-use = PDF byte offset, if free = next object number in free list or 65535 (or 0?) */      
+    public first: number,
+
+    /** \d{5}: generation number always >= 0. Expected to match `Y` in `X Y obj` for in-use objects. */   
+    public generationNumber: number,  
+
+    /** (`f` (free) | `n` (in-use)): true iff `n`, false if `f` */
+    public inUse: boolean             
   ) {}
 }
 
+
 export class XrefInfoMatrix {
   /** 
-   * 1st index = object number
-   * 2nd index = file revision 
-   *    0 = original PDF
-   *    1 = oldest (1st) incremental update, etc.
+   * @property 2D sparse matrix cross reference table for the PDF 
+   * (all sections + sub-sections):
+   * - 1st index = object number
+   * - 2nd index = file revision: 
+   *     * 0 = original PDF
+   *     * 1 = oldest (1st) revision (incremental update)
+   *     * 2 = 2nd oldest revision, etc.
    */
   private matrix: EntryNode[][] = [];
 
-  /** Set of diagnostics generated when building cross-reference information */
+  /** @property Set of diagnostics generated when building cross-reference 
+   *  information. May be empty. */
   public diagnostics: Diagnostic[] = [];
 
   /** 
-   * Dumps out the matrix to console.log(), sorted by Object Number, then file revision
+   * @brief Dumps out the sparse matrix to `console.log()`, sorted by Object Number, 
+   * then file revision as lines of text.
    */
   public dumpMatrix(): void {
     let i;
@@ -35,8 +113,8 @@ export class XrefInfoMatrix {
         for (j =0; j < this.matrix[i].length; j++) {
           if (this.matrix[i][j]) {
             use = (this.matrix[i][j].inUse ? "in-use" : "free  ");
-            // console.log(`${i.toString().padStart(5)} ${this.matrix[i][j].generationNumber.toString().padStart(5)} obj: ` +
-            //             `rev. ${j} was ${use} @ line ${this.matrix[i][j].lineNbr}`);
+            console.log(`${i.toString().padStart(5)} ${this.matrix[i][j].generationNumber.toString().padStart(5)} obj: ` +
+                        `rev. ${j} was ${use} @ line ${this.matrix[i][j].lineNbr}`);
           }
         }
       }
@@ -44,15 +122,17 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * Has this Object Number been defined as free or in-use (with any generation number)?
+   * @brief Has this Object Number (with ANY generation number) ever been explicitly defined 
+   * as free or in-use in any sub-section of any revision?
    */
   public isObjectNumberValid(objectNumber: number): boolean {
     return this.matrix[objectNumber] !== undefined;
   }
 
   /** 
-   * Was this object ID (object number and generation number pair) ever defined as in-use?
-   * This means a "X Y obj" should exist in PDF.
+   * @brief Was this object ID (object number and generation number pair) ever defined as in-use?
+   * This means `X Y obj`...`endobj` should exist somewhere in the PDF, even if it is free in the
+   * final version PDF.
    */
   public isObjectIDInUse(objectNumber: number, generationNumber: number): boolean {
     if (this.matrix[objectNumber] !== undefined) {
@@ -67,8 +147,13 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * Find the Object Number of the cross reference table entry at lineNumber, which should have
-   * the same generation number. Returns the object number or -1 if not found.
+   * @brief Find the Object Number of the entry in the cross reference data of an object that is at `byteOffset`
+   * ensuring to match the generation number. 
+   * @param byteOffset byte offset (_as PDF byte offset, not VSCode offset!_) of start of `X Y obj` in a body section of the PDF.
+   *     Note that due to VSCode mangling binary data, VSCode offsets need to be converted to PDF byte offsets. 
+   * @param generationNumber the generation number `Y` of `X Y obj` in a body section of the PDF
+   * @param flag either `n` for an in-use object or `f` for a free object
+   * @returns the object number as determined by the cross-reference table data or -1 if not found.
    */
   public getObjectNumberBasedOnByteOffset(byteOffset: number, generationNumber: number, flag: string): number {
     let o: EntryNode[];
@@ -88,11 +173,12 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * Was this object ID (object number and generation number pair) ever defined as in-use?
-   * This means a "X Y obj" should exist in PDF. Returns the byte offset in the PDF or -1 if not found.
-   *
+   * @brief Was this **object ID** (object number and generation number pair) ever defined as in-use?
+   * This means a `X Y obj` should also exist in PDF. 
+   * 
+   * @returns the byte offset in the PDF or -1 if not found.
    * This PDF byte offset then needs to be converted to a VSCode line number to estimate where 
-   * the PDF object "X Y obj" ... "endobj" is approximately located.
+   * the PDF object `X Y obj` ... `endobj` is approximately located.
    */
   public getByteOffsetOfInuseObjectID(objectNumber: number, generationNumber: number): number {
     if (this.matrix[objectNumber] !== undefined) {
@@ -107,8 +193,8 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * Returns the _first_ cross reference table entry line number for a given Object ID (object number and 
-   * generation number pair, such as from "X Y R" or "X Y obj"). Returns -1 if no match.
+   * @returns the _first_ cross reference section entry line number for a given Object ID (object number and 
+   * generation number pair, such as from `X Y R` or `X Y obj`). Returns -1 if no match.
    */
   public getFirstLineNumberForObjectID(objectNumber: number, generationNumber: number): number {
     if (this.matrix[objectNumber] !== undefined) {
@@ -123,8 +209,8 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * Get the complete list of in-use object ID's across all incremental updates. 
-   * Might be empty array [] if the object ID was not in any cross reference table. 
+   * @returns Get the complete list of in-use object ID's across all incremental updates. 
+   * Might be empty array `[]` if the object ID was not in any cross reference section. 
    */
   public getInUseEntriesForObjectID(objectNumber: number, generationNumber: number): EntryNode[] {
     const entries: EntryNode[] = [];
@@ -140,17 +226,18 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * Get the complete revision list of an object's changes across all incremental updates. 
-   * Might be empty array [] if the object number was not in any cross reference table. 
+   * @returns Get the complete revision list of an object's changes across all revisions. 
+   * Might be empty array `[]` if the object number was not in any cross reference section. 
    */
   public getObjectNumberEntries(objectNumber: number): EntryNode[]  {
     return this.isObjectNumberValid(objectNumber) ? this.matrix[objectNumber] : [];
   }
 
   /**
-   * Finds ALL conventional cross reference tables and merges them into a single mega-matrix.
-   * Conventional cross reference table start with "xref" and end with "trailer" or "startxref"
-   * keyword (for hybrid reference PDFs). Starts from TOP of the PDF for revision numbers.
+   * @brief Finds ALL conventional cross reference tables and merges them into a single mega-matrix.
+   * Conventional cross reference table sections start with `xref` and end with `trailer` or `startxref`
+   * keyword (for hybrid reference PDFs) - assuming no syntax errors. 
+   * Starts from TOP of the PDF for revision numbering.
    */
   public mergeAllXrefTables(pdfFile: TextDocument) {
     let revision = 0;
@@ -170,30 +257,30 @@ export class XrefInfoMatrix {
     }
     while (startXref === xrefStart + 5);
 
-    // Did we find the "xref" start to a conventional cross reference table?
+    // Did we find the `xref` start to a conventional cross reference table?
     if (xrefStart === -1) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
         message: `No conventional cross reference tables were found - "xref" keyword missing`,
         range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
-        source: "pdf-cos-syntax"
+        source: "pdfcossyntax"
       });
     }
 
-    // Did we find the "startxref" start that is near the end of a file revision?
+    // Did we find the `startxref` start that is near the end of a file revision?
     if (startXref === -1) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
         message: `"startxref" keyword missing`,
         range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
-        source: "pdf-cos-syntax"
+        source: "pdfcossyntax"
       });
     }
 
     // Locate end of conventional cross reference table: "trailer" or "startxref" keywords
     let xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
     if (xrefEnd < 0) {
-      // Hybrid PDFs may not have "trailer" keyword, so rely on "startxref"
+      // Hybrid PDFs may not have `trailer` keyword, so rely on `startxref`
       xrefEnd = startXref;
     }
     let xrefTable: string;
@@ -229,10 +316,13 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * Merges a _single_ conventional cross reference table into the matrix. "xref"
-   * keyword can be the first line. Stops if "trailer", "startxref" or "%%EOF" is found.
-   * startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
+   * @brief Merges a _single_ conventional cross reference section into the matrix. `xref`
+   * keyword can be the first line. Stops if `trailer`, `startxref` or `%%EOF` is found.
    * Also captures basic sanity check/validation issues.
+   * @param startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
+   * @param revision revision of PDF file (0 = original PDF, 1 = 1st revision, etc)
+   * @param xref the text of the cross-reference section (from VSCode so any binary data
+   *     may be messed up - but there shouldn't be any!) 
    */
   private addXrefTable(startLineNbr: number, revision: number, xref: string) {
     let currentObjectNum: number | null = null;
@@ -270,7 +360,7 @@ export class XrefInfoMatrix {
           severity: DiagnosticSeverity.Warning,
           range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
           message: `PDF cross reference table contains illegal characters: "${entryPatternMatch[1]}"`,
-          source: "pdf-cos-syntax"
+          source: "pdfcossyntax"
         });
       }
       entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
@@ -283,7 +373,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
-            source: "pdf-cos-syntax"
+            source: "pdfcossyntax"
           });
           startLineNbr++;
           continue;
@@ -297,7 +387,7 @@ export class XrefInfoMatrix {
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
               message: `Expected next free object to be object ${nextFreeObj}, not object ${currentObjectNum}. Free list of objects not chained correctly`,
-              source: "pdf-cos-syntax"
+              source: "pdfcossyntax"
             });
           }
           nextFreeObj = freeObjNumber;
@@ -320,7 +410,7 @@ export class XrefInfoMatrix {
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
               message: `Object 0 at start of free list did not have a generation number of 65535 (was "${genNum}")`,
-              source: "pdf-cos-syntax"
+              source: "pdfcossyntax"
             });
           }
         }
@@ -331,7 +421,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Warning,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
             message: `Cross reference table entries should always be 20 bytes (was ${entryStr.length + 1})`,
-            source: "pdf-cos-syntax"
+            source: "pdfcossyntax"
           });
         }
         
@@ -364,7 +454,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Subsection object count was negative: ${newEntryCount}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdf-cos-syntax"
+            source: "pdfcossyntax"
           });
           entryCount = null;
           currentObjectNum = null;
@@ -377,7 +467,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Subsection object number was negative: ${newCurrentObjectNum}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdf-cos-syntax"
+            source: "pdfcossyntax"
           });
           entryCount = null;
           currentObjectNum = null;
@@ -390,7 +480,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Expected ${entryCount} more entries before this subsection marker: ${entryStr}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdf-cos-syntax"
+            source: "pdfcossyntax"
           });
         }
         entryCount = newEntryCount;
@@ -406,7 +496,7 @@ export class XrefInfoMatrix {
         severity: DiagnosticSeverity.Warning,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
         message: `Expected next free object to be object ${nextFreeObj}, but cross reference table ended. Free list of objects not chained correctly`,
-        source: "pdf-cos-syntax"
+        source: "pdfcossyntax"
       });
     }
 
@@ -416,7 +506,7 @@ export class XrefInfoMatrix {
         severity: DiagnosticSeverity.Error,
         message: `Expected ${entryCount} more entries before end of cross reference table`,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-        source: "pdf-cos-syntax"
+        source: "pdfcossyntax"
       });
     }
   }

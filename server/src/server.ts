@@ -16,6 +16,8 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
+"use strict";
+
 import {
   createConnection,
   TextDocuments,
@@ -58,7 +60,7 @@ import {
 import { debug } from "console";
 import { TextEncoder } from "util";
 import PDFParser, { PDFSectionType } from "./parser/PdfParser";
-import { PDSCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
+import { PDFCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
 import PDFObject from './models/PdfObject';
 import * as ohmParser from './ohmParser';
@@ -85,8 +87,13 @@ let hasDiagnosticRelatedInformationCapability = false;
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 };
-let globalSettings: PDSCOSSyntaxSettings = defaultSettings;
+const defaultSettings: PDFCOSSyntaxSettings = { 
+  maxNumberOfProblems: 100,
+  ignorePreambleAndPostamble: false,
+  ignoreXRefLineLength: false,
+  verboseLogging: false
+};
+let globalSettings: PDFCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
@@ -228,7 +235,7 @@ connection.onDidChangeConfiguration((change) => {
       documents.all().forEach(validateTextDocument);
     });
   } else {
-    globalSettings = <PDSCOSSyntaxSettings>(
+    globalSettings = <PDFCOSSyntaxSettings>(
       (change.settings.pdscosSyntax || defaultSettings)
     );
     // Revalidate all open text documents with new settings
@@ -239,9 +246,9 @@ connection.onDidChangeConfiguration((change) => {
   documents.all().forEach(validateTextDocument);
 });
 
-async function getDocumentSettings(): Promise<PDSCOSSyntaxSettings> {
-  const promise = new Promise<PDSCOSSyntaxSettings>((resolve, reject) => {
-    const settings: PDSCOSSyntaxSettings = { maxNumberOfProblems: 100 }; 
+async function getDocumentSettings(): Promise<PDFCOSSyntaxSettings> {
+  const promise = new Promise<PDFCOSSyntaxSettings>((resolve, reject) => {
+    const settings: PDFCOSSyntaxSettings = defaultSettings; 
     resolve(settings);
   });
   return promise;

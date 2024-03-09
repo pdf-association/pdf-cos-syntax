@@ -16,15 +16,15 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
-"use strict";
+'use strict';
 
 import * as vscode from "vscode";
 import * as path from "path";
 import * as pdf from "./pdfClientUtilities";
 import * as sankey from "./sankey-webview";
 
-// Import shared definitions from Ohm-based tokenizing parser (server-side!)
-import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken, PDSCOSSyntaxSettings } from "./types";
+// Import shared definitions from server-side
+import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken, PDFCOSSyntaxSettings } from "../../server/src/types";
 
 import {
   LanguageClient,
@@ -139,7 +139,7 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
       textDocument: { uri: document.uri.toString() },
   }) as PDFToken[];
   pdf_tokens = tokens;
-  // console.log('fetched', pdf_tokens);
+  console.log('Client: fetch_semantic_tokens_from_LSP', pdf_tokens);
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
   for (let i = 0; i < pdf_tokens.length; i ++) {
     const token = pdf_tokens[i];
@@ -190,70 +190,49 @@ export async function activate(context: vscode.ExtensionContext) {
     // },
   };
 
-  function getExtensionSettings(): any {
+  function getExtensionSettings(): PDFCOSSyntaxSettings {
     const configuration = vscode.workspace.getConfiguration('pdf-cos-syntax');
     const maxNumberOfProblems = configuration.get<number>('maxNumberOfProblems', 100);
-    const allowPreambleAndPostamble = configuration.get<boolean>('allowPreambleAndPostamble', true);
+    const ignorePreambleAndPostamble = configuration.get<boolean>('ignorePreambleAndPostamble', false);
+    const ignoreXRefLineLength = configuration.get<boolean>('ignoreXRefLineLength', false);
     const verboseLogging = configuration.get<boolean>('verboseLogging', false);
   
     return {
-      maxNumberOfProblems,
-      allowPreambleAndPostamble,
-      verboseLogging
+      maxNumberOfProblems: maxNumberOfProblems,
+      ignorePreambleAndPostamble: ignorePreambleAndPostamble,
+      ignoreXRefLineLength: ignoreXRefLineLength,
+      verboseLogging: verboseLogging
     };
   }
   
-  vscode.workspace.onDidChangeConfiguration(event => {
-    if (event.affectsConfiguration('pdf-cos-syntax')) {
-      const updatedSettings = getExtensionSettings();
-
-      if (updatedSettings.verboseLogging) {
-        console.log('Verbose logging enabled');
-      }
-    }
-  });
-  
   // Create the language client and start the client.
   client = new LanguageClient(
-    "pdfCosSyntax",
+    "pdf-cos-syntax",
     "PDF COS Syntax",
     serverOptions,
     clientOptions
   );
-
   await client.start();
+
+  vscode.workspace.onDidChangeConfiguration(event => {
+    console.log('Client onDidChangeConfiguration');
+    if (event.affectsConfiguration('pdf-cos-syntax')) {
+      const updatedSettings = getExtensionSettings();
+      console.log('Client new settings: ${updatedSettings}');
+    }
+  });
+  
+  // create a new status bar item
+  pdfStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  pdfStatusBarItem.command = "pdf-cos-syntax.StatusBarClick";
 
   const provider = new PDFFoldingRangeProvider();
   context.subscriptions.push(
-    vscode.languages.registerFoldingRangeProvider(
-      { language: "pdf" },
-      provider
-    ),
-    vscode.languages.registerFoldingRangeProvider({ language: "fdf" }, provider)
-  );
-
-  // line commenting
-  context.subscriptions.push(
-    vscode.languages.setLanguageConfiguration("pdf", {
-      comments: {
-        lineComment: "%",
-      },
-    }),
-    vscode.languages.setLanguageConfiguration("fdf", {
-      comments: {
-        lineComment: "%",
-      },
-    })
-  );
-
-  // create a new status bar item
-  pdfStatusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Right,
-    100
-  );
-  pdfStatusBarItem.command = "pdf-cos-syntax.StatusBarClick";
-
-  context.subscriptions.push(
+    vscode.languages.registerFoldingRangeProvider({ language: "pdf" }, provider),
+    vscode.languages.registerFoldingRangeProvider({ language: "fdf" }, provider),
+    // line commenting
+    vscode.languages.setLanguageConfiguration("pdf", {comments: {lineComment: "%"}}),
+    vscode.languages.setLanguageConfiguration("fdf", {comments: {lineComment: "%"}}),
     // Command palette custom command / editor context sub-menu options under "PDF"
     vscode.commands.registerCommand(
       "pdf-cos-syntax.imageA85DCT", 
@@ -318,62 +297,55 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     pdfStatusBarItem,
     vscode.window.onDidChangeActiveTextEditor(updateStatusBarItem),
-    vscode.window.onDidChangeTextEditorSelection(updateStatusBarItem)
+    vscode.window.onDidChangeTextEditorSelection(updateStatusBarItem),
+    // Sankey Flow Diagram webview - initiated by Command Palette custom command
+    vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
+      // console.log(`pdf-cos-syntax.sankey`);
+      sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
+    })
   );
 
   // update status bar item once at start
   updateStatusBarItem();
 
-  // // Sankey Flow Diagram webview - initiated by Command Palette custom command
-  // context.subscriptions.push(
-  //   vscode.commands.registerCommand("pdf-cos-syntax.sankey", () => {
-  //     // console.log(`pdf-cos-syntax.sankey`);
-  //     sankey.SankeyPanel.createOrShow(context, fakeDataCSV);
-  //   })
-  // );
-
-  // if (vscode.window.registerWebviewPanelSerializer) {
-  //   // Make sure we register a serializer in activation event
-  //   vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
-  //     async deserializeWebviewPanel(
-  //       webviewPanel: vscode.WebviewPanel,
-  //       state: any
-  //     ) {
-  //       // console.log(`Got state: ${state}`);
-  //       // Reset the webview options so we use latest uri for `localResourceRoots`.
-  //       webviewPanel.webview.options = sankey.getWebviewOptions(
-  //         context.extensionUri
-  //       );
-  //       sankey.SankeyPanel.revive(webviewPanel, context);
-  //     },
-  //   });
-  // }
+  if (vscode.window.registerWebviewPanelSerializer) {
+    // Make sure we register a serializer in activation event
+    vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
+      async deserializeWebviewPanel(
+        webviewPanel: vscode.WebviewPanel,
+        state: any
+      ) {
+        // console.log(`Got state: ${state}`);
+        // Reset the webview options so we use latest uri for `localResourceRoots`.
+        webviewPanel.webview.options = sankey.getWebviewOptions(
+          context.extensionUri
+        );
+        sankey.SankeyPanel.revive(webviewPanel, context);
+      },
+    });
+  }
   
   // analyze the document and return semantic tokens
-  // const semanticProvider: vscode.DocumentSemanticTokensProvider = {
-  //   provideDocumentSemanticTokens(
-  //     document: vscode.TextDocument
-  //   ): vscode.ProviderResult<vscode.SemanticTokens> {
-  //     // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
+  const semanticProvider: vscode.DocumentSemanticTokensProvider = {
+    provideDocumentSemanticTokens(
+      document: vscode.TextDocument
+    ): vscode.ProviderResult<vscode.SemanticTokens> {
+      // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
 
-  //     // if cached semantic tokens apply to this document URI then reuse 
-  //     if (!semanticTokens || (document.uri !== semantic_doc_uri)) {
-  //       fetch_semantic_tokens_from_LSP(document);
-  //     }
-  //     return semanticTokens;
-  //   }
-  // };
+      // if cached semantic tokens apply to this document URI then reuse 
+      if (!semanticTokens || (document.uri !== semantic_doc_uri)) {
+        fetch_semantic_tokens_from_LSP(document);
+      }
+      return semanticTokens;
+    }
+  };
 
-  // const semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
-  //   { language: "pdf" },
-  //   semanticProvider,
-  //   legend
-  // );
-  // const semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
-  //   { language: "fdf" },
-  //   semanticProvider,
-  //   legend
-  // );
+  const semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+    { language: "pdf" }, semanticProvider, legend
+  );
+  const semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+    { language: "fdf" }, semanticProvider, legend
+  );
 }
 
 /**
@@ -523,4 +495,3 @@ export function deactivate(): Thenable<void> | undefined {
   if (!client) return undefined;
   return client.stop();
 }
-
