@@ -261,9 +261,9 @@ export class XrefInfoMatrix {
     if (xrefStart === -1) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
-        message: `No conventional cross reference tables were found - "xref" keyword missing`,
+        message: `No conventional cross reference sections were found - "xref" keyword missing`,
         range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
-        source: "pdfcossyntax"
+        source: "pdf-cos-syntax"
       });
     }
 
@@ -273,11 +273,11 @@ export class XrefInfoMatrix {
         severity: DiagnosticSeverity.Error,
         message: `"startxref" keyword missing`,
         range: { start: Position.create(0, 0), end: Position.create(0, Number.MAX_VALUE) },
-        source: "pdfcossyntax"
+        source: "pdf-cos-syntax"
       });
     }
 
-    // Locate end of conventional cross reference table: "trailer" or "startxref" keywords
+    // Locate end of conventional cross reference section: "trailer" or "startxref" keywords
     let xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
     if (xrefEnd < 0) {
       // Hybrid PDFs may not have `trailer` keyword, so rely on `startxref`
@@ -311,7 +311,7 @@ export class XrefInfoMatrix {
       }
     }
 
-    // console.log(`Found ${revision} conventional cross reference tables`);
+    // console.log(`Found ${revision} conventional cross reference sections`);
     return;
   }
 
@@ -360,7 +360,7 @@ export class XrefInfoMatrix {
           severity: DiagnosticSeverity.Warning,
           range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
           message: `PDF cross reference table contains illegal characters: "${entryPatternMatch[1]}"`,
-          source: "pdfcossyntax"
+          source: "pdf-cos-syntax"
         });
       }
       entryPatternMatch = entryStr.match(/\b(\d{10}) (\d{5}) (f|n)\b/);
@@ -373,7 +373,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
-            source: "pdfcossyntax"
+            source: "pdf-cos-syntax"
           });
           startLineNbr++;
           continue;
@@ -387,7 +387,7 @@ export class XrefInfoMatrix {
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
               message: `Expected next free object to be object ${nextFreeObj}, not object ${currentObjectNum}. Free list of objects not chained correctly`,
-              source: "pdfcossyntax"
+              source: "pdf-cos-syntax"
             });
           }
           nextFreeObj = freeObjNumber;
@@ -410,7 +410,7 @@ export class XrefInfoMatrix {
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
               message: `Object 0 at start of free list did not have a generation number of 65535 (was "${genNum}")`,
-              source: "pdfcossyntax"
+              source: "pdf-cos-syntax"
             });
           }
         }
@@ -421,7 +421,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Warning,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
             message: `Cross reference table entries should always be 20 bytes (was ${entryStr.length + 1})`,
-            source: "pdfcossyntax"
+            source: "pdf-cos-syntax"
           });
         }
         
@@ -454,7 +454,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Subsection object count was negative: ${newEntryCount}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdfcossyntax"
+            source: "pdf-cos-syntax"
           });
           entryCount = null;
           currentObjectNum = null;
@@ -467,7 +467,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Subsection object number was negative: ${newCurrentObjectNum}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdfcossyntax"
+            source: "pdf-cos-syntax"
           });
           entryCount = null;
           currentObjectNum = null;
@@ -480,7 +480,7 @@ export class XrefInfoMatrix {
             severity: DiagnosticSeverity.Error,
             message: `Expected ${entryCount} more entries before this subsection marker: ${entryStr}`,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-            source: "pdfcossyntax"
+            source: "pdf-cos-syntax"
           });
         }
         entryCount = newEntryCount;
@@ -496,7 +496,7 @@ export class XrefInfoMatrix {
         severity: DiagnosticSeverity.Warning,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
         message: `Expected next free object to be object ${nextFreeObj}, but cross reference table ended. Free list of objects not chained correctly`,
-        source: "pdfcossyntax"
+        source: "pdf-cos-syntax"
       });
     }
 
@@ -506,7 +506,7 @@ export class XrefInfoMatrix {
         severity: DiagnosticSeverity.Error,
         message: `Expected ${entryCount} more entries before end of cross reference table`,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-        source: "pdfcossyntax"
+        source: "pdf-cos-syntax"
       });
     }
   }
