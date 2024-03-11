@@ -25,12 +25,12 @@ import Ascii85 = require('ascii85');
 
 
 /**
- * Convert current EOL setting to count bytes so lengths can be adjusted accordingly.
+ * @brief Convert current EOL setting to count bytes so lengths can be adjusted accordingly.
  * 
  * @param eol - current editor EOL setting ("auto" is normalized to something) 
- * @returns 1 or 2 bytes per EOL.
+ * @returns {number} 1 or 2 bytes per EOL.
  */
-function _EOLtoBytes(eol: vscode.EndOfLine) {
+function _EOLtoBytes(eol: vscode.EndOfLine): number {
   switch (eol) {
 		case vscode.EndOfLine.CRLF: return 2;
 		case vscode.EndOfLine.LF: return 1;
@@ -40,7 +40,7 @@ function _EOLtoBytes(eol: vscode.EndOfLine) {
 
 
 /**
- * Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
+ * @brief Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
   const a85encoded = Ascii85.encode(bytes, { delimiter: false });
@@ -51,7 +51,7 @@ export function convertToAscii85Filter(bytes: Buffer): string[] {
 
 
 /**
- * Converts a buffer of `/ASCII85Decode` encoded data back
+ * @brief Converts a buffer of `/ASCII85Decode` encoded data back
  * to raw bytes as a UTF-8 string. Requires data end with "~>".
  */
 export function convertFromAscii85Filter(a85: string): string {
@@ -75,7 +75,7 @@ export function convertFromAscii85Filter(a85: string): string {
 
 
 /**
- * Splits a string into "chunks" of a fixed length.
+ * @brief Splits a string into "chunks" of a fixed length.
  * 
  * @param string - string to wrap
  * @param chunkSize - width of a "chunk" of the string
@@ -969,4 +969,11 @@ export function xrefToXRefStream(
     vscode.window.showErrorMessage(`ERROR: Conventional cross reference table conversion failed: ${error}!`);
     return [];
   }
+}
+
+/**
+ * @brief Exports the PDF documents full cross-reference table as a CSV
+ */
+export async function exportXrefAsCSV() {
+  /** @todo see server XrefInfoMatrix.ts XrefInfoMatrix.saveToCSV() */
 }

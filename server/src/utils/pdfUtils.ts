@@ -29,8 +29,10 @@ const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
 
 /**
  * @brief Takes a number, assumed to be a 32 bit signed integer and
- * converts to groups of 8 bits for display as a PDF bitmask.
- * @param {number} num  the assumed 32 bit integer number
+ * converts to groups of 8 bits for display as a PDF bitmask hover.
+ * 
+ * @param {number} num  the assumed 32 bit integer number (converted)
+ * 
  * @returns {string} binary bitmask of flags as a string
  */
 export function flags32_to_binary(num: number): string {
@@ -145,15 +147,18 @@ export function findAllDefinitions(
  * @brief Looks from given cursor position BACK up the file to locate
  * the first preceding `X Y obj` 
  * 
+ * @param {Position} cursor cursor position in PDF
+ * @param {TextDocument} document PDF document
+ * 
  * @returns {number} a line number of nearest `X Y obj` or -1 if not found 
  */
 export function findPreviousObjectLineNumber(
-  cusor: Position,
+  cursor: Position,
   document: TextDocument
 ): number {
   const topOfFile = document.getText({
     start: { line: 0, character: 0 },
-    end: cusor
+    end: cursor
   });
   let topLines = topOfFile.split('\n');
   topLines = topLines.reverse();
@@ -171,7 +176,7 @@ export function findPreviousObjectLineNumber(
 /**
  * @brief Determine if the given document is an FDF file based on its URI extension.
  *
- * @param {TextDocument} document - the document object containing information about the file
+ * @param {TextDocument} document - the PDF document
  *
  * @returns {boolean} true if the document is an FDF file, false otherwise
  */
@@ -199,7 +204,8 @@ interface SemanticTokenInfo {
  * @brief Works out the kind of semantic token at the given cursor position.
  * Only looks at the current line, but checks to ensure position is on
  * the token in case of multiple potential tokens on one line:
- * e.g. [ 1 0 R 2 0 R 3 0 R ] - which indirect reference is being queried?
+ * e.g. `[ 1 0 R 2 0 R 3 0 R ]` - which indirect reference is being queried?
+ * 
  * @returns {SemanticTokenInfo | null}
  */
 export function getSemanticTokenAtPosition(

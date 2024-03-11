@@ -19,6 +19,7 @@
  * then paste it after "export const ArlingtonPDF Model =" and add a semi-colon.
  * It may need to be de-tabbed.
  */
+'use strict';
 
 /**
  * An Arlington data row. See https://github.com/pdf-association/arlington-pdf-model 

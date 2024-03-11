@@ -133,6 +133,7 @@ function parseDocument(documentText: string) {
 }
 
 documents.onDidChangeContent((change) => {
+  console.log(`connection.onDidChangeContent`);
   validateTextDocument(change.document);
   const document = change.document;
   if (document) {
@@ -142,7 +143,9 @@ documents.onDidChangeContent((change) => {
   updatePDFDataBasedOnEdit(change.document, pdfData);
 });
 
+
 connection.onDidOpenTextDocument((params) => {
+  console.log(`connection.onDidOpenTextDocument`);
   const document = documents.get(params.textDocument.uri);
   if (document) {
     updateXrefMatrixForDocument(document.uri, document.getText());
@@ -150,6 +153,7 @@ connection.onDidOpenTextDocument((params) => {
 });
 
 connection.onInitialize((params: InitializeParams) => {
+  console.log(`connection.onInitialize`);
   const capabilities = params.capabilities;
 
   // Does the client support the `workspace/configuration` request?
@@ -199,7 +203,9 @@ connection.onInitialize((params: InitializeParams) => {
   return result;
 });
 
+
 connection.onInitialized(() => {
+  console.log(`connection.onInitialized`);
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
     connection.client.register(
@@ -214,9 +220,10 @@ connection.onInitialized(() => {
   }
 });
 
+
 // Entry point for Semantic Token parsing
 connection.onRequest("textDocument/semanticTokens/full", (params) => { 
-  // console.log(`Server onRequest "textDocument/semanticTokens/full"`);
+  console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
@@ -226,7 +233,7 @@ connection.onRequest("textDocument/semanticTokens/full", (params) => {
 
 
 connection.onDidChangeConfiguration((change) => {
-  // console.log(`Server onDidChangeConfiguration`);
+  console.log(`connection.onDidChangeConfiguration`);
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
@@ -248,6 +255,7 @@ connection.onDidChangeConfiguration((change) => {
 });
 
 async function getDocumentSettings(): Promise<PDFCOSSyntaxSettings> {
+  console.log(`server async getDocumentSettings`);
   const promise = new Promise<PDFCOSSyntaxSettings>((resolve, reject) => {
     const settings: PDFCOSSyntaxSettings = defaultSettings; 
     resolve(settings);
@@ -255,42 +263,22 @@ async function getDocumentSettings(): Promise<PDFCOSSyntaxSettings> {
   return promise;
 }
 
-// function generateDiagnostics(document: TextDocument): Diagnostic[] {
-//   const diagnostics: Diagnostic[] = [];
-//   const settings = getDocumentSettings(document.uri); // Fetch settings for this document
-
-//   // Example logic for limiting diagnostics
-//   for (const problem of analyzeDocument(document)) {
-//     if (settings.allowPreambleAndPostamble || !problem.isPreambleOrPostamble) {
-//       diagnostics.push(createDiagnostic(problem));
-//       if (diagnostics.length >= settings.maxNumberOfProblems) break; // Limit reached
-//     }
-//   }
-
-//   return diagnostics;
-// }
-
-// function log(message: string): void {
-//   const settings = getGlobalSettings(); // Assuming a function to fetch global settings
-//   if (settings.verboseLogging) {
-//     console.log(message); // Only log if verbose logging is enabled
-//   }
-// }
-
 
 // Only keep settings for open documents
 documents.onDidClose((e) => {
+  console.log(`documents.onDidClose`);
   pdfDocumentData.delete(e.document.uri);
 });
 
+
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode
-  // console.log("Server onDidChangeWatchedFiles");
+  console.log(`connection.onDidChangeWatchedFiles`);
 });
 
 
 /** 
- * Intellisense code completion on "/" for PDF names.  Items are automatically 
+ * @brief Intellisense code completion on "/" for PDF names.  Items are automatically 
  * sorted alphabetically and will auto-filter as the user types more.
  */ 
 connection.onCompletion(
@@ -309,6 +297,7 @@ connection.onCompletion(
  * NOT USED unless completionProvider: { resolveProvider: false, ... }
  */ 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  console.log(`connection.onCompletionResolve`);
   return item;
 });
 
@@ -323,7 +312,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
  */
 connection.onDefinition(
   (params: TextDocumentPositionParams): Definition | null => {
-    // console.log(`onDefinition for ${params.textDocument.uri}`);
+    console.log(`connection.onDefinition for ${params.textDocument.uri}`);
 
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
@@ -400,7 +389,7 @@ connection.onDefinition(
  *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
  */
 connection.onReferences((params): Location[] | null => {
-  // console.log(`onReferences for ${params.textDocument.uri}`);
+  console.log(`connection.onReferences for ${params.textDocument.uri}`);
 
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
@@ -472,6 +461,7 @@ connection.onReferences((params): Location[] | null => {
  *   - on conventional cross reference table entries --> hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
+  console.log(`connection.onHover`);
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
   if (!docData || !docData.xrefMatrix || !document) return null;
@@ -568,9 +558,7 @@ connection.onHover((params): Hover | null => {
 
     case "bitMask": {
       // a bitmask entry
-      const match = semanticTokenText.match(
-        /\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/
-      );
+      const match = semanticTokenText.match(/\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/);
       if (!match || match.length != 3) return null;
       const bm = parseInt(match[2]);
       return { contents: flags32_to_binary(bm) };
@@ -607,6 +595,7 @@ connection.onHover((params): Hover | null => {
  */
 connection.onDocumentSymbol(
   (params: DocumentSymbolParams): DocumentSymbol[] => {
+  console.log(`connection.onDocumentSymbol`);
   const { textDocument } = params;
   const document = documents.get(textDocument.uri);
   if (!document) return [];
@@ -756,15 +745,15 @@ connection.listen();
 
 
 /**
- * Perform basic validation of a conventional PDF:
- * 1. check 1st line for valid "%PDF-x.y" header, including known PDF version
+ * @brief Perform basic validation of a conventional PDF:
+ * 1. check 1st line for valid `%PDF-x.y   header, including known PDF version
  * 2. check 2nd line for binary file marker line with 4 bytes > 127
- * 3. check last line for "%%EOF"
- * 4. check conventional PDF file: xref, trailer and startxref keywords need to exist
- * 5. check that a conventional cross-reference table is correct for an original PDF
+ * 3. check last line for `%%EOF`
+ * 4. check conventional PDF file: `xref`, `trailer` and `startxref` keywords need to exist
+ * 5. check that a conventional cross-reference section is correct for an original PDF
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  // console.log(`validateTextDocument for ${textDocument.uri}`);
+  console.log(`validateTextDocument for ${textDocument.uri}`);
   let diagnostics: Diagnostic[] = [];
 
   const text = textDocument.getText();

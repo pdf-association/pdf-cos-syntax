@@ -235,6 +235,10 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.languages.setLanguageConfiguration("fdf", {comments: {lineComment: "%"}}),
     // Command palette custom command / editor context sub-menu options under "PDF"
     vscode.commands.registerCommand(
+      "pdf-cos-syntax.exportXrefAsCSV", 
+      (uri) => commandHandler("exportXrefAsCSV", context, uri)
+    ),
+    vscode.commands.registerCommand(
       "pdf-cos-syntax.imageA85DCT", 
       (uri) => commandHandler("imageA85DCT", context, uri)
     ),
@@ -413,6 +417,9 @@ export async function commandHandler(
   let out: string = "";
 
   switch (option) {
+    case "exportXrefAsCSV":
+      await pdf.exportXrefAsCSV().then();
+      break;
     case "imageA85DCT":
       await pdf.convertImageToAscii85DCT(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");

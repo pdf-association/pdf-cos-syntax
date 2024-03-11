@@ -268,7 +268,7 @@
       ],
       "pdf.submenu": [
         {
-          "command": "pdf-cos-syntax.imageAHex",
+          "command": "pdf-cos-syntax.exportXrefAsCSV",
           "when": "(editorLangId == pdf) || (editorLangId == fdf)"
         },
         {
@@ -337,6 +337,14 @@
       }
     ],
     "commands": [
+      {
+        "command": "pdf-cos-syntax.exportXrefAsCSV",
+        "title": "Export all cross reference table data for all revisions as a CSV file",
+        "shortTitle": "Export cross reference table as CSV",
+        "category": "PDF",
+        "icon": "$(export)",
+        "enablement": "(editorLangId == pdf) || (editorLangId == fdf)"
+      },
       {
         "command": "pdf-cos-syntax.imageAHex",
         "title": "Insert an Image XObject using /ASCIIHexDecode filter on raw pixels",

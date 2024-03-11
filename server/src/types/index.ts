@@ -13,6 +13,7 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
+'use strict';
 
 export * from './documentTypes';
 export * from './tokenTypes';
