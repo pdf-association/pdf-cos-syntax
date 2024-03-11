@@ -65,6 +65,8 @@
  *       keywords and continues to include either `%%EOF` or if that is missing the start
  *       of the next section.
  */
+'use strict';
+
 import { TextDocument, Position, Range } from "vscode-languageserver-textdocument";
 import PDFObject from '../models/PdfObject';
 

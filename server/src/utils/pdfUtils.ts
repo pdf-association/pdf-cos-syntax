@@ -1,5 +1,5 @@
 /**
- * @brief VSCode PDF COS syntax LSP server 
+ * @brief PDF utility functions 
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
@@ -16,17 +16,22 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
 */
+'use strict';
+
 import { Range, TextDocument } from "vscode-languageserver-textdocument";
-import { Location, Position } from "vscode-languageserver";
-import * as vscode from 'vscode';
+import { DocumentUri, Location, Position } from "vscode-languageserver";
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
+
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
 const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
 
+
 /**
- * Takes a number, assumed to be a 32 bit signed integer and
+ * @brief Takes a number, assumed to be a 32 bit signed integer and
  * converts to groups of 8 bits for display as a PDF bitmask.
+ * @param {number} num  the assumed 32 bit integer number
+ * @returns {string} binary bitmask of flags as a string
  */
 export function flags32_to_binary(num: number): string {
   const flag = Math.abs(num) & 0xFFFFFFFF;
@@ -46,10 +51,10 @@ export function flags32_to_binary(num: number): string {
 
 
 /**
- * Find all occurrences of "X Y R" in the text for a given object ID.
+ * @brief Find all occurrences of "X Y R" in the text for a given object ID.
  *
  * @param {number} objNum - object number. Should be > 0.
- * @param {number}genNum - object generation number. Should be >= 0.
+ * @param {number} genNum - object generation number. Should be >= 0.
  * @param {TextDocument} document - the PDF (as text) document
  *
  * @returns {Location[]} an array of locations
@@ -65,7 +70,7 @@ export function findAllReferences(
 
   const references: Location[] = [];
 
-  // Avoid minimal matches with larger object numbers (e.g. 10 matches 10 but also 110, 210)
+  // Avoid minimal matches with larger object numbers (e.g. 10 matches 10 but also 110, 210, etc.)
   // Avoid false matches with PDF "RG" operator as it takes 3 numeric operands
   const referencePattern = new RegExp(
     `(?<!\\d)${objNum} ${genNum} R(?=[^G])`,
@@ -93,7 +98,7 @@ export function findAllReferences(
 }
 
 /**
- * Find all occurrences of "X Y obj" in the text for a given object ID.
+ * @brief Find all occurrences of "X Y obj" in the text for a given object ID.
  *
  * @param {number} objNum - object number. Should be > 0.
  * @param {number} genNum - object generation number. Should be >= 0.
@@ -137,10 +142,10 @@ export function findAllDefinitions(
 
 
 /**
- * Looks from given cursor position BACK up the file to locate
- * the first preceding "X Y obj" 
+ * @brief Looks from given cursor position BACK up the file to locate
+ * the first preceding `X Y obj` 
  * 
- * @returns a line number of nearest "X Y obj" or -1 if not found 
+ * @returns {number} a line number of nearest `X Y obj` or -1 if not found 
  */
 export function findPreviousObjectLineNumber(
   cusor: Position,
@@ -164,22 +169,22 @@ export function findPreviousObjectLineNumber(
 }
 
 /**
- * Determine if the given document is an FDF file based on its URI extension.
+ * @brief Determine if the given document is an FDF file based on its URI extension.
  *
- * @param document - the document object containing information about the file
+ * @param {TextDocument} document - the document object containing information about the file
  *
- * @returns true if the document is an FDF file, false otherwise
+ * @returns {boolean} true if the document is an FDF file, false otherwise
  */
 export function isFileFDF(document: TextDocument): boolean {
   return document.uri.toLowerCase().endsWith(".fdf");
 }
 
 /**
- * Determine if the given document is a PDF file based on its URI extension.
+ * @brief Determine if the given document is a PDF file based on its URI extension.
  *
- * @param[in] document - the document object containing information about the file
+ * @param {TextDocument} document - the document object containing information about the file
  *
- * @returns true if the document is a PDF file, false otherwise
+ * @returns {boolean} true if the document is a PDF file, false otherwise
  */
 export function isFilePDF(document: TextDocument): boolean {
   return document.uri.toLowerCase().endsWith(".pdf");
@@ -191,10 +196,11 @@ interface SemanticTokenInfo {
 }
 
 /**
- * Works out the kind of semantic token at the given cursor position.
+ * @brief Works out the kind of semantic token at the given cursor position.
  * Only looks at the current line, but checks to ensure position is on
  * the token in case of multiple potential tokens on one line:
  * e.g. [ 1 0 R 2 0 R 3 0 R ] - which indirect reference is being queried?
+ * @returns {SemanticTokenInfo | null}
  */
 export function getSemanticTokenAtPosition(
   document: TextDocument,
@@ -325,7 +331,16 @@ export function getSemanticTokenAtPosition(
   return null;
 }
 
-export function buildXrefMatrix(content: string): XrefInfoMatrix {
+/**
+ * @brief Builds the cross-reference table (2D matrix) from all cross-reference sections
+ * in the PDF.
+ * 
+ * @param {DocumentUri} docURI URI of PDF document
+ * @param {string} content PDF document text content
+ * 
+ * @returns {XrefInfoMatrix}
+ */
+export function buildXrefMatrix(docURI: DocumentUri, content: string): XrefInfoMatrix {
   console.log(`buildXrefMatrix(...)`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
@@ -359,18 +374,19 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
     lineCount: content.split("\n").length,
   };
 
-  // Merge all xref tables found in the document into the matrix
-  xrefMatrix.mergeAllXrefTables(mockPDFDocument);
-
+  // Merge all conventional cross reference sections into the matrix
+  xrefMatrix.mergeAllXrefSections(mockPDFDocument);
+  // xrefMatrix.saveToCSV(docURI);
   return xrefMatrix;
 }
 
 
 /**
- * Consrtuct a PDF hover for Date objects.
+ * @brief Construct a hover for PDF Date objects.
  * 
- * @param d  PDF date string (literal or hex string)
- * @returns Human-readable date for the valid parts of the PDF date string
+ * @param {string} d  PDF date string (literal or hex string)
+ * 
+ * @returns {string} Human-readable date for the valid parts of the PDF date string
  */
 function parsePDFDateString(d: string): string {
   /** @todo - hex strings! */ 
@@ -465,10 +481,3 @@ function parsePDFDateString(d: string): string {
 
   return s;
 }
-
-// function convertRangeToVscodeRange(range: { start: { line: number; character: number; }, end: { line: number; character: number; } }): Range {
-//   const start: Position = Position.create(range.start.line, range.start.character);
-//   const end: Position = Position.create(range.end.line, range.end.character);
-//   return Range.create(start, end);
-// }
-

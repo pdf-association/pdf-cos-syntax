@@ -37,6 +37,7 @@ import {
   DocumentSymbolParams,
   DocumentSymbol,
   SymbolKind,
+  DocumentUri,
 } from "vscode-languageserver/node";
 
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
@@ -900,7 +901,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       addDiagnostic(
         Position.create(0, 0),
         Position.create(0, 8),
-        "PDF does not contain a conventional cross reference table starting with object 0 (beginning of the free list)"
+        "PDF does not contain a conventional cross reference section starting with object 0 (beginning of the free list)"
       );
     }
 
@@ -918,7 +919,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
-function updateXrefMatrixForDocument(uri: string, content: string) {
+function updateXrefMatrixForDocument(uri: DocumentUri, content: string) {
   let docData = pdfDocumentData.get(uri);
   if (!docData) {
     docData = { settings: globalSettings }; // or fetch default settings
@@ -926,5 +927,5 @@ function updateXrefMatrixForDocument(uri: string, content: string) {
   }
 
   // Create or update the XrefInfoMatrix for the document content
-  docData.xrefMatrix = buildXrefMatrix(content);
+  docData.xrefMatrix = buildXrefMatrix(uri, content);
 }

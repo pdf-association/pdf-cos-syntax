@@ -58,9 +58,13 @@
  * 
  * - table = the amalgamation of one or more cross reference sections in a PDF
 */
+'use strict';
 
-import { Diagnostic, DiagnosticSeverity, Position } from 'vscode-languageserver';
+import { Diagnostic, DiagnosticSeverity, DocumentUri, Position } from 'vscode-languageserver';
 import { TextDocument } from "vscode-languageserver-textdocument";
+import * as fs from 'fs';
+import * as path from 'path';
+
 
 export class EntryNode {
   constructor(
@@ -88,7 +92,7 @@ export class XrefInfoMatrix {
   /** 
    * @property 2D sparse matrix cross reference table for the PDF 
    * (all sections + sub-sections):
-   * - 1st index = object number
+   * - 1st index = object number (all generation numbers)
    * - 2nd index = file revision: 
    *     * 0 = original PDF
    *     * 1 = oldest (1st) revision (incremental update)
@@ -96,30 +100,74 @@ export class XrefInfoMatrix {
    */
   private matrix: EntryNode[][] = [];
 
-  /** @property Set of diagnostics generated when building cross-reference 
-   *  information. May be empty. */
-  public diagnostics: Diagnostic[] = [];
+  /**
+   * @property total number of file revisions in the PDF
+   */
+  private maxRevision: number = 0;
 
   /** 
-   * @brief Dumps out the sparse matrix to `console.log()`, sorted by Object Number, 
-   * then file revision as lines of text.
+   * @property Set of diagnostics generated when building cross-reference 
+   *  information. May be empty. 
    */
-  public dumpMatrix(): void {
-    let i;
-    let j;
-    let use: string;
-    for (i = 0; i < this.matrix.length; i++) {
-      if (this.matrix[i]) {
-        for (j =0; j < this.matrix[i].length; j++) {
-          if (this.matrix[i][j]) {
-            use = (this.matrix[i][j].inUse ? "in-use" : "free  ");
-            console.log(`${i.toString().padStart(5)} ${this.matrix[i][j].generationNumber.toString().padStart(5)} obj: ` +
-                        `rev. ${j} was ${use} @ line ${this.matrix[i][j].lineNbr}`);
+  public diagnostics: Diagnostic[] = [];
+
+
+  /** 
+   * @brief Saves the sparse cross reference matrix to a CSV file ("-xref.csv" appended) where:
+   * - column A: object number
+   * - columns B-: changes in each revision (incl. byte offset and line numbers)
+   * 
+   * @param uri filename (will have ".csv" appended)
+   */
+  public saveToCSV(uri: DocumentUri): void {
+    let csv: string = ""; // CSV = lines with "\n"
+
+    // Add title row
+    let line: string = `"Object Number","Original"`;
+    for (let i = 1; i < this.maxRevision; i++) {
+      line = line + `,"Revision ${i}"`;
+    }
+    csv = csv + line + "\n";
+
+    /** @todo - doesn't take into account different generation numbers for objects */
+    for (let objNum = 0; objNum < this.matrix.length; objNum++) {
+      if (this.matrix[objNum]) {
+        line = `${objNum}`;
+        for (let revNum = 0; revNum < this.matrix[objNum].length; revNum++) {
+          if (this.matrix[objNum][revNum]) {
+            if (this.matrix[objNum][revNum].inUse) {
+              // in-use object
+              line = line + `,"in-use @ offset ${this.matrix[objNum][revNum].first} (line ${this.matrix[objNum][revNum].lineNbr})"`;
+            }
+            else {
+              // free object
+              line = line + `,"free (line ${this.matrix[objNum][revNum].lineNbr})"`;
+            }
+          }
+          else {
+            // revision "rev" did not redefine this object so skip this column
+            line = line + `,`;
           }
         }
+        csv = csv + line + "\n";
+      }
+      else {
+        // object "objNum" was never explicitly defined (so free by implication) --> skip row entirely
       }
     }
+
+    // Convert URI "file:///" to a local file reference
+    let fname = uri.replace("file:///", ""); 
+    fname = fname.replace("%3A", ":");
+    fname = path.normalize(fname + "-xref.csv");
+    fs.writeFile(fname, csv.toString(), function(err) {
+      if (err) {
+          return console.error(err);
+      }
+      console.log(`File "${fname}" created!`);
+    });
   }
+
 
   /** 
    * @brief Has this Object Number (with ANY generation number) ever been explicitly defined 
@@ -234,17 +282,17 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * @brief Finds ALL conventional cross reference tables and merges them into a single mega-matrix.
-   * Conventional cross reference table sections start with `xref` and end with `trailer` or `startxref`
-   * keyword (for hybrid reference PDFs) - assuming no syntax errors. 
-   * Starts from TOP of the PDF for revision numbering.
+   * @brief Finds ALL conventional cross reference sections and merges them into a single mega-matrix.
+   * Conventional cross reference sections start with `xref` and end with `trailer`, or `startxref`
+   * keyword for hybrid reference PDFs - assuming no syntax errors. 
+   * Starts from TOP of the PDF for zero-based revision numbering.
+   * @param pdfFile text of a PDF file
    */
-  public mergeAllXrefTables(pdfFile: TextDocument) {
+  public mergeAllXrefSections(pdfFile: TextDocument) {
     let revision = 0;
     let pdf = pdfFile.getText();
 
-    /////////////////////////////////////////
-    // Normalize line endings to \n so Position <--> Offsets work. BUT DON'T ALTER BYTE COUNTS!
+    // Normalize PDF EOLs to `\n` so Position <--> Offsets work. DOESN'T ALTER BYTE OFFSETS!
     pdf = pdf.replace('\\r\\n', ' \\n');
     pdf = pdf.replace('\\r', '\\n');
 
@@ -255,9 +303,9 @@ export class XrefInfoMatrix {
       xrefStart = pdf.indexOf("xref", startXref + "startxref".length);
       startXref = pdf.indexOf("startxref", startXref + "startxref".length);
     }
-    while (startXref === xrefStart + 5);
+    while (startXref === xrefStart + "start".length);
 
-    // Did we find the `xref` start to a conventional cross reference table?
+    // Did we find the `xref` keyword start to a conventional cross reference section?
     if (xrefStart === -1) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
@@ -292,14 +340,18 @@ export class XrefInfoMatrix {
       else {
         xrefTable = pdf.slice(xrefStart, xrefEnd);
       }
-      this.addXrefTable(pdfFile.positionAt(xrefStart).line, revision, xrefTable);
+
+      // Add this cross-reference section
+      this.addXrefSection(pdfFile.positionAt(xrefStart).line, revision, xrefTable);
       revision++;
+
       do {
         // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
         xrefStart = pdf.indexOf("xref", startXref + "startxref".length);
         startXref = pdf.indexOf("startxref", startXref + "startxref".length);
       }
-      while (startXref === xrefStart + 5); // will also stop on -1
+      while (startXref === (xrefStart + "start".length)); // will also stop on -1
+
       if (xrefStart > 0) {
         xrefEnd = pdf.indexOf("trailer", xrefStart + "xref".length);
         if (xrefEnd < 0) {
@@ -311,20 +363,21 @@ export class XrefInfoMatrix {
       }
     }
 
-    // console.log(`Found ${revision} conventional cross reference sections`);
-    return;
+    this.maxRevision = revision;
+    console.log(`Found ${revision} conventional cross reference sections.`);
   }
 
   /**
    * @brief Merges a _single_ conventional cross reference section into the matrix. `xref`
    * keyword can be the first line. Stops if `trailer`, `startxref` or `%%EOF` is found.
    * Also captures basic sanity check/validation issues.
+   * 
    * @param startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
    * @param revision revision of PDF file (0 = original PDF, 1 = 1st revision, etc)
    * @param xref the text of the cross-reference section (from VSCode so any binary data
    *     may be messed up - but there shouldn't be any!) 
    */
-  private addXrefTable(startLineNbr: number, revision: number, xref: string) {
+  private addXrefSection(startLineNbr: number, revision: number, xref: string) {
     let currentObjectNum: number | null = null;
     let entryCount: number | null = null;
     let nextFreeObj: number | null = null; // Free list always starts with object 0
