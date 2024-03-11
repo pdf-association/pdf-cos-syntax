@@ -16,28 +16,46 @@
 'use strict';
 
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-import { Diagnostic } from 'vscode-languageserver';
+import { Diagnostic, DocumentSymbol } from 'vscode-languageserver';
+import { PDFToken } from './tokenTypes';
 
 export interface PDFCOSSyntaxSettings {
+  /** @property maximum number of diagnostic problems reported */
   maxNumberOfProblems: number;
+
+  /** 
+   * @property whether or not to ignore premable (before `%PDF-x.y`) and 
+   * postamble (after last `%%EOF`) junk bytes 
+   * */
   ignorePreambleAndPostamble: boolean;
+
+  /**
+   *  @property whether or not to ignore cross reference entry line lengths 
+   * (supposedly 20 bytes, but a very common issue) 
+   */
   ignoreXRefLineLength: boolean;
+
+  /** @property whether or not to enable verbose logging */
   verboseLogging: boolean;
 }
 
-export type OhmParseResults = {
-  // Define the structure of your Ohm parse results here
-};
 
-export type OutlineTree = {
-  // Define the structure of your outline tree here
-};
-
-export type PDFDocumentData = {
+export interface PDFDocumentData {
+  /** @property current settings */
   settings: PDFCOSSyntaxSettings;
-  xrefMatrix?: XrefInfoMatrix;
-  ohmParseResults?: OhmParseResults; // Add Ohm parse results
-  diagnosticsList?: Diagnostic[]; // Add diagnostics list using LSP Diagnostic type or similar
-  outlineTree?: OutlineTree; // Add outline tree
-  rawPDFBytes?: Uint8Array; // Add raw PDF bytes
-};
+
+  /** @property cross reference table data */
+  xrefMatrix: XrefInfoMatrix;
+
+  /** @property Ohm parser results */
+  ohmParseResults: PDFToken[]; 
+
+  /** @property diagnostics from parsing, cross reference table, etc. */
+  diagnosticsList: Diagnostic[]; 
+
+  /** @property outline tree / breadcrumbs */
+  outlineTree: DocumentSymbol[]; 
+
+  /** @property raw bytes from PDF - NOT processed via VSCode as UTF-8!! */
+  rawPDFBytes: Uint8Array; 
+}

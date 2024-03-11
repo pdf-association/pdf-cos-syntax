@@ -29,6 +29,7 @@ const grammar = ohm.grammar(grammarString);
 
 // Main entry point to Ohm parser called by LSP server
 function getTokens(text: string): PDFToken[] {
+  console.log(`getTokens(..) - Ohm`);
   let lineNbr: number = 1;
 
   const semantics = grammar.createSemantics();
@@ -46,7 +47,6 @@ function getTokens(text: string): PDFToken[] {
       // ignore
       return [];
     },
-
     header(_1, majorVer, _3, minorVer, _5) {
       const token: PDFToken = {
         line: lineNbr,
@@ -235,7 +235,6 @@ function getTokens(text: string): PDFToken[] {
       // ignore - wait for xref_entry
       return [];
     },
-
     xref_entry(tenEntry, _1, fiveEntry, _2, status) {
       const token: PDFToken = {
         line: lineNbr,
@@ -281,7 +280,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "comment",
-        // content: commentText.sourceString, // no need to keep comment
+        // content: commentText.sourceString, // no need to keep comment itself
       };
       return [token];
     },
@@ -307,26 +306,21 @@ function getTokens(text: string): PDFToken[] {
       if (matchResult.failed()) {
         // This will fail for multi-line tokens such as literal and hex strings
         /// cannot span multiple lines: https://github.com/microsoft/vscode/blob/3be5ad240bd78db6892e285cb0c0de205ceab126/src/vs/workbench/api/common/extHostTypes.ts#L3261
-        /** @todo - Could retry by stitching a few lines together, but VSCode SemanticTokens */
+        /** @todo - Could retry by stitching a few lines together, but VSCode SemanticTokens wants per line */
         console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
       } else {
         const lineTokens: PDFToken[] = semantics(matchResult).extract();
-        // console.log(
-        //   `Line ${lineNbr}: tokenized "${line.trim()}": `,
-        //   lineTokens
-        // );
+        // console.log(`Line ${lineNbr}: tokenized "${line.trim()}": `, lineTokens);
         // When encounter a "stream" token, skip until "endstream" (or "endobj" or "X Y obj")
-        /** @todo - try a different Ohm grammar on the stream data! Content Stream, PSType4, CMap, etc. */
-        const streamKeyword = lineTokens.findIndex((t: PDFToken) => {
-          return t.type === "stream";
-        });
+        /** @todo - try a different Ohm grammar on the stream data: Content Stream, PSType4, CMap, etc. */
+        const streamKeyword = lineTokens.findIndex((t: PDFToken) => { return t.type === "stream"; });
         if (streamKeyword !== -1) insideStream = true;
         tokenList = tokenList.concat(lineTokens);
       }
     }
     lineNbr += 1;
   }
-  // console.log(`Finished tokenizing ${lineNbr} lines`);
+  console.log(`Finished tokenizing ${lineNbr} lines`);
 
   // DEBUG ONLY VALIDATION OF TOKENS
   //
@@ -345,11 +339,13 @@ function getTokens(text: string): PDFToken[] {
   //   }
   // });
 
-  /** @todo - How do we mark an error in syntax (what does Ohm do)???
+  /** 
+   * @todo - How do we mark an error in syntax (what does Ohm do)???
    *  - whole line vs after a few tokens and at end-of-a-line vs somewhere in the middle of a line
    */
 
-  /** @todo - processing tokenList array for
+  /** 
+   * @todo - processing tokenList array for
    *  - basic file and syntax validation
    *  - file layout and structure markers
    *  - dictionary key modifier (so can know key or key-value)

@@ -65,6 +65,7 @@ import { PDFCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
 import PDFObject from './models/PdfObject';
 import * as ohmParser from './ohmParser';
+import { isUint8Array } from 'util/types';
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
@@ -99,21 +100,24 @@ let globalSettings: PDFCOSSyntaxSettings = defaultSettings;
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
 
 function getPDFDocumentData(uri: string): PDFDocumentData | undefined {
+  console.log(`getPDFDocumentData(${uri})`);
   // Assuming you have a map or similar structure to store PDFDocumentData instances by URI
   return pdfDocumentData.get(uri);
 }
 
 function updatePDFDataBasedOnEdit(document: TextDocument, pdfData: PDFDocumentData | undefined): void {
+  console.log(`updatePDFDataBasedOnEdit(...)`);
   // Example: Update the XRefMatrix based on the document's content
   // This is purely illustrative and depends on your specific implementation needs
   if (pdfData) {
     const newParseResults = parseDocument(document.getText());
-    pdfData.ohmParseResults = newParseResults.ohmParseResults;
+    // pdfData.ohmParseResults = newParseResults.ohmParseResults;
     // pdfData.xrefMatrix = newParseResults.xrefMatrix;
   }
 }
 
 function parseDocument(documentText: string) {
+  console.log(`parseDocument(...)`);
   // Your parsing logic here
   // This is just a placeholder. Replace it with your actual implementation.
   return {
@@ -133,23 +137,18 @@ function parseDocument(documentText: string) {
 }
 
 documents.onDidChangeContent((change) => {
-  console.log(`connection.onDidChangeContent`);
-  validateTextDocument(change.document);
+  console.log(`documents.onDidChangeContent`);
   const document = change.document;
-  if (document) {
-    updateXrefMatrixForDocument(document.uri, document.getText());
-  }
-  const pdfData = getPDFDocumentData(change.document.uri);
-  updatePDFDataBasedOnEdit(change.document, pdfData);
+  validateTextDocument(document);
+  updateXrefMatrixForDocument(document.uri, document.getText());
+  const pdfData = getPDFDocumentData(document.uri);
+  updatePDFDataBasedOnEdit(document, pdfData);
 });
 
 
 connection.onDidOpenTextDocument((params) => {
   console.log(`connection.onDidOpenTextDocument`);
-  const document = documents.get(params.textDocument.uri);
-  if (document) {
-    updateXrefMatrixForDocument(document.uri, document.getText());
-  }
+  updateXrefMatrixForDocument(params.textDocument.uri, params.textDocument.text);
 });
 
 connection.onInitialize((params: InitializeParams) => {
@@ -595,7 +594,7 @@ connection.onHover((params): Hover | null => {
  */
 connection.onDocumentSymbol(
   (params: DocumentSymbolParams): DocumentSymbol[] => {
-  console.log(`connection.onDocumentSymbol`);
+  console.log(`connection.onDocumentSymbol(${params.textDocument.uri}) = outline`);
   const { textDocument } = params;
   const document = documents.get(textDocument.uri);
   if (!document) return [];
@@ -757,8 +756,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   let diagnostics: Diagnostic[] = [];
 
   const text = textDocument.getText();
-  // Rebuild cross-reference table information in case anything changed.
-  updateXrefMatrixForDocument(textDocument.uri, text);
 
   const addDiagnostic = (
     start: Position,
@@ -909,12 +906,22 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 function updateXrefMatrixForDocument(uri: DocumentUri, content: string) {
-  let docData = pdfDocumentData.get(uri);
+  console.log(`updateXrefMatrixForDocument(${uri}, ...)`);
+  let docData: PDFDocumentData | undefined = pdfDocumentData.get(uri);
+
   if (!docData) {
-    docData = { settings: globalSettings }; // or fetch default settings
+    docData = { 
+      settings: defaultSettings,
+      xrefMatrix: buildXrefMatrix(uri, content),
+      ohmParseResults: [],
+      outlineTree: [],
+      diagnosticsList: [],
+      rawPDFBytes: new Uint8Array
+    }; // or fetch default settings
     pdfDocumentData.set(uri, docData);
   }
-
-  // Create or update the XrefInfoMatrix for the document content
-  docData.xrefMatrix = buildXrefMatrix(uri, content);
+  else {
+    // Update the XrefInfoMatrix for the document content
+    docData.xrefMatrix = buildXrefMatrix(uri, content);
+  }
 }
