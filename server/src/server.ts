@@ -81,9 +81,8 @@ const connection = createConnection(ProposedFeatures.all);
 // Create a simple text document manager.
 const documents = new TextDocuments(TextDocument);
 
-let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
+let hasConfigurationCapability = true;
+let hasDiagnosticRelatedInformationCapability = true;
 
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
@@ -95,6 +94,7 @@ const defaultSettings: PDFCOSSyntaxSettings = {
   ignoreXRefLineLength: false,
   verboseLogging: false
 };
+
 let globalSettings: PDFCOSSyntaxSettings = defaultSettings;
 
 const pdfDocumentData: Map<string, PDFDocumentData> = new Map();
@@ -136,9 +136,9 @@ function parseDocument(documentText: string) {
   };
 }
 
-documents.onDidChangeContent((change) => {
-  console.log(`documents.onDidChangeContent`);
-  const document = change.document;
+documents.onDidChangeContent((_change) => {
+  console.log(`documents.onDidChangeContent(${_change.document.uri})`);
+  const document = _change.document;
   validateTextDocument(document);
   updateXrefMatrixForDocument(document.uri, document.getText());
   const pdfData = getPDFDocumentData(document.uri);
@@ -146,28 +146,28 @@ documents.onDidChangeContent((change) => {
 });
 
 
-connection.onDidOpenTextDocument((params) => {
-  console.log(`connection.onDidOpenTextDocument`);
-  updateXrefMatrixForDocument(params.textDocument.uri, params.textDocument.text);
+connection.onDidOpenTextDocument((_params) => {
+  console.log(`connection.onDidOpenTextDocument(...)`);
+  updateXrefMatrixForDocument(_params.textDocument.uri, _params.textDocument.text);
 });
 
-connection.onInitialize((params: InitializeParams) => {
-  console.log(`connection.onInitialize`);
-  const capabilities = params.capabilities;
+connection.onInitialize((_params: InitializeParams) => {
+  console.log(`connection.onInitialize(...)`);
+  const capabilities = _params.capabilities;
 
   // Does the client support the `workspace/configuration` request?
   // If not, we fall back using global settings.
   hasConfigurationCapability = !!(
     capabilities.workspace && !!capabilities.workspace.configuration
   );
-  hasWorkspaceFolderCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
+
   hasDiagnosticRelatedInformationCapability = !!(
     capabilities.textDocument &&
     capabilities.textDocument.publishDiagnostics &&
     capabilities.textDocument.publishDiagnostics.relatedInformation
   );
+
+  console.log(`hasConfigurationCapability=${hasConfigurationCapability}, hasDiagnosticRelatedInformationCapability=${hasDiagnosticRelatedInformationCapability}`);
 
   const result: InitializeResult = {
     capabilities: {
@@ -176,7 +176,7 @@ connection.onInitialize((params: InitializeParams) => {
       // Tell the client that this server supports code completion for PDF names
       completionProvider: {
         resolveProvider: false, // change to true so onCompletionResolve() gets called
-        triggerCharacters: [ "/" ]
+        triggerCharacters: [ "/" ] // first character of a PDF name
       },
       definitionProvider: true,
       referencesProvider: true,
@@ -191,39 +191,24 @@ connection.onInitialize((params: InitializeParams) => {
       documentSymbolProvider: true,
     },
   };
-  if (hasWorkspaceFolderCapability) {
-    result.capabilities.workspace = {
-      workspaceFolders: {
-        supported: true,
-      },
-    };
-  }
 
   return result;
 });
 
 
 connection.onInitialized(() => {
-  console.log(`connection.onInitialized`);
+  console.log(`connection.onInitialized()`);
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
-    connection.client.register(
-      DidChangeConfigurationNotification.type,
-      undefined
-    );
-  }
-  if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-      connection.console.log("Workspace folder change event received.");
-    });
+    connection.client.register(DidChangeConfigurationNotification.type, undefined);
   }
 });
 
 
-// Entry point for Semantic Token parsing
-connection.onRequest("textDocument/semanticTokens/full", (params) => { 
+// Entry point for full Semantic Token parsing triggred by client-side
+connection.onRequest("textDocument/semanticTokens/full", (_params) => { 
   console.log(`Server onRequest "textDocument/semanticTokens/full"`);
-  const document = documents.get(params.textDocument.uri);
+  const document = documents.get(_params.textDocument.uri);
   if (!document) return null;
   const text = document.getText();
   const tokens: PDFToken[] = ohmParser.getTokens(text);
@@ -231,8 +216,8 @@ connection.onRequest("textDocument/semanticTokens/full", (params) => {
 });
 
 
-connection.onDidChangeConfiguration((change) => {
-  console.log(`connection.onDidChangeConfiguration`);
+connection.onDidChangeConfiguration((_change) => {
+  console.log(`connection.onDidChangeConfiguration(${_change.settings})`);
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfDocumentData.clear();
@@ -243,7 +228,7 @@ connection.onDidChangeConfiguration((change) => {
     });
   } else {
     globalSettings = <PDFCOSSyntaxSettings>(
-      (change.settings.pdscosSyntax || defaultSettings)
+      (_change.settings.pdfcossyntax || defaultSettings)
     );
     // Revalidate all open text documents with new settings
     documents.all().forEach(validateTextDocument);
@@ -254,7 +239,7 @@ connection.onDidChangeConfiguration((change) => {
 });
 
 async function getDocumentSettings(): Promise<PDFCOSSyntaxSettings> {
-  console.log(`server async getDocumentSettings`);
+  console.log(`server async getDocumentSettings()`);
   const promise = new Promise<PDFCOSSyntaxSettings>((resolve, reject) => {
     const settings: PDFCOSSyntaxSettings = defaultSettings; 
     resolve(settings);
@@ -264,15 +249,9 @@ async function getDocumentSettings(): Promise<PDFCOSSyntaxSettings> {
 
 
 // Only keep settings for open documents
-documents.onDidClose((e) => {
-  console.log(`documents.onDidClose`);
-  pdfDocumentData.delete(e.document.uri);
-});
-
-
-connection.onDidChangeWatchedFiles((_change) => {
-  // Monitored files have change in VSCode
-  console.log(`connection.onDidChangeWatchedFiles`);
+documents.onDidClose((_event) => {
+  console.log(`documents.onDidClose(${_event.document.uri})`);
+  pdfDocumentData.delete(_event.document.uri);
 });
 
 
