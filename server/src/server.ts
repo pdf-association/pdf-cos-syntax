@@ -610,7 +610,7 @@ connection.onDocumentSymbol(
   // discovered in the PDF file. DON'T ASSUME because editing can break things!!
   let r1: Range;
   for (let revision = 0; revision < pdfParser.getNumRevisions(); revision++) {
-    let revisionName: string = `Incremental Update ${revision}`;
+    let revisionName: string = `Revision ${revision}`;
     if (revision === 0)
       revisionName = `Original PDF`;
     // console.group(`Revision ${revision} = ${revisionName}`);

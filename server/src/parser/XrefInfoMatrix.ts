@@ -257,7 +257,7 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * @returns Get the complete list of in-use object ID's across all incremental updates. 
+   * @returns Get the complete list of in-use object ID's across all revisions. 
    * Might be empty array `[]` if the object ID was not in any cross reference section. 
    */
   public getInUseEntriesForObjectID(objectNumber: number, generationNumber: number): EntryNode[] {

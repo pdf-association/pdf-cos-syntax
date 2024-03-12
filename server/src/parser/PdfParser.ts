@@ -212,7 +212,7 @@ export default class PDFParser {
   /**
    * @returns the number of revisions in the PDF. A revision count
    * of 1 means there is just an original PDF, 2 means there is also
-   * an incremental updates, etc. 
+   * one incremental update, etc. 
    */
   getNumRevisions(): number {
     return this._NumRevisions + 1;
