@@ -492,11 +492,8 @@ export async function commandHandler(
       editBuilder.replace(selection, out);
     });
   }
-
-  /** @todo - move to hover. Test PDF name normalization */
-  // pdf.normalizedPDFname("/A#42");
-  // pdf.normalizedPDFname("/paired#28#29parentheses");
 }
+
 
 export function deactivate(): Thenable<void> | undefined {
   if (!client) return undefined;

@@ -45,13 +45,19 @@ import { TextDocument, Range } from "vscode-languageserver-textdocument";
 import {
   isFileFDF,
   isFilePDF,
-  flags32_to_binary,
   getSemanticTokenAtPosition,
   findAllDefinitions,
   findAllReferences,
   findPreviousObjectLineNumber,
   buildXrefMatrix,
 } from "./utils/pdfUtils";
+
+import { 
+  hoverFlags32_to_binary,
+  hoverHexStringToUTF8,
+  hoverNormalizedPDFname,
+  hoverPDFDateString
+} from './utils/pdfHoverUtils';
 
 import {
   DictKeyCodeCompletion
@@ -519,9 +525,8 @@ connection.onHover((params): Hover | null => {
       break;
     }
 
-    case "endobjKeyword": // "endobj"
-    case "endstreamKeyword": {
-      // "endstream"
+    case "endobjKeyword":       // `endobj`
+    case "endstreamKeyword": {  // `endstream`
       // Look back up the file to find closest matching "\d+ \d+ obj"
       const lineNbr = findPreviousObjectLineNumber(position, document);
       if (lineNbr !== -1) {
@@ -535,30 +540,15 @@ connection.onHover((params): Hover | null => {
     }
 
     case "bitMask": {
-      // a bitmask entry
       const match = semanticTokenText.match(/\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/);
       if (!match || match.length != 3) return null;
-      const bm = parseInt(match[2]);
-      return { contents: flags32_to_binary(bm) };
+      return { contents: hoverFlags32_to_binary(parseInt(match[2])) };
     }
 
     case "hexString": {
-      // a hex string
       const match = semanticTokenText.match(/<([0-9a-fA-F \t\n\r\f\0]+)>/);
       if (!match || match.length != 2) return null;
-
-      let hexString = match[1].trim().replace(/ \t\n\r\f\0/g, ""); // remove all whitespace
-      if (hexString.length === 0) return { contents: `Empty hex string` };
-
-      hexString = hexString.length % 2 ? hexString + "0" : hexString;
-
-      let asUTF8 = "'";
-      for (let i = 0; i < hexString.length; i += 2) {
-        const s = String.fromCharCode(parseInt(hexString.slice(i, i + 2), 16));
-        asUTF8 += s;
-      }
-      asUTF8 += "'";
-      return { contents: asUTF8 };
+      return { contents: hoverHexStringToUTF8(match[1]) };
     }
 
     default:

@@ -156,29 +156,6 @@ export function convertFromAsciiHexFilter(aHex: string): string {
 
 
 /**
- * @todo move to hover
- * Normalizes a PDF name but replace the 2-digit `#` hex codes with the
- * ASCII character.
- * @param name - the PDF name
- * @returns equivalent PDF name, but without any 2-digit `#` hex codes
- */
-export function normalizedPDFname(name: string): string {
-  if (name.indexOf('#') == -1) return name;
-
-  const m = name.match(/(#[0-9a-fA-F][0-9a-fA-F])/g);
-  if (m === null) return name;
-  let newName: string = name;
-  for(let i: number = 0; i < m.length; i++) {
-    const hexDigits: string = m[i].slice(1, 3); // get the 2 hex digits
-    const hexCode: number = parseInt(hexDigits, 16);
-    newName = newName.replace(m[i], String.fromCharCode(hexCode));
-  }
-  // console.log(`normalizedPDFname: ${name} --> ${newName}`);
-  return newName;
-}
-
-
-/**
  * Converts some arbitrary binary data to an ASCIIHex-encoded PDF stream object that
  * will work nicely in VSCode.
  * 
