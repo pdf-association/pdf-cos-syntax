@@ -1,14 +1,13 @@
 /**
- * @brief VSCode PDF COS syntax LSP server
+ * VSCode PDF COS syntax LSP server
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
  * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License.
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -16,7 +15,7 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
-"use strict";
+'use strict';
 
 import {
   createConnection,
@@ -68,7 +67,7 @@ import { debug } from "console";
 import { TextEncoder } from "util";
 import PDFParser, { PDFSectionType } from "./parser/PdfParser";
 import { PDFCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
-import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/constants';
+import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/pdfSemanticTokens';
 import PDFObject from './models/PdfObject';
 import * as ohmParser from './ohmParser';
 import { isUint8Array } from 'util/types';
@@ -262,7 +261,7 @@ documents.onDidClose((_event) => {
 
 
 /** 
- * @brief Intellisense code completion on "/" for PDF names.  Items are automatically 
+ * Intellisense code completion on "/" for PDF names.  Items are automatically 
  * sorted alphabetically and will auto-filter as the user types more.
  */ 
 connection.onCompletion(
@@ -278,7 +277,7 @@ connection.onCompletion(
 
 
 /**
- * NOT USED unless completionProvider: { resolveProvider: false, ... }
+ * NOT USED unless completionProvider: \{ resolveProvider: false, ... \}
  */ 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   console.log(`connection.onCompletionResolve`);
@@ -288,9 +287,9 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 
 /**
  *  "Go to definition" capability:
- *    - on "X Y R" --> find all "X Y obj"
- *    - on "X Y obj" --> find all "X Y obj" (incl. current position)
- *    - on in-use ("n") cross reference table entries --> find all "X Y obj"
+ *    - on "X Y R" → find all "X Y obj"
+ *    - on "X Y obj" → find all "X Y obj" (incl. current position)
+ *    - on in-use ("n") cross reference table entries → find all "X Y obj"
  *
  *  Because of file revisions, there may be MULTIPLE locations for any given "X Y obj"!!
  */
@@ -311,7 +310,7 @@ connection.onDefinition(
     const lineText = document.getText(token.range);
 
     switch (token.type) {
-      case "indirectObject": // X Y obj --> may have MULTIPLE objects with this definition!
+      case "indirectObject": // X Y obj → may have MULTIPLE objects with this definition!
       case "indirectReference": {
         // X Y R
         const objMatch = lineText.match(/(\d+) (\d+)/);
@@ -368,9 +367,9 @@ connection.onDefinition(
 
 /**
  *  Find all references capability
- *   - on "X Y R" --> find all other "X Y R"
- *   - on "X Y obj" --> find all "X Y R"
- *   - on in-use entries "\d{10} \d{5} n" --> find all "X Y R" where X=object number and Y=\d{5}
+ *   - on "X Y R" → find all other "X Y R"
+ *   - on "X Y obj" → find all "X Y R"
+ *   - on in-use entries "\\d\{10\} \\d\{5\} n" → find all "X Y R" where X=object number and Y=\\d\{5\}
  */
 connection.onReferences((params): Location[] | null => {
   console.log(`connection.onReferences for ${params.textDocument.uri}`);
@@ -440,9 +439,9 @@ connection.onReferences((params): Location[] | null => {
 
 /**
  * Hover capabilities:
- *   - on "X Y obj" --> hover says how many references, etc.
- *   - on "X Y R" --> hover says how many objects, etc.
- *   - on conventional cross reference table entries --> hover says object number, etc.
+ *   - on "X Y obj" → hover says how many references, etc.
+ *   - on "X Y R" → hover says how many objects, etc.
+ *   - on conventional cross reference table entries → hover says object number, etc.
  */
 connection.onHover((params): Hover | null => {
   console.log(`connection.onHover`);
@@ -713,9 +712,9 @@ connection.listen();
 
 
 /**
- * @brief Perform basic validation of a conventional PDF:
- * 1. check 1st line for valid `%PDF-x.y   header, including known PDF version
- * 2. check 2nd line for binary file marker line with 4 bytes > 127
+ * Perform basic validation of a conventional PDF:
+ * 1. check 1st line for valid `%PDF-x.y` header, including known PDF version
+ * 2. check 2nd line for binary file marker line with 4 bytes greater than 127
  * 3. check last line for `%%EOF`
  * 4. check conventional PDF file: `xref`, `trailer` and `startxref` keywords need to exist
  * 5. check that a conventional cross-reference section is correct for an original PDF
@@ -788,7 +787,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   }
 
   // Validate 2nd line of both PDF and FDF
-  const encoder = new TextEncoder(); // UTF-8 codepoints --> bytes
+  const encoder = new TextEncoder(); // UTF-8 codepoints → bytes
   const secondLine = textDocument.getText({
     start: Position.create(1, 0),
     end: Position.create(1, 5),

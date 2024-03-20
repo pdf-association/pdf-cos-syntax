@@ -1,11 +1,11 @@
 /**
- * @brief VSCode PDF COS syntax Arlington PDF Model JSON data 
+ * VSCode PDF COS syntax Arlington PDF Model JSON data 
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -14,7 +14,7 @@
  * (DARPA). Approved for public release.
  * 
  * To generate the JSON data, run the Python script ./scripts/arlington-to-vscode.py:
- * python arlington-to-vscode.py -p ..\..\arlington-pdf-model\Jupyter\pandas.tsv -j arl.json
+ * python arlington-to-vscode.py -p ../../arlington-pdf-model/Jupyter/pandas.tsv -j arl.json
  * 
  * then paste it after "export const ArlingtonPDF Model =" and add a semi-colon.
  * It may need to be de-tabbed.

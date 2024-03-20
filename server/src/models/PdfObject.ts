@@ -1,11 +1,11 @@
 /**
- * @brief Simple class representing metrics a single PDF indirect object   
+ * Simple class representing metrics a single PDF indirect object   
  *
  * @copyright
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed

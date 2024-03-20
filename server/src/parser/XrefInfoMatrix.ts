@@ -1,14 +1,13 @@
 /**
- * @brief Manages the cross-reference table for a PDF file 
+ * Manages the cross-reference table for a PDF file 
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
  * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. 
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -31,25 +30,25 @@
  * 
  * - original PDF = the PDF excluding all revisions (incremental updates)
  *      Needs to define object 0 as the start of the free list so first
- *      cross reference subsection marker line should be `0 \d+` where \d+
+ *      cross reference subsection marker line should be `0 \\d+` where \\d+
  *      are the number of objects in the original PDF  
  * 
- * - object number = mostly > 0 (as object 0 is the start of freelist in the original PDF)
+ * - object number = mostly \> 0 (as object 0 is the start of freelist in the original PDF)
  * 
- * - generation number = always >= 0
+ * - generation number = always \>= 0
  * 
  * - object ID = object number AND generation number pair
  * 
  * - revision = PDF as defined by the addition of a single incremental update
  * 
- * - object entry = \d{10} \d{5} (f|n) - supposedly 20 byte entries
+ * - object entry = \\d\{10\} \\d\{5\} (f|n) - supposedly 20 byte entries
  *       Object number is only known by calculating from previous sub-section marker line
  * 
- * - sub-section marker line = line with 2 integers demarcating the start of a new subsection \d+ \d+
+ * - sub-section marker line = line with 2 integers demarcating the start of a new subsection \\d+ \\d+
  *       1st number = starting object number - should only be ZERO in original PDF
  *       2nd number = number of objects - can be ZERO in a revision!
  * 
- * - sub-section = object entries below each sub-section marker line (\d+ \d+)
+ * - sub-section = object entries below each sub-section marker line (\\d+ \\d+)
  *       Note that a cross reference sub-section is technically OPTIONAL in a revision 
  *       as the number of entries in a sub-section can be ZERO. Cannot be ZERO for the
  *       original PDF.
@@ -76,10 +75,10 @@ export class EntryNode {
     /** Object number (as determined by number of lines since previous cross reference subsection marker line) */        
     public objectNum: number,   
 
-    /** \d{10}: if in-use = PDF byte offset, if free = next object number in free list or 65535 (or 0?) */      
+    /** \\d\{10\}: if in-use = PDF byte offset, if free = next object number in free list or 65535 (or 0?) */      
     public first: number,
 
-    /** \d{5}: generation number always >= 0. Expected to match `Y` in `X Y obj` for in-use objects. */   
+    /** \\d\{5\}: generation number always \>= 0. Expected to match `Y` in `X Y obj` for in-use objects. */   
     public generationNumber: number,  
 
     /** (`f` (free) | `n` (in-use)): true iff `n`, false if `f` */
@@ -90,7 +89,7 @@ export class EntryNode {
 
 export class XrefInfoMatrix {
   /** 
-   * @property 2D sparse matrix cross reference table for the PDF 
+   * 2D sparse matrix cross reference table for the PDF 
    * (all sections + sub-sections):
    * - 1st index = object number (all generation numbers)
    * - 2nd index = file revision: 
@@ -101,23 +100,23 @@ export class XrefInfoMatrix {
   private matrix: EntryNode[][] = [];
 
   /**
-   * @property total number of file revisions in the PDF
+   * total number of file revisions in the PDF
    */
   private maxRevision: number = 0;
 
   /** 
-   * @property Set of diagnostics generated when building cross-reference 
-   *  information. May be empty. 
+   * Set of diagnostics generated when building cross-reference 
+   * information. May be empty. 
    */
   public diagnostics: Diagnostic[] = [];
 
 
   /** 
-   * @brief Saves the sparse cross reference matrix to a CSV file ("-xref.csv" appended) where:
+   * Saves the sparse cross reference matrix to a CSV file ("-xref.csv" appended) where:
    * - column A: object number
    * - columns B-: changes in each revision (incl. byte offset and line numbers)
    * 
-   * @param uri filename (will have ".csv" appended)
+   * @param uri - filename (will have ".csv" appended)
    */
   public saveToCSV(uri: DocumentUri): void {
     let csv: string = ""; // CSV = lines with "\n"
@@ -170,7 +169,7 @@ export class XrefInfoMatrix {
 
 
   /** 
-   * @brief Has this Object Number (with ANY generation number) ever been explicitly defined 
+   * Has this Object Number (with ANY generation number) ever been explicitly defined 
    * as free or in-use in any sub-section of any revision?
    */
   public isObjectNumberValid(objectNumber: number): boolean {
@@ -178,7 +177,7 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * @brief Was this object ID (object number and generation number pair) ever defined as in-use?
+   * Was this object ID (object number and generation number pair) ever defined as in-use?
    * This means `X Y obj`...`endobj` should exist somewhere in the PDF, even if it is free in the
    * final version PDF.
    */
@@ -195,12 +194,12 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * @brief Find the Object Number of the entry in the cross reference data of an object that is at `byteOffset`
+   * Find the Object Number of the entry in the cross reference data of an object that is at `byteOffset`
    * ensuring to match the generation number. 
-   * @param byteOffset byte offset (_as PDF byte offset, not VSCode offset!_) of start of `X Y obj` in a body section of the PDF.
+   * @param byteOffset - byte offset (_as PDF byte offset, not VSCode offset!_) of start of `X Y obj` in a body section of the PDF.
    *     Note that due to VSCode mangling binary data, VSCode offsets need to be converted to PDF byte offsets. 
-   * @param generationNumber the generation number `Y` of `X Y obj` in a body section of the PDF
-   * @param flag either `n` for an in-use object or `f` for a free object
+   * @param generationNumber - the generation number `Y` of `X Y obj` in a body section of the PDF
+   * @param flag - either `n` for an in-use object or `f` for a free object
    * @returns the object number as determined by the cross-reference table data or -1 if not found.
    */
   public getObjectNumberBasedOnByteOffset(byteOffset: number, generationNumber: number, flag: string): number {
@@ -221,7 +220,7 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * @brief Was this **object ID** (object number and generation number pair) ever defined as in-use?
+   * Was this **object ID** (object number and generation number pair) ever defined as in-use?
    * This means a `X Y obj` should also exist in PDF. 
    * 
    * @returns the byte offset in the PDF or -1 if not found.
@@ -282,11 +281,11 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * @brief Finds ALL conventional cross reference sections and merges them into a single mega-matrix.
+   * Finds ALL conventional cross reference sections and merges them into a single mega-matrix.
    * Conventional cross reference sections start with `xref` and end with `trailer`, or `startxref`
    * keyword for hybrid reference PDFs - assuming no syntax errors. 
    * Starts from TOP of the PDF for zero-based revision numbering.
-   * @param pdfFile text of a PDF file
+   * @param pdfFile - text of a PDF file
    */
   public mergeAllXrefSections(pdfFile: TextDocument) {
     let revision = 0;
@@ -368,13 +367,13 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * @brief Merges a _single_ conventional cross reference section into the matrix. `xref`
+   * Merges a _single_ conventional cross reference section into the matrix. `xref`
    * keyword can be the first line. Stops if `trailer`, `startxref` or `%%EOF` is found.
    * Also captures basic sanity check/validation issues.
    * 
-   * @param startLineNbr is an ABSOLUTE line number in VSCode's PDF TextDocument.
-   * @param revision revision of PDF file (0 = original PDF, 1 = 1st revision, etc)
-   * @param xref the text of the cross-reference section (from VSCode so any binary data
+   * @param startLineNbr - is an ABSOLUTE line number in VSCode's PDF TextDocument.
+   * @param revision - revision of PDF file (0 = original PDF, 1 = 1st revision, etc)
+   * @param xref - the text of the cross-reference section (from VSCode so any binary data
    *     may be messed up - but there shouldn't be any!) 
    */
   private addXrefSection(startLineNbr: number, revision: number, xref: string) {

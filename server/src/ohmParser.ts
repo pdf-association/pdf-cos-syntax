@@ -1,11 +1,10 @@
 /**
- * @brief Ohm-based tokenizing parser running in LSP server.
+ * Ohm-based tokenizing parser running in LSP server.
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -13,7 +12,7 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
-"use strict";
+'use strict';
 
 import * as ohm from "ohm-js";
 import * as fs from "fs";

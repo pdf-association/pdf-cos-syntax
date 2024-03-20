@@ -1,11 +1,10 @@
 /**
- * @brief A marker-based PDF parser that classifies ranges of bytes as certain types of "object"  
+ * A marker-based PDF parser that classifies ranges of bytes as certain types of "object"  
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -18,21 +17,21 @@
  * Notes on JavaScript/TypeScript regular expression and PDF lexical rules based on:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions
  *
- * - PDF whitespace are ONLY the 6 characters / \t\n\r\f\0/
+ * - PDF whitespace are ONLY the 6 characters / \\t\\n\\r\\f\\0/
  *    - this is DIFFERENT to  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#white_space
  *
- * - PDF EOL sequences are ONLY the 3: \r, \n, or \r\n
+ * - PDF EOL sequences are ONLY the 3: \\r, \\n, or \\r\\n
  *    - PDF files are NOT required to use consistent EOLs so there can be a mix!
  *    - this is DIFFERENT to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#line_terminators
  *
- * - official PDF delimiters (in addition to whitespace and EOL): / <>[]()\//
+ * - official PDF delimiters (in addition to whitespace and EOL): / \<\>[]()\//
  *
- * - object IDs (object number and generation number pairs) CANNOT have '+'/'-' so /\d+\ is OK
+ * - object IDs (object number and generation number pairs) CANNOT have '+'/'-' so /\\d+\\ is OK
  *
- * - JS space, Word and word boundary character classes (\w, \W, \b, \B, \s, \S) CANNOT be
+ * - JS space, Word and word boundary character classes (\\w, \\W, \\b, \\B, \\s, \\S) CANNOT be
  *    used as they do not match PDF's definition!!!
  *
- * - once all PDF EOLs are normalized to ONLY \n, can then rely on string.startsWith(), etc.
+ * - once all PDF EOLs are normalized to ONLY \\n, can then rely on string.startsWith(), etc.
  * 
  * - non-regex searching for "xref", "stream" and "obj" can mismatch to "startxref", "endstream" and "endobj"!
  *   Should use a regex with look-before for PDF whitespace or EOLs. BE CAREFUL WITH indexOf()!
@@ -106,7 +105,7 @@ class PDFMarker {
 export default class PDFParser {
   /**
    *  The reference content of the PDF as a single VSCode (UTF-8) string.
-   *  PDF line endings have been normalized to "\n" 
+   *  PDF line endings have been normalized to "\\n" 
    */
   private readonly _content: string;
 
@@ -140,7 +139,7 @@ export default class PDFParser {
 
   /** 
    * Normalize PDF line endings but keep character counts unchanged. 
-   * This parser ONLY checks and splits with "\n"!
+   * This parser ONLY checks and splits with "\\n"!
    */
   constructor(document: TextDocument) {
     this._content = document.getText();

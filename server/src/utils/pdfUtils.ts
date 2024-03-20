@@ -1,14 +1,13 @@
 /**
- * @brief PDF utility functions 
+ * PDF utility functions 
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
  * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. 
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -27,13 +26,13 @@ import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
 const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
 
 /**
- * @brief Find all occurrences of "X Y R" in the text for a given object ID.
+ * Find all occurrences of "X Y R" in the text for a given object ID.
  *
- * @param {number} objNum - object number. Should be > 0.
- * @param {number} genNum - object generation number. Should be >= 0.
- * @param {TextDocument} document - the PDF (as text) document
+ * @param objNum - object number. Should be greater than 0.
+ * @param genNum - object generation number. Should be greater than or equal to 0.
+ * @param document - the PDF (as text) document
  *
- * @returns {Location[]} an array of locations
+ * @returns an array of locations
  */
 export function findAllReferences(
   objNum: number,
@@ -74,13 +73,13 @@ export function findAllReferences(
 }
 
 /**
- * @brief Find all occurrences of "X Y obj" in the text for a given object ID.
+ * Find all occurrences of "X Y obj" in the text for a given object ID.
  *
- * @param {number} objNum - object number. Should be > 0.
- * @param {number} genNum - object generation number. Should be >= 0.
- * @param {TextDocument} document - the PDF (as text) document
+ * @param objNum - object number. Should be greater than 0.
+ * @param genNum - object generation number. Should be greater than or equal to 0.
+ * @param document - the PDF (as text) document
  *
- * @returns {Location[]} an array of definition locations. Might be empty.
+ * @returns an array of definition locations. Might be empty.
  */
 export function findAllDefinitions(
   objNum: number,
@@ -118,13 +117,13 @@ export function findAllDefinitions(
 
 
 /**
- * @brief Looks from given cursor position BACK up the file to locate
+ * Looks from given cursor position BACK up the file to locate
  * the first preceding `X Y obj` 
  * 
- * @param {Position} cursor cursor position in PDF
- * @param {TextDocument} document PDF document
+ * @param cursor - cursor position in PDF
+ * @param document - PDF document
  * 
- * @returns {number} a line number of nearest `X Y obj` or -1 if not found 
+ * @returns a line number of nearest `X Y obj` or -1 if not found 
  */
 export function findPreviousObjectLineNumber(
   cursor: Position,
@@ -148,22 +147,22 @@ export function findPreviousObjectLineNumber(
 }
 
 /**
- * @brief Determine if the given document is an FDF file based on its URI extension.
+ * Determine if the given document is an FDF file based on its URI extension.
  *
- * @param {TextDocument} document - the PDF document
+ * @param document - the PDF document
  *
- * @returns {boolean} true if the document is an FDF file, false otherwise
+ * @returns true if the document is an FDF file, false otherwise
  */
 export function isFileFDF(document: TextDocument): boolean {
   return document.uri.toLowerCase().endsWith(".fdf");
 }
 
 /**
- * @brief Determine if the given document is a PDF file based on its URI extension.
+ * Determine if the given document is a PDF file based on its URI extension.
  *
- * @param {TextDocument} document - the document object containing information about the file
+ * @param document - the document object containing information about the file
  *
- * @returns {boolean} true if the document is a PDF file, false otherwise
+ * @returns true if the document is a PDF file, false otherwise
  */
 export function isFilePDF(document: TextDocument): boolean {
   return document.uri.toLowerCase().endsWith(".pdf");
@@ -175,12 +174,10 @@ interface SemanticTokenInfo {
 }
 
 /**
- * @brief Works out the kind of semantic token at the given cursor position.
+ * Works out the kind of semantic token at the given cursor position.
  * Only looks at the current line, but checks to ensure position is on
  * the token in case of multiple potential tokens on one line:
  * e.g. `[ 1 0 R 2 0 R 3 0 R ]` - which indirect reference is being queried?
- * 
- * @returns {SemanticTokenInfo | null}
  */
 export function getSemanticTokenAtPosition(
   document: TextDocument,
@@ -312,13 +309,11 @@ export function getSemanticTokenAtPosition(
 }
 
 /**
- * @brief Builds the cross-reference table (2D matrix) from all cross-reference sections
+ * Builds the cross-reference table (2D matrix) from all cross-reference sections
  * in the PDF.
  * 
- * @param {DocumentUri} docURI URI of PDF document
- * @param {string} content PDF document text content
- * 
- * @returns {XrefInfoMatrix}
+ * @param docURI - URI of PDF document
+ * @param content - PDF document text content
  */
 export function buildXrefMatrix(docURI: DocumentUri, content: string): XrefInfoMatrix {
   console.log(`buildXrefMatrix(...)`);

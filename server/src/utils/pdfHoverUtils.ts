@@ -1,14 +1,13 @@
 /**
- * @brief Utilities functions to support VSCode hovers
+ * Utilities functions to support VSCode hovers
  *
- * @copyright
- * Copyright 2024 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2024 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
  * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License.
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -16,14 +15,14 @@
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
  */
-"use strict";
+'use strict';
 
 /**
- * @brief Construct a hover for PDF Date objects.
+ * @public Construct a hover for PDF Date objects.
  * 
- * @param {string} d  PDF date string (literal or hex string)
+ * @param d - PDF date string (literal or hex string)
  * 
- * @returns {string} Human-readable date for the valid parts of the PDF date string
+ * @returns Human-readable date for the valid parts of the PDF date string
  */
 export function hoverPDFDateString(d: string): string {
   /** @todo - hex strings! */ 
@@ -110,7 +109,7 @@ export function hoverPDFDateString(d: string): string {
       }
 
     }
-    catch (e: any) {
+    catch (e) {
       console.log("ERROR: ", e);
       s = 'ERROR: ' + e + ' - ' + s;
     }
@@ -121,12 +120,12 @@ export function hoverPDFDateString(d: string): string {
 
 
 /**
- * @brief Takes a number, assumed to be a 32 bit signed integer and
+ * @public Takes a number, assumed to be a 32 bit signed integer and
  * converts to groups of 8 bits for display as a PDF bitmask hover.
  * 
- * @param {number} num  the assumed 32 bit integer number (converted)
+ * @param num - the assumed 32 bit integer number (converted)
  * 
- * @returns {string} binary bitmask of flags as a string
+ * @returns binary bitmask of flags as a string
  */
 export function hoverFlags32_to_binary(num: number): string {
   const flag = Math.abs(num) & 0xFFFFFFFF;
@@ -146,12 +145,12 @@ export function hoverFlags32_to_binary(num: number): string {
   
   
 /**
- * @brief Normalize a PDF name by replacing the 2-digit `#` hex codes with the
+ * @public Normalize a PDF name by replacing the 2-digit `#` hex codes with the
  * ASCII character.
  * 
- * @param {string} name - the PDF name
+ * @param name - the PDF name
  * 
- * @returns {string} equivalent PDF name, but without any 2-digit `#` hex codes
+ * @returns equivalent PDF name, but without any 2-digit `#` hex codes
  */
 export function hoverNormalizedPDFname(name: string): string {
   if (name.indexOf('#') == -1) return name;
@@ -170,11 +169,11 @@ export function hoverNormalizedPDFname(name: string): string {
 
 
 /**
- * @brief convert a PDF hex string to human-readable UTF-8 string
+ * @public convert a PDF hex string to human-readable UTF-8 string
  * 
- * @param {string} hexstring the PDF hex string (can include whitespace)
+ * @param hexstring - the PDF hex string (can include whitespace)
  * 
- * @returns {string} UTF-8 equivalent 
+ * @returns UTF-8 equivalent 
  */
 export function hoverHexStringToUTF8(hexstring: string): string {
   let s = hexstring.trim().replace(/ \t\n\r\f\0/g, ""); // remove all whitespace

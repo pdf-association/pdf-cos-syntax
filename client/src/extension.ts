@@ -1,14 +1,14 @@
 /**
- * @brief VSCode PDF COS syntax language client
+ * VSCode PDF COS syntax language client
  *
- * @copyright
+ * @copyright 
  * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  *
  * Original portions: Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License.
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed

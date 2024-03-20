@@ -1,13 +1,12 @@
 /**
- * @brief VSCode PDF COS syntax client-side command functionality
+ * VSCode PDF COS syntax client-side command functionality
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  * 
- * @author Peter Wyatt, PDF Association
+ * Author: Peter Wyatt, PDF Association
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
@@ -25,10 +24,10 @@ import Ascii85 = require('ascii85');
 
 
 /**
- * @brief Convert current EOL setting to count bytes so lengths can be adjusted accordingly.
+ * Convert current EOL setting to count bytes so lengths can be adjusted accordingly.
  * 
  * @param eol - current editor EOL setting ("auto" is normalized to something) 
- * @returns {number} 1 or 2 bytes per EOL.
+ * @returns 1 or 2 bytes per EOL.
  */
 function _EOLtoBytes(eol: vscode.EndOfLine): number {
   switch (eol) {
@@ -40,7 +39,7 @@ function _EOLtoBytes(eol: vscode.EndOfLine): number {
 
 
 /**
- * @brief Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
+ * Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
   const a85encoded = Ascii85.encode(bytes, { delimiter: false });
@@ -51,8 +50,8 @@ export function convertToAscii85Filter(bytes: Buffer): string[] {
 
 
 /**
- * @brief Converts a buffer of `/ASCII85Decode` encoded data back
- * to raw bytes as a UTF-8 string. Requires data end with "~>".
+ * Converts a buffer of `/ASCII85Decode` encoded data back
+ * to raw bytes as a UTF-8 string. Requires data end with "~\>".
  */
 export function convertFromAscii85Filter(a85: string): string {
   try {
@@ -75,7 +74,7 @@ export function convertFromAscii85Filter(a85: string): string {
 
 
 /**
- * @brief Splits a string into "chunks" of a fixed length.
+ * Splits a string into "chunks" of a fixed length.
  * 
  * @param string - string to wrap
  * @param chunkSize - width of a "chunk" of the string
@@ -112,7 +111,7 @@ export function convertToAsciiHexFilter(data: Buffer): string[] {
 
 /**
  * Converts `/ASCIIHexDecode` encoded data to raw bytes as a UTF-8 string.
- * Fails on any non-hex code or whitespace characters. Requires data end with '>'
+ * Fails on any non-hex code or whitespace characters. Requires data end with '\>'
  */
 export function convertFromAsciiHexFilter(aHex: string): string {
   try {
@@ -949,7 +948,7 @@ export function xrefToXRefStream(
 }
 
 /**
- * @brief Exports the PDF documents full cross-reference table as a CSV
+ * Exports the PDF documents full cross-reference table as a CSV
  */
 export async function exportXrefAsCSV() {
   /** @todo see server XrefInfoMatrix.ts XrefInfoMatrix.saveToCSV() */

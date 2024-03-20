@@ -1,13 +1,12 @@
 /**
- * @brief VSCode PDF COS syntax client-side Sankey webview functionality
+ * VSCode PDF COS syntax client-side Sankey webview functionality
  *
- * @copyright
- * Copyright 2023 PDF Association, Inc. https://www.pdfa.org
+ * @copyright Copyright 2023 PDF Association, Inc. https://www.pdfa.org
  * SPDX-License-Identifier: Apache-2.0
  * 
- * @author Peter Wyatt, PDF Association
+ * Author: Peter Wyatt, PDF Association
  *
- * @remark
+ * @remarks
  * This material is based upon work supported by the Defense Advanced
  * Research Projects Agency (DARPA) under Contract No. HR001119C0079.
  * Any opinions, findings and conclusions or recommendations expressed
