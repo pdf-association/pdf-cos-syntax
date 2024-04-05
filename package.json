@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.87.0"
+    "vscode": "^1.88.0"
   },
   "icon": "assets/pdf-light.png",
   "main": "./out/client/src/extension",
@@ -500,7 +500,7 @@
     "@ohm-js/cli": "^2.0.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.4",
-    "@types/vscode": "^1.87.0",
+    "@types/vscode": "^1.88.0",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
     "@vscode/test-electron": "^2.3.9",
@@ -510,7 +510,7 @@
     "install": "^0.13.0",
     "mocha": "^10.4.0",
     "npm": "^10.5.1",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.4"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
