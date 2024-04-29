@@ -41,7 +41,7 @@ export class SankeyPanel
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
 
-  public static createOrShow(context: vscode.ExtensionContext, csvData: string) {
+  public static createOrShow(context: vscode.ExtensionContext, csvData: string): void {
     // console.log(`createOrShow ${context.extensionUri}`);
 
     const column = vscode.window.activeTextEditor
@@ -77,7 +77,7 @@ export class SankeyPanel
     panel.webview.postMessage({ type: {type: 'CSV-Data', value: csvData } });
   }
 
-  public static revive(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
+  public static revive(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): void {
     // console.log(`revive`);
     SankeyPanel.currentPanel = new SankeyPanel(panel, context);
   }
@@ -93,9 +93,10 @@ export class SankeyPanel
 
     // Update the content based on view changes
     this._panel.onDidChangeViewState(
-      e => {
-        if (this._panel.visible) 
+      _e => {
+        if (this._panel.visible) {
           this._getHtmlForWebview(this._panel.webview);
+        }
       },
       null,
       this._disposables
@@ -117,14 +118,14 @@ export class SankeyPanel
     this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
   }
 
-  public sendDataToWebview() {
+  public sendDataToWebview(): void {
     // console.log(`sendDataToWebview`);
     // Send a message to the webview 
     // You can send any JSON serializable data.
     this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' });
   }
 
-  public dispose() {
+  public dispose(): void {
     // console.log(`dispose`);
     SankeyPanel.currentPanel = undefined;
 
@@ -133,7 +134,7 @@ export class SankeyPanel
 
     while (this._disposables.length) {
       const x = this._disposables.pop();
-      if (x) x.dispose();
+      if (x) { x.dispose(); }
     }
   }
 

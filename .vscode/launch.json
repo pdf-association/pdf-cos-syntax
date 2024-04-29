@@ -23,6 +23,5 @@
       "sourceMaps": true,
       "preLaunchTask": "npm: watch"
       }
-
   ]
 }

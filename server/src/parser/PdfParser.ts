@@ -66,7 +66,7 @@
  */
 'use strict';
 
-import { TextDocument, Position, Range } from "vscode-languageserver-textdocument";
+import type { TextDocument, Position, Range } from "vscode-languageserver-textdocument";
 import PDFObject from '../models/PdfObject';
 
 
@@ -89,7 +89,7 @@ class PDFMarker {
   public readonly offset: number;
 
   /** Revision number. -1 = unset. 0 = original PDF, 1 = oldest incremental update, etc. */
-  public revision: number = -1;
+  public revision = -1;
 
   /** The section kind as classified by this parser */
   public section: PDFSectionType = PDFSectionType.unset;
@@ -140,6 +140,7 @@ export default class PDFParser {
   /** 
    * Normalize PDF line endings but keep character counts unchanged. 
    * This parser ONLY checks and splits with "\\n"!
+   * @param document - the PDF document
    */
   constructor(document: TextDocument) {
     this._content = document.getText();
@@ -149,7 +150,7 @@ export default class PDFParser {
     // Work out where all the markers are located (in order)
     this._markers = [];
     let match;  
-    while ((match = this._markersRegex.exec(this._content)) !== null) {
+    while ((match = this._markersRegex.exec(this._content)) != null) {
       this._markers.push(new PDFMarker(match[0], match.index));
     }
 
@@ -157,51 +158,58 @@ export default class PDFParser {
     this._NumRevisions = -1;
     let currentSection: PDFSectionType = PDFSectionType.unset;
 
-    for (let i: number = 0; i < this._markers.length; i++) {
+    for (let i = 0; i < this._markers.length; i++) {
       switch (this._markers[i].marker) {
-        case "stream":
-          if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer))
+        case "stream": {
+          if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer)) {
             this._NumRevisions++;
+          }
           currentSection = PDFSectionType.Body;
-          if (this._NumRevisions === -1) this._NumRevisions = 0; // malformed file 
+          if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
           this._markers[i].revision = this._NumRevisions;
           this._markers[i].section = currentSection; 
           break;
-        case "xref":
-          if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer))
+        }
+        case "xref": {
+          if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer)) {
             this._NumRevisions++;
+          }
           currentSection = PDFSectionType.CrossReference;
-          if (this._NumRevisions === -1) this._NumRevisions = 0; // malformed file 
+          if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
           this._markers[i].revision = this._NumRevisions;
           this._markers[i].section = currentSection; 
           break;
+        }
         case "trailer":
         case "startxref":
-        case "%%EOF":
+        case "%%EOF": {
           currentSection = PDFSectionType.Footer;
           this._markers[i].revision = this._NumRevisions;
           this._markers[i].section = currentSection; 
           break;
-        default:
+        }
+        default: {
           // variable text for "%[PF]DF-x.y" and "X Y obj"!
           if (this._markers[i].marker.startsWith("%PDF-") || this._markers[i].marker.startsWith("%FDF-")) {
             if (currentSection !== PDFSectionType.Header) {
               currentSection = PDFSectionType.Header;
               this._NumRevisions++;
             }
-            if (this._NumRevisions === -1) this._NumRevisions = 0; // malformed file 
+            if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
             this._markers[i].revision = this._NumRevisions;
             this._markers[i].section = currentSection; 
           }
           else { // "X Y obj"
-            if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer))
+            if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer)) {
               this._NumRevisions++;
+            }
             currentSection = PDFSectionType.Body;
-            if (this._NumRevisions === -1) this._NumRevisions = 0; // malformed file 
+            if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
             this._markers[i].revision = this._NumRevisions;
             this._markers[i].section = currentSection; 
           }
           break;
+        }
       }
     }
 
@@ -219,6 +227,7 @@ export default class PDFParser {
 
 
   /**
+   * @param revision - the PDF file revision (>= 0)
    * @returns the ordered set of sections for the given revision. 
    * Order is based on the PDF file, which can be illogical when
    * editting. 
@@ -229,16 +238,17 @@ export default class PDFParser {
     let startIdx: number;
     // Find the first marker for this revision
     for (startIdx = 0; startIdx < this._markers.length; startIdx++) {
-      if (this._markers[startIdx].revision === revision)
+      if (this._markers[startIdx].revision === revision) {
         break;
+      }
     }
 
     // Find all the markers for this revision
-    let i: number;
     order.push(this._markers[startIdx].section);
-    for (i = startIdx; (i < this._markers.length) && (this._markers[i].revision === revision); i++) {
-      if (this._markers[i].section !== order[order.length - 1])
+    for (let i = startIdx; (i < this._markers.length) && (this._markers[i].revision === revision); i++) {
+      if (this._markers[i].section !== order[order.length - 1]) {
         order.push(this._markers[i].section);
+      }
     }
 
     return order;
@@ -248,19 +258,22 @@ export default class PDFParser {
   /** 
    * Convert an absolute byte offset to a Line/Character Position.
    * Note that Line and Character numbering are 0-based!
+   * @param offset - the byte offset into the PDF file (>= 0)
+   * @returns the Position into the VSCode document
    */
   convertOffsetToPosition(offset: number): Position {
     const asLines = this._content.slice(0, offset).split("\n");
     let line = asLines.length - 1;
-    if (line < 0) line = 0;
+    if (line < 0) { line = 0; }
     let char = asLines[line].length - 1;
-    if (char < 0) char = 0;
+    if (char < 0) { char = 0; }
     // console.log(`convertOffsetToPosition(${offset}) --> line=${line}, char=${char}`);
     return { line: line, character: char };
   }
 
 
   /** 
+   * @param revision - the PDF file revision (>= 0)
    * @returns range from `%[PF]DF-x.y` to next section for a given revision of the PDF.
    * This range is **not** minimal and may include cavities, etc.
    */
@@ -268,43 +281,49 @@ export default class PDFParser {
     const foundHdr = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.Header) && (o.revision === revision)); 
     });
-    if (foundHdr === -1) // No header anywhere 
+    if (foundHdr === -1) { // No header anywhere 
       throw new Error(`Unexpected Header section range request for revision ${revision}.`);
+    }
 
     const startOffset: number = this._markers[foundHdr].offset;
     let endOffset: number;
-    if (foundHdr < (this._markers.length - 1))
+    if (foundHdr < (this._markers.length - 1)) {
       endOffset = this._markers[foundHdr + 1].offset - 1;
-    else
+    } else {
       endOffset = this._content.length;
+    }
     return { start: this.convertOffsetToPosition(startOffset), end: this.convertOffsetToPosition(endOffset) };
   }
 
 
   /**
+   * @param revision - the PDF file revision (>= 0)
    * @returns the range for all sections in a given revision. 
    * This range is **not** minimal and may include cavities, etc.
    */
   getRevisionRange(revision: number): Range {
-    const revisionStartIdx = this._markers.findIndex((o: PDFMarker, index) => { 
+    const revisionStartIdx = this._markers.findIndex((o: PDFMarker, _index) => { 
       return (o.revision === revision); 
     });
-    if (revisionStartIdx === -1) 
+    if (revisionStartIdx === -1) {
       throw new Error(`getRevisionRange() unexpected revision ${revision}.`);
+    }
 
     const revisionStartOffset = this._markers[revisionStartIdx].offset;
     let revisionEndOffset: number;
-    if (revisionStartIdx >= this._markers.length - 1) 
+    if (revisionStartIdx >= this._markers.length - 1) {
       revisionEndOffset = this._content.length;
-    else {
+    } else {
       let foundEnd: number = revisionStartIdx + 1;
       while ((foundEnd < this._markers.length) && 
-             (this._markers[foundEnd].revision === revision))
+             (this._markers[foundEnd].revision === revision)) {
         foundEnd++;
-      if (foundEnd < this._markers.length)
+      }
+      if (foundEnd < this._markers.length) {
         revisionEndOffset = this._markers[foundEnd].offset - 1;
-      else
+      } else {
         revisionEndOffset = this._content.length;
+      }
     }
 
     return { start: this.convertOffsetToPosition(revisionStartOffset), end: this.convertOffsetToPosition(revisionEndOffset) };
@@ -312,6 +331,7 @@ export default class PDFParser {
 
 
   /**
+   * @param revision - the PDF file revision (>= 0)
    * @returns the range for all body objects starting with 1st full object `X Y obj` 
    * to `endobj` in the file, up to the 1st marker which is not a `X Y obj` for a
    * given revision. This range is **not** minimal and may include cavities, etc.
@@ -320,23 +340,26 @@ export default class PDFParser {
     const bodyStartIdx = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.Body) && (o.revision === revision)); 
     });
-    if (bodyStartIdx === -1) 
+    if (bodyStartIdx === -1) {
       throw new Error(`Unexpected Body section request for revision ${revision}.`);
+    }
 
     const bodyStartOffset = this._markers[bodyStartIdx].offset;
     let bodyEndOffset: number;
-    if (bodyStartIdx >= this._markers.length - 1) 
+    if (bodyStartIdx >= this._markers.length - 1) {
       bodyEndOffset = this._content.length;
-    else {
+    } else {
       let foundEnd: number = bodyStartIdx + 1;
       while ((foundEnd < this._markers.length) && 
              (this._markers[foundEnd].section === PDFSectionType.Body) &&
-             (this._markers[foundEnd].revision === revision))
+             (this._markers[foundEnd].revision === revision)) {
         foundEnd++;
-      if (foundEnd < this._markers.length)
+      }
+      if (foundEnd < this._markers.length) {
         bodyEndOffset = this._markers[foundEnd].offset - 1;
-      else
+      } else {
         bodyEndOffset = this._content.length;
+      }
     }
 
     return { start: this.convertOffsetToPosition(bodyStartOffset), end: this.convertOffsetToPosition(bodyEndOffset) };
@@ -344,6 +367,7 @@ export default class PDFParser {
 
 
   /**
+   * @param revision - the PDF file revision (>= 0)
    * @returns every object in the specified revision of the PDF file.
    * Partitions from `X Y obj` marker to the next `endobj` keyword. 
    */
@@ -353,7 +377,7 @@ export default class PDFParser {
     let idx = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.Body) && (o.revision === revision)); 
     });
-    if (idx === -1) return [];
+    if (idx === -1) { return []; }
 
     // Find "X Y obj" markers and determine end of object.
     while ((idx < this._markers.length) && 
@@ -362,8 +386,8 @@ export default class PDFParser {
       if (this._markers[idx].marker.endsWith("obj")) {
         const startObjOffset = this._markers[idx].offset;
         let endObjOffset: number;
-        let startStmOffset: number = -1;
-        let endStmOffset: number = -1;
+        let startStmOffset = -1;
+        let endStmOffset = -1;
         if (idx < (this._markers.length - 2)) {
           // At least 2 markers before end of markers...
           if (this._markers[idx + 1].marker === "stream") {
@@ -373,12 +397,14 @@ export default class PDFParser {
             // Find the next marker that would be the start of the next object
             // (allowing for malformed PDFs with multiple stream keywords)
             let i = idx + 2;
-            while ((i < this._markers.length) && (this._markers[i].marker === "stream"))
+            while ((i < this._markers.length) && (this._markers[i].marker === "stream")) {
               i++;
-            if (i < this._markers.length)
+            }
+            if (i < this._markers.length) {
               endObjOffset = this._markers[i].offset - 1;  
-            else
+            } else {
               endObjOffset = this._content.length;
+            }
           }
           else {
             endObjOffset = this._markers[idx + 1].offset - 1;  
@@ -433,6 +459,7 @@ export default class PDFParser {
 
 
   /**
+   * @param revision revision of a file (>= 0)
    * @returns the range for all footer subsections for a given revision.
    * A "footer" section can include `trailer`, `startxref` and `%%EOF`. 
    * This range is **not** minimal and may include cavities, etc.
@@ -441,36 +468,43 @@ export default class PDFParser {
     const footerStartIdx = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.Footer) && (o.revision === revision)); 
     });
-    if (footerStartIdx === -1) 
+    if (footerStartIdx === -1) {
       throw new Error(`Unexpected Footer section request for revision ${revision}.`);
+    }
 
     const footerStartOffset = this._markers[footerStartIdx].offset;
     let footerEndOffset: number;
-    if (footerStartIdx >= this._markers.length - 1) 
+    if (footerStartIdx >= this._markers.length - 1) {
       footerEndOffset = this._content.length;
-    else {
-      let foundEnd: number = footerStartIdx + 1;
+    } else {
+      let foundEnd = footerStartIdx + 1;
       while ((foundEnd < this._markers.length) && 
              (this._markers[foundEnd].section === PDFSectionType.Body) &&
-             (this._markers[foundEnd].revision === revision))
+             (this._markers[foundEnd].revision === revision)) {
         foundEnd++;
-      if (foundEnd < this._markers.length)
+      }
+      if (foundEnd < this._markers.length) {
         footerEndOffset = this._markers[foundEnd].offset - 1;
-      else
+      } else {
         footerEndOffset = this._content.length;
+      }
     }
 
     return { start: this.convertOffsetToPosition(footerStartOffset), end: this.convertOffsetToPosition(footerEndOffset) };
   }
 
 
-  /** @returns true if given object contains a stream */
+  /**
+   * @param obj - a PDF Object 
+   * @returns true iff the given object contains a stream 
+   */
   hasObjectStreamInside(obj: PDFObject) : boolean {
     return obj.hasStream();
   }
 
 
   /** 
+   * @param obj - a PDF object
    * @returns a Range for an entire indirect object, from `X Y obj` 
    * up to corresponding `endobj` keyword. It may contain a stream.
    */
@@ -482,12 +516,12 @@ export default class PDFParser {
 
 
   /** 
+   * @param obj - a PDF object 
    * @returns a Range for a stream with an indirect object, from `stream` 
    * to corresponding `endstream` keyword. Or null if no stream.
    */
   getObjectStreamRange(obj: PDFObject): Range | null {
-    if (!obj.hasStream()) 
-      return null;
+    if (!obj.hasStream()) { return null; }
 
     const startStmOffset = obj.getStartStreamOffset();
     const endStmOffset = obj.getEndStreamOffset();
@@ -497,29 +531,34 @@ export default class PDFParser {
 
   /**
    * Gets a conventional cross reference table range within a Footer section.
+   * @param revision - revision of a file (>= 0)
+   * @returns the Range of the requested revision
    */
   getCrossReferenceTableRange(revision: number): Range {
     const footerStartXrefIdx = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.CrossReference) && 
               (o.revision === revision)); 
     });
-    if (footerStartXrefIdx === -1)
+    if (footerStartXrefIdx === -1) {
       throw new Error(`Unexpected Cross reference section request for revision ${revision}.`);
+    }
 
     const footerStartXrefOffset = this._markers[footerStartXrefIdx].offset;
     let footerEndXrefOffset: number;
-    if (footerStartXrefIdx >= this._markers.length - 1) 
+    if (footerStartXrefIdx >= this._markers.length - 1) {
       footerEndXrefOffset = this._content.length;
-    else {
-      let foundEnd: number = footerStartXrefIdx + 1;
+    } else {
+      let foundEnd = footerStartXrefIdx + 1;
       while ((foundEnd < this._markers.length) && 
              (this._markers[foundEnd].section === PDFSectionType.CrossReference) &&
-             (this._markers[foundEnd].revision === revision))
+             (this._markers[foundEnd].revision === revision)) {
         foundEnd++;
-      if (foundEnd < this._markers.length)
+      }
+      if (foundEnd < this._markers.length) {
         footerEndXrefOffset = this._markers[foundEnd].offset - 1;
-      else
+      } else {
         footerEndXrefOffset = this._content.length;
+      }
     }
 
     return { start: this.convertOffsetToPosition(footerStartXrefOffset), end: this.convertOffsetToPosition(footerEndXrefOffset) };
@@ -527,14 +566,16 @@ export default class PDFParser {
 
 
   /**
+   * @param revision - revision of a file (>= 0)
    * @returns which Footer subsections are present and in what order 
    */
   getFooterSubsections(revision: number): string[] {
     const footerStartIdx = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.Footer) && (o.revision === revision)); 
     });
-    if (footerStartIdx === -1) 
-      throw new Error(`Unexpected Footer sub-sections request for revision ${revision}.`);
+    if (footerStartIdx === -1) { 
+      throw new Error(`Unexpected Footer sub-sections request for revision ${revision}.`); 
+    }
 
     const subsections: string[] = [];
     subsections.push(this._markers[footerStartIdx].marker);
@@ -543,8 +584,9 @@ export default class PDFParser {
     while ((i < this._markers.length) &&
            (this._markers[i].section === PDFSectionType.Footer) && 
            (this._markers[i].revision === revision)) {
-      if (this._markers[i].marker !== subsections[subsections.length - 1].toString())
+      if (this._markers[i].marker !== subsections[subsections.length - 1].toString()) {
         subsections.push(this._markers[i].marker);
+      }
       i++;
     }
 
@@ -555,34 +597,41 @@ export default class PDFParser {
   /**
    * Gets a footer subsection (`trailer`, `startxref`, `%%EOF`) range for a 
    * specified revision.
+   * @param revision - revision of a file (>= 0)
+   * @param subsection - footer marker string to searcg for
+   * @returns the Range. May throw an Error.
    */
   getFooterSubsectionRange(revision: number, subsection: string): Range {
-    if ([ "trailer", "startxref", "%%EOF" ].findIndex((s: string) => (s === subsection)) === -1)
+    if ([ "trailer", "startxref", "%%EOF" ].findIndex((s: string) => (s === subsection)) === -1) {
       throw new Error(`Unexpected footer subsection ${subsection}`);
+    }
 
     const footerSubsectionStartXrefIdx = this._markers.findIndex((o: PDFMarker) => { 
       return ((o.section === PDFSectionType.Footer) && 
               (o.marker === subsection) &&
               (o.revision === revision)); 
     });
-    if (footerSubsectionStartXrefIdx === -1)
+    if (footerSubsectionStartXrefIdx === -1) {
       throw new Error(`Unexpected footer sub-section request for ${subsection} for revision ${revision}.`);
+    }
 
     const footerSubsectionStartXrefOffset = this._markers[footerSubsectionStartXrefIdx].offset;
     let footerSubsectionEndXrefOffset: number;
-    if (footerSubsectionStartXrefIdx >= this._markers.length - 1) 
+    if (footerSubsectionStartXrefIdx >= this._markers.length - 1) {
       footerSubsectionEndXrefOffset = this._content.length;
-    else {
-      let foundEnd: number = footerSubsectionStartXrefIdx + 1;
+    } else {
+      let foundEnd = footerSubsectionStartXrefIdx + 1;
       while ((foundEnd < this._markers.length) && 
              (this._markers[foundEnd].section === PDFSectionType.Footer) &&
              (this._markers[foundEnd].marker === subsection) &&
-             (this._markers[foundEnd].revision === revision))
+             (this._markers[foundEnd].revision === revision)) {
         foundEnd++;
-      if (foundEnd < this._markers.length)
+      }
+      if (foundEnd < this._markers.length) {
         footerSubsectionEndXrefOffset = this._markers[foundEnd].offset - 1;
-      else
+      } else {
         footerSubsectionEndXrefOffset = this._content.length;
+      }
     }
 
     return { 

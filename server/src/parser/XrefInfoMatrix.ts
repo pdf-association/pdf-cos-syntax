@@ -56,18 +56,21 @@
  * - section = comprises zero or more cross reference sub-sections.
  * 
  * - table = the amalgamation of one or more cross reference sections in a PDF
-*/
+ */
 'use strict';
 
-import { Diagnostic, DiagnosticSeverity, DocumentUri, Position } from 'vscode-languageserver';
-import { TextDocument } from "vscode-languageserver-textdocument";
+import { DiagnosticSeverity, Position } from 'vscode-languageserver';
+import type { Diagnostic, DocumentUri } from 'vscode-languageserver';
+import type { TextDocument } from "vscode-languageserver-textdocument";
 import * as fs from 'fs';
 import * as path from 'path';
 
 
 export class EntryNode {
+
   constructor(
-    /** ABSOLUTE line number of a cross reference entry in VSCode's `TextDocument`.
+    /** 
+     * ABSOLUTE line number of a cross reference entry in VSCode's `TextDocument`.
      *  May not match line number in PDF due to binary data!
      */
     public lineNbr: number,   
@@ -93,16 +96,16 @@ export class XrefInfoMatrix {
    * (all sections + sub-sections):
    * - 1st index = object number (all generation numbers)
    * - 2nd index = file revision: 
-   *     * 0 = original PDF
-   *     * 1 = oldest (1st) revision (incremental update)
-   *     * 2 = 2nd oldest revision, etc.
+   *     - 0 = original PDF
+   *     - 1 = oldest (1st) revision (incremental update)
+   *     - 2 = 2nd oldest revision, etc.
    */
   private matrix: EntryNode[][] = [];
 
   /**
    * total number of file revisions in the PDF
    */
-  private maxRevision: number = 0;
+  private maxRevision = 0;
 
   /** 
    * Set of diagnostics generated when building cross-reference 
@@ -119,10 +122,10 @@ export class XrefInfoMatrix {
    * @param uri - filename (will have ".csv" appended)
    */
   public saveToCSV(uri: DocumentUri): void {
-    let csv: string = ""; // CSV = lines with "\n"
+    let csv = ""; // CSV = lines with "\n"
 
     // Add title row
-    let line: string = `"Object Number","Original"`;
+    let line = `"Object Number","Original"`;
     for (let i = 1; i < this.maxRevision; i++) {
       line = line + `,"Revision ${i}"`;
     }
@@ -171,6 +174,8 @@ export class XrefInfoMatrix {
   /** 
    * Has this Object Number (with ANY generation number) ever been explicitly defined 
    * as free or in-use in any sub-section of any revision?
+   * @param objectNumber - PDF object number (> 0)
+   * @returns true iff this object has been explicitly defined in any revision as free or in-use
    */
   public isObjectNumberValid(objectNumber: number): boolean {
     return this.matrix[objectNumber] !== undefined;
@@ -180,12 +185,15 @@ export class XrefInfoMatrix {
    * Was this object ID (object number and generation number pair) ever defined as in-use?
    * This means `X Y obj`...`endobj` should exist somewhere in the PDF, even if it is free in the
    * final version PDF.
+   * @param objectNumber - PDF object number > 0
+   * @param generationNumber - PDF generation number >= 0
+   * @returns true iff this specific object ID was defined as an in-use object in any revision
    */
   public isObjectIDInUse(objectNumber: number, generationNumber: number): boolean {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if (e && (generationNumber === e.generationNumber) && e.inUse) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
             return true;
         }
       }
@@ -206,13 +214,9 @@ export class XrefInfoMatrix {
     let o: EntryNode[];
     let e: EntryNode;
     for (o of this.matrix) {
-      if (o) {
-        for (e of o) {
-          if (e) {
-            if ((byteOffset === e.first) && (generationNumber === e.generationNumber) && (e.inUse == (flag === "n"))) {
-                return e.objectNum;
-            }
-          }
+      for (e of o) {
+        if ((byteOffset === e.first) && (generationNumber === e.generationNumber) && (e.inUse === (flag === "n"))) {
+            return e.objectNum;
         }
       }
     }
@@ -222,6 +226,8 @@ export class XrefInfoMatrix {
   /** 
    * Was this **object ID** (object number and generation number pair) ever defined as in-use?
    * This means a `X Y obj` should also exist in PDF. 
+   * @param objectNumber  - a PDF object number (> 0)
+   * @param generationNumber - a PDF generation number (>= 0) 
    * 
    * @returns the byte offset in the PDF or -1 if not found.
    * This PDF byte offset then needs to be converted to a VSCode line number to estimate where 
@@ -231,7 +237,7 @@ export class XrefInfoMatrix {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if (e && (generationNumber === e.generationNumber) && e.inUse) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
             return e.first;
         }
       }
@@ -240,6 +246,8 @@ export class XrefInfoMatrix {
   }
 
   /**
+   * @param objectNumber  - a PDF object number (> 0)
+   * @param generationNumber - a PDF generation number (>= 0) 
    * @returns the _first_ cross reference section entry line number for a given Object ID (object number and 
    * generation number pair, such as from `X Y R` or `X Y obj`). Returns -1 if no match.
    */
@@ -247,7 +255,7 @@ export class XrefInfoMatrix {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if (e && (generationNumber === e.generationNumber) && e.inUse) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
             return e.lineNbr;
         }
       }
@@ -255,7 +263,9 @@ export class XrefInfoMatrix {
     return -1;
   }
 
-  /** 
+  /**
+   * @param objectNumber  - a PDF object number (> 0)
+   * @param generationNumber - a PDF generation number (>= 0) 
    * @returns Get the complete list of in-use object ID's across all revisions. 
    * Might be empty array `[]` if the object ID was not in any cross reference section. 
    */
@@ -264,7 +274,7 @@ export class XrefInfoMatrix {
     if (this.matrix[objectNumber] !== undefined) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
-          if (e && (generationNumber === e.generationNumber) && e.inUse) {
+          if ((generationNumber === e.generationNumber) && e.inUse) {
             entries.push(e);
         }
       }
@@ -273,6 +283,7 @@ export class XrefInfoMatrix {
   }
 
   /** 
+   * @param objectNumber  - a PDF object number (> 0)
    * @returns Get the complete revision list of an object's changes across all revisions. 
    * Might be empty array `[]` if the object number was not in any cross reference section. 
    */
@@ -287,7 +298,7 @@ export class XrefInfoMatrix {
    * Starts from TOP of the PDF for zero-based revision numbering.
    * @param pdfFile - text of a PDF file
    */
-  public mergeAllXrefSections(pdfFile: TextDocument) {
+  public mergeAllXrefSections(pdfFile: TextDocument): void {
     let revision = 0;
     let pdf = pdfFile.getText();
 
@@ -376,7 +387,7 @@ export class XrefInfoMatrix {
    * @param xref - the text of the cross-reference section (from VSCode so any binary data
    *     may be messed up - but there shouldn't be any!) 
    */
-  private addXrefSection(startLineNbr: number, revision: number, xref: string) {
+  private addXrefSection(startLineNbr: number, revision: number, xref: string): void {
     let currentObjectNum: number | null = null;
     let entryCount: number | null = null;
     let nextFreeObj: number | null = null; // Free list always starts with object 0
@@ -420,7 +431,7 @@ export class XrefInfoMatrix {
       if (entryPatternMatch && (entryPatternMatch.length === 4)) {
         const genNum = parseInt(entryPatternMatch[2]);
         const letter = entryPatternMatch[3];
-        if (currentObjectNum === null || entryCount === null || entryCount < 0 || currentObjectNum < 0) {
+        if (currentObjectNum == null || entryCount == null || entryCount < 0 || currentObjectNum < 0) {
           this.diagnostics.push({
             severity: DiagnosticSeverity.Error,
             message: `Unexpected xref entry without a preceding valid subsection marker: ${entryStr}`,
@@ -434,7 +445,7 @@ export class XrefInfoMatrix {
         // Check chaining of free list (singly linked list by \d{10} object numbers)
         if (letter === "f") {
           const freeObjNumber = parseInt(entryPatternMatch[1]);
-          if (nextFreeObj && (nextFreeObj != currentObjectNum)) {
+          if (nextFreeObj && (nextFreeObj !== currentObjectNum)) {
             this.diagnostics.push({
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
@@ -457,7 +468,7 @@ export class XrefInfoMatrix {
         if (!this.matrix[currentObjectNum]) {
           this.matrix[currentObjectNum] = [];
           // Check if very first object 0 in revision 0 of original PDF had correct free list 
-          if ((currentObjectNum == 0) && (genNum !== 65535)) {
+          if ((currentObjectNum === 0) && (genNum !== 65535)) {
             this.diagnostics.push({
               severity: DiagnosticSeverity.Warning,
               range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
@@ -468,7 +479,7 @@ export class XrefInfoMatrix {
         }
 
         // Because of split("\n") above, the "\n" is removed so -1!!
-        if (trueLen != 19) {
+        if (trueLen !== 19) {
           this.diagnostics.push({
             severity: DiagnosticSeverity.Warning,
             range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, 20) },
@@ -481,7 +492,7 @@ export class XrefInfoMatrix {
         this.matrix[currentObjectNum][revision] = entry;
 
         entryCount--;
-        if (entryCount <= 0) entryCount = null;
+        if (entryCount <= 0) { entryCount = null; }
         currentObjectNum++;
         startLineNbr++;
         continue;
@@ -489,7 +500,7 @@ export class XrefInfoMatrix {
 
       const subsectionMatch = entryStr.match(/\b(\d+) (\d+)\b/);
 
-      if (subsectionMatch && (subsectionMatch.length == 3)) {
+      if (subsectionMatch && (subsectionMatch.length === 3)) {
         const newCurrentObjectNum = parseInt(subsectionMatch[1], 10);
         const newEntryCount = parseInt(subsectionMatch[2], 10);
 
@@ -527,7 +538,7 @@ export class XrefInfoMatrix {
           continue;
         }
 
-        if ((entryCount !== null) && (entryCount > 0)) {
+        if ((entryCount != null) && (entryCount > 0)) {
           this.diagnostics.push({
             severity: DiagnosticSeverity.Error,
             message: `Expected ${entryCount} more entries before this subsection marker: ${entryStr}`,
@@ -543,7 +554,7 @@ export class XrefInfoMatrix {
     } // for-each line in this cross reference table
 
     // Was free list terminated with an object number of 0?
-    if (nextFreeObj && (nextFreeObj != 0)) {
+    if (nextFreeObj && (nextFreeObj !== 0)) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Warning,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
@@ -553,7 +564,7 @@ export class XrefInfoMatrix {
     }
 
     // Were there too few entries according to last subsection marker?
-    if ((entryCount !== null) && (entryCount > 0)) {
+    if ((entryCount != null) && (entryCount > 0)) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
         message: `Expected ${entryCount} more entries before end of cross reference table`,

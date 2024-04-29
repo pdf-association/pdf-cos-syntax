@@ -42,18 +42,20 @@ export default class PDFObject {
     this._endStreamOffset = stmEndOffset;
 
     const match = obj.match(this._objectIdentifier);
-    if (match && (match.length == 3)) {
+    if (match && (match.length === 3)) {
       this._objectNumber = parseInt(match[1]);
       this._generationNumber = parseInt(match[2]);
     }
-    else 
+    else {
       throw new Error(`Could not find object ID in ${obj.slice(0,10)}!`);
+    }
 
     if (stmStartOffset !== -1) {
       if ((stmStartOffset >= stmEndOffset) ||
           (stmStartOffset <= start) ||
-          (stmEndOffset > this._endOffset)) 
+          (stmEndOffset > this._endOffset)) {
         throw new Error(`Stream offsets are invalid for object ${this.getObjectID()}}!`);
+      }
     }
   }
 

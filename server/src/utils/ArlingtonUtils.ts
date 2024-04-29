@@ -14,13 +14,14 @@
  */
 'use strict';
 
-import { 
-  ArlingtonPDFModel, 
-  AlringtonItem 
-} from "../models/ArlingtonPDFModel";
+import { ArlingtonPDFModel } from "../models/ArlingtonPDFModel";
+import type { AlringtonItem } from "../models/ArlingtonPDFModel";
+
+import type {
+  CompletionItem
+} from "vscode-languageserver/node";
 
 import {
-  CompletionItem,
   CompletionItemKind,
   MarkupKind,
 } from "vscode-languageserver/node";
@@ -38,8 +39,8 @@ export function DictKeyCodeCompletion() : CompletionItem[] {
 
   let k: AlringtonItem;
   for (k of ArlingtonPDFModel) {
-    if (k.Key.includes("*")) continue; // skip wildcards
-    const alreadyExist = dictKeys.find((obj) => { return obj.label == k.Key; });
+    if (k.Key.includes("*")) { continue; } // skip wildcards
+    const alreadyExist = dictKeys.find((obj) => { return obj.label === k.Key; });
     if (!alreadyExist) {
       dictKeys.push({
         kind: CompletionItemKind.Variable,
@@ -53,10 +54,10 @@ export function DictKeyCodeCompletion() : CompletionItem[] {
     else {
       // Multiple objects have a key with this name. Clean out the specifics.
       alreadyExist.documentation = "";
-      if (alreadyExist.detail != "Many...") {
+      if (alreadyExist.detail !== "Many...") {
         alreadyExist.detail = alreadyExist.detail + ", " + k.Object;
         // Too many objects so don't list them all
-        if (alreadyExist.detail.length > 90) alreadyExist.detail = "Many...";
+        if (alreadyExist.detail.length > 90) { alreadyExist.detail = "Many..."; }
       }
       alreadyExist.data = 0;
     }
@@ -67,16 +68,17 @@ export function DictKeyCodeCompletion() : CompletionItem[] {
 
 /**
  * Returns the list of possible name values for a given dictionary key.
+ * @param dictKey - the PDF key name
  */
 export function DictKeyValueCodeCompletion(dictKey: string) : CompletionItem[] {
   const dictKeyValues: CompletionItem[] = [];
 
   let k: AlringtonItem;
   for (k of ArlingtonPDFModel) {
-    if (k.Key.includes("*")) continue; // skip wildcards
+    if (k.Key.includes("*")) { continue; } // skip wildcards
 
     /** @todo support multi-typed keys: k.Type.includes("name") */
-    if ((k.Key == dictKey) && (k.Type == "name")) {
+    if ((k.Key === dictKey) && (k.Type === "name")) {
       const values = k.PossibleValues.slice(1, k.PossibleValues.length - 1).split(',');
       let v: string;
       for (v of values) {

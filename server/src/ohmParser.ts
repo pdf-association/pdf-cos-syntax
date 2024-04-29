@@ -16,7 +16,7 @@
 
 import * as ohm from "ohm-js";
 import * as fs from "fs";
-import { PDFToken, TOKEN_TYPES } from "./types";
+import type { PDFToken } from "./types";
 import * as path from "path";
 
 const grammarPath = path.join(
@@ -29,14 +29,14 @@ const grammar = ohm.grammar(grammarString);
 // Main entry point to Ohm parser called by LSP server
 function getTokens(text: string): PDFToken[] {
   console.log(`getTokens(..) - Ohm`);
-  let lineNbr: number = 1;
+  let lineNbr = 1;
 
   const semantics = grammar.createSemantics();
 
   semantics.addOperation("extract()", {
     _iter(...children) {
       let childTokenList: PDFToken[] = [];
-      children.forEach((child, index) => {
+      children.forEach((child, _index) => {
         const childTokens: PDFToken[] = child.extract();
         childTokenList = childTokenList.concat(childTokens);
       });
@@ -177,9 +177,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "integer",
-        content: sign
-          ? parseInt(sign.sourceString + digits.sourceString)
-          : parseInt(digits.sourceString),
+        content: parseInt(sign.sourceString + digits.sourceString)
       };
       return [token];
     },
@@ -190,10 +188,10 @@ function getTokens(text: string): PDFToken[] {
         end: this.source.endIdx,
         type: "real",
         content: parseFloat(
-          (sign ? sign.sourceString : "") +
+            sign.sourceString +
             part1.sourceString +
             dot.sourceString +
-            (part2 ? part2.sourceString : "")
+            part2.sourceString
         ),
       };
       return [token];
@@ -273,7 +271,7 @@ function getTokens(text: string): PDFToken[] {
       };
       return [token];
     },
-    comment(_1, commentText, _2) {
+    comment(_1, _commentText, _2) {
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
@@ -287,7 +285,7 @@ function getTokens(text: string): PDFToken[] {
 
   // Tokenize line-by-line
   const lines = text.split("\n");
-  let insideStream: boolean = false;
+  let insideStream = false;
   let tokenList: PDFToken[] = [];
   for (const line of lines) {
     if (insideStream) {
@@ -296,8 +294,9 @@ function getTokens(text: string): PDFToken[] {
         line.trim().startsWith("endstream") ||
         line.trim().startsWith("endobj") ||
         line.trim().match(/\\d+[ \t\f\0\r\n]+\\d+[ \t\f\0\r\n]+obj/)
-      )
+      ) {
         insideStream = false; // fallthrough and let Ohm parse this line fully to get token locations
+      }
     }
 
     if (!insideStream && line.trim().length > 0) {
@@ -313,7 +312,7 @@ function getTokens(text: string): PDFToken[] {
         // When encounter a "stream" token, skip until "endstream" (or "endobj" or "X Y obj")
         /** @todo - try a different Ohm grammar on the stream data: Content Stream, PSType4, CMap, etc. */
         const streamKeyword = lineTokens.findIndex((t: PDFToken) => { return t.type === "stream"; });
-        if (streamKeyword !== -1) insideStream = true;
+        if (streamKeyword !== -1) { insideStream = true; }
         tokenList = tokenList.concat(lineTokens);
       }
     }

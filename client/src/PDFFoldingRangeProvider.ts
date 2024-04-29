@@ -14,7 +14,8 @@
  */
 'use strict';
 
-import { FoldingRangeProvider, TextDocument, FoldingRange, ProviderResult } from 'vscode';
+import type { FoldingRangeProvider, TextDocument,  ProviderResult } from 'vscode';
+import {FoldingRange } from 'vscode';
 
 export class PDFFoldingRangeProvider implements FoldingRangeProvider {
   provideFoldingRanges(document: TextDocument): ProviderResult<FoldingRange[]> {

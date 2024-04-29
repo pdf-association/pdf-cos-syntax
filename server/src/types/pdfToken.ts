@@ -15,7 +15,7 @@
 'use strict';
 
 
-/** @public Ohm parser semantic token object */
+/** Ohm parser semantic token object */
 export interface PDFToken {
   /** the type of semantic token */
   type: string;

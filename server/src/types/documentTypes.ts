@@ -14,20 +14,23 @@
  */
 'use strict';
 
-import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
-import { Diagnostic, DocumentSymbol } from 'vscode-languageserver';
-import { PDFToken } from './pdfToken';
+import type { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
+import type { Diagnostic, DocumentSymbol } from 'vscode-languageserver';
+import type { PDFToken } from './pdfToken';
 
 
-/** @public settings for VSCode extension */
+/** 
+ * settings for VSCode extension 
+ */
 export interface PDFCOSSyntaxSettings {
+
   /** maximum number of diagnostic problems reported */
   maxNumberOfProblems: number;
 
   /** 
    * whether or not to ignore premable (before `%PDF-x.y`) and 
    * postamble (after last `%%EOF`) junk bytes 
-   * */
+   */
   ignorePreambleAndPostamble: boolean;
 
   /**
@@ -41,7 +44,9 @@ export interface PDFCOSSyntaxSettings {
 }
 
 
-/** @public cached data about each PDF document that is open in VSCode */
+/** 
+ * cached data about each PDF document that is open in VSCode 
+ */
 export interface PDFDocumentData {
   /** current settings */
   settings: PDFCOSSyntaxSettings;

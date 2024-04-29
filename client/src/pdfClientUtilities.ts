@@ -31,18 +31,19 @@ import Ascii85 = require('ascii85');
  */
 function _EOLtoBytes(eol: vscode.EndOfLine): number {
   switch (eol) {
-		case vscode.EndOfLine.CRLF: return 2;
-		case vscode.EndOfLine.LF: return 1;
-    default: return 1; // should never happen! Code rot?? 
+		case vscode.EndOfLine.CRLF: { return 2; }
+		case vscode.EndOfLine.LF:   { return 1; }
+    default: { return 1; } // should never happen! Code rot?? 
   }
 }
 
 
 /**
  * Converts a buffer of bytes to PDF `/ASCII85Decode` encoding.
+ * @param bytes - the Buffer of bytes to encode as ASCII-85
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
-  const a85encoded = Ascii85.encode(bytes, { delimiter: false });
+  const a85encoded: string = Ascii85.encode(bytes, { delimiter: false });
   const res = _stringToChunks(a85encoded + '~>', 70);
   // console.log(`_convertToAscii85filter: ${res}`); 
   return res;
@@ -52,6 +53,8 @@ export function convertToAscii85Filter(bytes: Buffer): string[] {
 /**
  * Converts a buffer of `/ASCII85Decode` encoded data back
  * to raw bytes as a UTF-8 string. Requires data end with "~\>".
+ * @param a85 - an ASCIII-85 encoded PDF string
+ * @returns string of decoded data (could be empty)
  */
 export function convertFromAscii85Filter(a85: string): string {
   try {
@@ -65,7 +68,7 @@ export function convertFromAscii85Filter(a85: string): string {
     // console.log(`_convertFromAscii85filter: ${s}`); 
     return s;
   }
-  catch (error) {
+  catch (error: any) {
     console.error(`_convertFromAscii85filter: Error ${error}`); 
     vscode.window.showErrorMessage(`ASCII-85 decompression error: ${error}!`);
     return '';
@@ -94,11 +97,12 @@ function _stringToChunks(string: string, chunkSize: number): string[] {
 /**
  * Converts a buffer of bytes to `/ASCIIHexDecode` encoding.
  * Wraps at 32 characters (i.e. every 16 bytes of input data). 
+ * @param data - data buffer to convert to ASCII-Hex
+ * @returns ASCII-Hex encoded string 
  */
 export function convertToAsciiHexFilter(data: Buffer): string[] {
-  let s: string = "";
-  let i: number;
-  for (i = 0; i < data.length; i++) {
+  let s = "";
+  for (let i = 0; i < data.length; i++) {
     const b = data[i];
     s = s + b.toString(16);
   }
@@ -112,6 +116,8 @@ export function convertToAsciiHexFilter(data: Buffer): string[] {
 /**
  * Converts `/ASCIIHexDecode` encoded data to raw bytes as a UTF-8 string.
  * Fails on any non-hex code or whitespace characters. Requires data end with '\>'
+ * @param aHex - ASCII-Hex encoded PDF string
+ * @returns string of decoded data - could be empty on error!
  */
 export function convertFromAsciiHexFilter(aHex: string): string {
   try {
@@ -121,10 +127,10 @@ export function convertFromAsciiHexFilter(aHex: string): string {
       return '';
     }
     aHex = aHex.slice(0, aHex.length - 1);  // remove EOD '>'
-    let i: number = 0;
-    let res: string = '';
+    let i = 0;
+    let res = '';
     while (i < aHex.length) {
-      if ('0123456789abcdefABCDEF'.indexOf(aHex[i]) !== -1) {
+      if ('0123456789abcdefABCDEF'.includes(aHex[i])) {
         if (i + 1 < aHex.length) {
           const h: number = parseInt(aHex.slice(i, i + 2), 16);
           res = res + String.fromCharCode(h);
@@ -135,7 +141,7 @@ export function convertFromAsciiHexFilter(aHex: string): string {
           res = res + String.fromCharCode(h);
         }
       }
-      else if (' \t\r\n\f\0'.indexOf(aHex[i]) === -1) {
+      else if (!' \t\r\n\f\0'.includes(aHex[i])) {
         // Bad data!
         console.error(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
         vscode.window.showErrorMessage(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
@@ -146,7 +152,7 @@ export function convertFromAsciiHexFilter(aHex: string): string {
     // console.log(`convertFromAsciiHexFilter: ${res}`); 
     return res;
   }
-  catch (error) {
+  catch (error: any) {
     console.error(`convertFromAsciiHexFilter: Error ${error}`); 
     vscode.window.showErrorMessage(`Error: ASCII-Hex ${error}!`);
     return '';
@@ -170,8 +176,8 @@ export function convertDataToAscii85Stream(
   eol: vscode.EndOfLine,
   data: Buffer, 
   objNum: number, 
-  genNum: number = 0, 
-  otherFilters: string = "", 
+  genNum = 0, 
+  otherFilters = "", 
   otherEntries: string[] = []
 ): string[] {
   let obj: string[] = [];
@@ -210,8 +216,8 @@ export function convertDataToAsciiHexStream(
   eol: vscode.EndOfLine,
   data: Buffer, 
   objNum: number, 
-  genNum: number = 0, 
-  otherFilters: string = "", 
+  genNum = 0, 
+  otherFilters = "", 
   otherEntries: string[] = []
 ): string[] {
   let obj: string[] = [];
@@ -235,16 +241,16 @@ export function convertDataToAsciiHexStream(
 
 
 /**
-  * Converts a PDF literal string to a PDF hex string.
-  * 
-  * @param literal - PDF literal string including `(` and `)`
-  * @returns a PDF hex string including `<` and `>`
-  */
+ * Converts a PDF literal string to a PDF hex string.
+ * 
+ * @param literal - PDF literal string including `(` and `)`
+ * @returns a PDF hex string including `<` and `>`
+ */
 export function convertLiteralToHexString(literal: string): string {
-  let hex: string = "<";
+  let hex = "<";
   const lit = literal.slice(1, literal.length - 1); // remove "(" and ")"
-  let i: number = 0; 
-  let ch: number = -1;
+  let i = 0; 
+  let ch = -1;
   while (i < lit.length) {
     if (lit[i] === "\\") {
       // Literal string escape sequence - Table 3 ISO 32000-2:2020
@@ -262,22 +268,23 @@ export function convertLiteralToHexString(literal: string): string {
       }
       else {
         switch (lit[i]) {
-          case "n": ch = 0x0A; break; // line feed
-          case "t": ch = 0x09; break; // horizontal tab
-          case "r": ch = 0x0D; break; // carriage return
-          case "b": ch = 0x08; break; // backspace
-          case "f": ch = 0x0C; break; // form feed
-          case "(": ch = 0x28; break; // left paren
-          case ")": ch = 0x29; break; // right paren
-          case "\\": ch = 0x5C; break; // reverse solidus
+          case "n":  { ch = 0x0A; break; } // line feed
+          case "t":  { ch = 0x09; break; } // horizontal tab
+          case "r":  { ch = 0x0D; break; } // carriage return
+          case "b":  { ch = 0x08; break; } // backspace
+          case "f":  { ch = 0x0C; break; } // form feed
+          case "(":  { ch = 0x28; break; } // left paren
+          case ")":  { ch = 0x29; break; } // right paren
+          case "\\": { ch = 0x5C; break; } // reverse solidus
           case "\r": { // EOL or EOL pair - ignore
             ch = -1; 
-            if (lit[i + 1] == "\n") 
+            if (lit[i + 1] === "\n") { 
               i++;
+            }
             break; 
           } 
-          case "\n": ch = -1; break; // EOL - ignore
-          default: ch = -1; break; // ignore unknown escapes
+          case "\n": { ch = -1; break; } // EOL - ignore
+          default:   { ch = -1; break; } // ignore unknown escapes
         }
       }
     }
@@ -285,8 +292,9 @@ export function convertLiteralToHexString(literal: string): string {
       ch = lit[i].charCodeAt(0);
     }
 
-    if (ch !== -1) 
+    if (ch !== -1) {
       hex = hex + ch.toString(16).padStart(2, '0');
+    }
     i++;
   }
   hex = hex + ">";
@@ -298,31 +306,31 @@ export function convertLiteralToHexString(literal: string): string {
 /**
   * Converts a PDF hex string to a literal string, using escape codes for unprintables.
   * 
-  * @param literal - PDF hex string including `<` and `>`
+  * @param hexString - PDF hex string including `<` and `>`
   * @returns a PDF literal string including `(` and `)`
   */
 export function convertHexToLiteralString(hexString: string): string {
   let lit = "(";
   const hex = hexString.slice(1, hexString.length - 1); // remove "<" and ">"
-  let i: number = 0; 
-  let ch: number;
+  let i = 0; 
   while (i < hex.length) {
     const h = hex.slice(i, i + 2);
     try {
       const ch = parseInt(h, 16);
       switch (ch) {
-        case 0x0A: lit = lit + "\\n"; break; // line feed
-        case 0x0D: lit = lit + "\\r"; break; // carriage return
-        case 0x08: lit = lit + "\\b"; break; // backspace
-        case 0x0C: lit = lit + "\\f"; break; // form feed
-        case 0x5C: lit = lit + "\\\\"; break; // reverse solidus
-        case 0x28: lit = lit + "\\("; break; // left paren
-        case 0x29: lit = lit + "\\)"; break; // right paren
+        case 0x0A: { lit = lit + "\\n"; break;  } // line feed
+        case 0x0D: { lit = lit + "\\r"; break;  } // carriage return
+        case 0x08: { lit = lit + "\\b"; break;  } // backspace
+        case 0x0C: { lit = lit + "\\f"; break;  } // form feed
+        case 0x5C: { lit = lit + "\\\\"; break; } // reverse solidus
+        case 0x28: { lit = lit + "\\("; break;  } // left paren
+        case 0x29: { lit = lit + "\\)"; break;  } // right paren
         default: {
-          if ((ch < 0x20) || (ch > 127))
+          if ((ch < 0x20) || (ch > 127)) {
             lit = lit + "\\" + ch.toString(8); // unprintable so do as octal
-          else
+          } else {
             lit = lit + String.fromCharCode(ch); // printable
+          }
           break;
         }
       }
@@ -446,7 +454,7 @@ export async function convertImageToAsciiHexDCT(
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+        if ((info.width !== undefined) && (info.height !== undefined)) {
           width = info.width;
           height = info.height;
         }
@@ -488,6 +496,10 @@ export async function convertImageToAsciiHexDCT(
  * Convert any image file supported by the NPM module "sharp" to an Image XObject 
  * as an ASCII-85 compressed raw pixels (i.e. just `/ASCII85Decode` filter),
  * The PDF Image XObject is returned as `string[]` without `\n`.
+ * 
+ * @param objNum - the object ID object number 
+ * @param genNum - the object ID generation number
+ * @param eol - current editor EOL setting for calculating lengths
  */ 
 export async function convertImageToRawAscii85(
   objNum: number, 
@@ -564,6 +576,9 @@ export async function convertImageToRawAscii85(
  * Convert any image file supported by the NPM module "sharp" to an Image XObject 
  * as ASCII-Hex compressed raw pixels (i.e. just `/ASCIIHexDecode` filter).
  * The PDF Image XObject is returned as `string[]` without `\n`.
+ * @param objNum - PDF object number for stream
+ * @param genNum - PDF generation number for stream
+ * @param eol - EOL to use based on VSCode editor setting
  */ 
 export async function convertImageToRawAsciiHex(
   objNum: number, 
@@ -640,6 +655,9 @@ export async function convertImageToRawAsciiHex(
 /**
  * Convert arbitary binary data loaded directly from a file to `/ASCII85Decode`
  * compressed stream object. The PDF stream object is returned as `string[]` without `\n`.
+ * @param objNum - PDF object number for stream
+ * @param genNum - PDF generation number for stream
+ * @param eol - EOL to use based on VSCode editor setting
  */
 export async function convertDataToAscii85(
   objNum: number, 
@@ -673,7 +691,7 @@ export async function convertDataToAscii85(
       });
     return pdfObj;
   }
-  catch (error) {
+  catch (error: any) {
     console.error(`Failed to convert to ASCII-85. Error: ${error}`);
     vscode.window.showErrorMessage(`Failed to convert to ASCII-85. Error: ${error}`);
     return [];
@@ -684,6 +702,9 @@ export async function convertDataToAscii85(
 /**
  * Convert arbitary binary data loaded directly from a file to an `/ASCIIHexDecode` 
  * compressed stream object. The PDF stream object is returned as `string[]` without `\n`.
+ * @param objNum - PDF object number for PDF stream
+ * @param genNum - generation number for PDF stream
+ * @param eol - EOL based on VSCode editor
  */
 export async function convertDataToAsciiHex(
   objNum: number, 
@@ -730,6 +751,7 @@ export async function convertDataToAsciiHex(
  * Note that Adobe does not support uncompressed object streams!
  * Does **NOT** check if object is just an indirect reference (which is not permitted in object streams).
  * 
+ * @param eol - EOL based on VSCode editor
  * @param inp - lines from input PDF comprising 1 or more full PDF indirect objects
  * @returns the PDF object stream is returned as `string[]` without `\n`.
  */ 
@@ -737,7 +759,7 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
   const inpLinesLen = inp.length; // number of lines
   const inpString = inp.join('\n'); // input lines as a single string
 
-  if ((inpLinesLen === 0) || (inpString.trim().length === 0)) return []; 
+  if ((inpLinesLen === 0) || (inpString.trim().length === 0)) { return []; } 
 
   const stream = inpString.match(/[ \t\r\n\f\0>]stream[ \t\r\n\f\0]/g);
   const endstream = inpString.match(/[ \t\r\n\f\0]endstream[ \t\r\n\f\0]/g);
@@ -759,14 +781,14 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
   }
 
   // Object stream required entries and body
-  let N: number = -1;
-  let firstLine: string = '';
+  let N = -1;
+  let firstLine = '';
   const objStm: string[] = [];
 
   // convert indirect objects to object stream
-  let firstObjectNum: number = -1;
+  let firstObjectNum = -1;
   let i: number;
-  let inObj: boolean = false;
+  let inObj = false;
   let m: RegExpMatchArray | null;
   for (i = 0; i < inpLinesLen; i++) {
     if (inp[i].trim().length === 0) {
@@ -775,8 +797,8 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
     else if ((m = inp[i].match(/(\d+)[ \t\r\n\f\0]\d+[ \t\r\n\f\0]obj/))) {
       // Matched an "X Y obj"
       inObj = true;
-      if (firstObjectNum < 0) firstObjectNum = parseInt(m[1]);
-      firstLine = firstLine + ' ' + m[1] + ' ' + objStm.join('\n').length;
+      if (firstObjectNum < 0) { firstObjectNum = parseInt(m[1]); }
+      firstLine = firstLine + ' ' + m[1] + ' ' + objStm.join('\n').length.toString();
       N++;
     }
     else if (inp[i].match(/endobj/)) {
@@ -818,7 +840,9 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
  * Convert a conventional cross-reference table to an **UNCOMPRESSED** cross-reference stream.
  * Note that Adobe does not support uncompressed cross-reference streams!
  * Does **NOT** check validity of the input conventional cross-reference table!!!
- * 
+ * @param objStmNum - object number for the object stream
+ * @param genNum - generation number for the object stream
+ * @param eol - EOL to use (based on VSCode)
  * @param inp - lines from input PDF comprising a conventional cross-reference table starting
  *              with `xref` keyword up to and including `%%EOF`
  * @returns the PDF cross reference stream is returned as `string[]` without `\n`.
@@ -832,7 +856,7 @@ export function xrefToXRefStream(
   const inpLinesLen = inp.length; // number of lines
   const inpString = inp.join('\n'); // input lines as a single string
 
-  if ((inpLinesLen === 0) || (inpString.trim().length === 0)) return []; 
+  if ((inpLinesLen === 0) || (inpString.trim().length === 0)) { return []; }
 
   if (!inp[0].startsWith("xref")) {
     console.error(`Conventional cross reference table must start with 'xref'!`);
@@ -863,12 +887,12 @@ export function xrefToXRefStream(
     const inpXrefEntries = inp.slice(1, trailerIdx);
 
     // Cross reference stream data
-    let indexStr: string = '';
-    const startxrefOffset: number = 0;
+    let indexStr = '';
+    const startxrefOffset = 0;
     const xrefEntries: string[] = []; // the ASCII-Hex encoded entries as per Table 18
 
-    let objNum: number = -1;
-    let objCount: number = -1;
+    let objNum = -1;
+    let objCount = -1;
     let m: RegExpMatchArray | null;
     for (const e of inpXrefEntries) {
       if ((objNum >= 0) && (objCount > 0) && ((m = e.match(/^(\d{10}) (\d{5}) f\b/)))) {
@@ -898,16 +922,16 @@ export function xrefToXRefStream(
     // Find all the lines making up the trailer dictionary (immediately after 'trailer' keyword).
     // Remove first `<<` and final `>>` then copy everything else to output
     let trailerLines = inp.slice(trailerIdx + 1, inp.length - 3);
-    if (trailerLines[0].trim() === '<<') 
+    if (trailerLines[0].trim() === '<<') {
       trailerLines = trailerLines.slice(1); // common case
-    else {
+    } else {
       let t = trailerLines.join('\n');
       t = t.replace('<<', '');
       trailerLines = t.split('\n');
     }
-    if (trailerLines[trailerLines.length - 1].trim() === '>>') 
+    if (trailerLines[trailerLines.length - 1].trim() === '>>') {
       trailerLines = trailerLines.slice(0, trailerLines.length - 2); // common case
-    else {
+    } else {
       let t = trailerLines.join('\n');
       for (let i = t.length; i > 0; i--) {
         if ((t[i] === '>') && (t[i - 1] === '>')) {

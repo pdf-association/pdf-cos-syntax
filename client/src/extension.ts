@@ -24,15 +24,11 @@ import * as pdf from "./pdfClientUtilities";
 import * as sankey from "./sankey-webview";
 
 // Import shared definitions from server-side
-import { TOKEN_TYPES, TOKEN_MODIFIERS, PDFToken, PDFCOSSyntaxSettings } from "../../server/src/types";
+import type { PDFToken, PDFCOSSyntaxSettings } from "../../server/src/types";
+import { TOKEN_TYPES, TOKEN_MODIFIERS } from "../../server/src/types";
 
-import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind,
-} from "vscode-languageclient/node";
-
+import type { LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
+import { LanguageClient, TransportKind } from "vscode-languageclient/node";
 import { PDFFoldingRangeProvider } from "./PDFFoldingRangeProvider";
 
 /////////////////////////////////////////////////////////////////////
@@ -367,9 +363,10 @@ function updateStatusBarItem(): void {
 
 /**
  * Returns the number of selected lines in the specified editor.
+ * @param editor - VSCode text editor 
  */
-function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined) {
-  let lines: number = 0;
+function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined): number {
+  let lines = 0;
   if (editor) {
     lines = editor.selections.reduce(
       (prev, curr) => prev + (curr.end.line - curr.start.line),
@@ -381,11 +378,13 @@ function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined) {
 
 /**
  * Action to peform when custom status bar item is clicked
+ * @param _context - VSCode context (not used)
+ * @param uri - the URI of the document
  */
 export function statusBarClick(
-  context: vscode.ExtensionContext,
+  _context: vscode.ExtensionContext,
   uri: vscode.Uri
-) {
+): void {
   const lines = getNumberOfSelectedLines(vscode.window.activeTextEditor);
   vscode.window.showInformationMessage(`${lines} line(s) selected.`);
 }
@@ -402,7 +401,7 @@ export async function commandHandler(
   uri: vscode.Uri
 ) {
   const editor = vscode.window.activeTextEditor;
-  if (editor == undefined) return;
+  if (editor === undefined) { return; }
   const selection = editor.selection;
   const inp = editor.document.getText(editor.selection);
 
@@ -414,65 +413,78 @@ export async function commandHandler(
   const objNum = 1;
   const genNum = 0;
 
-  let out: string = "";
+  let out = "";
 
   switch (option) {
-    case "exportXrefAsCSV":
+    case "exportXrefAsCSV": {
       await pdf.exportXrefAsCSV().then();
       break;
-    case "imageA85DCT":
+    }
+    case "imageA85DCT": {
       await pdf.convertImageToAscii85DCT(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");
       });
       break;
-    case "imageAHexDCT":
+    }
+    case "imageAHexDCT": {
       await pdf.convertImageToAsciiHexDCT(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");
       });
       break;
-    case "imageA85":
+    }
+    case "imageA85": {
       await pdf.convertImageToRawAscii85(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");
       });
       break;
-    case "imageAHex":
+    }
+    case "imageAHex": {
       await pdf.convertImageToRawAsciiHex(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");
       });
       break;
-    case "dataA85":
+    }
+    case "dataA85": {
       await pdf.convertDataToAscii85(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");
       });
       break;
-    case "dataAHex":
+    }
+    case "dataAHex": {
       await pdf.convertDataToAsciiHex(objNum, genNum, eol).then((pdf) => {
         out = pdf.join("\n");
       });
       break;
-    case "2objectStream":
+    }
+    case "2objectStream": {
       out = pdf.objectsToObjectStream(eol, inp.split(`\n`)).join("\n");
       break;
-    case "2XrefStream":
+    }
+    case "2XrefStream": {
       out = pdf
         .xrefToXRefStream(objNum, genNum, eol, inp.split(`\n`))
         .join("\n");
       break;
-    case "2AsciiHex":
+    }
+    case "2AsciiHex": {
       out = pdf.convertToAsciiHexFilter(Buffer.from(inp, "utf8")).join(`\n`);
       break;
-    case "2Ascii85":
+    }
+    case "2Ascii85": {
       out = pdf.convertToAscii85Filter(Buffer.from(inp, "utf8")).join(`\n`);
       break;
-    case "FromAsciiHex":
+    }
+    case "FromAsciiHex": {
       out = pdf.convertFromAsciiHexFilter(inp);
       break;
-    case "FromAscii85":
+    }
+    case "FromAscii85": {
       out = pdf.convertFromAscii85Filter(inp);
       break;
+    }
     case "Literal2Hex": {
       // Need to select a full literal string incl. `(`/`)`
-      if (inp[0] == "(" && inp[inp.length - 1] === ")")
+      if (inp[0] === "(" && inp[inp.length - 1] === ")")
         out = pdf.convertLiteralToHexString(inp);
       break;
     }
@@ -482,8 +494,9 @@ export async function commandHandler(
         out = pdf.convertHexToLiteralString(inp);
       break;
     }
-    default:
+    default: {
       break;
+    }
   }
 
   // Replace highlighted text with output, if something was returned
@@ -496,6 +509,6 @@ export async function commandHandler(
 
 
 export function deactivate(): Thenable<void> | undefined {
-  if (!client) return undefined;
+  if (!client) { return undefined; }
   return client.stop();
 }

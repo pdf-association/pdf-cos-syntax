@@ -39,7 +39,8 @@ import {
   DocumentUri,
 } from "vscode-languageserver/node";
 
-import { TextDocument, Range } from "vscode-languageserver-textdocument";
+import type { Range } from "vscode-languageserver-textdocument";
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   isFileFDF,
@@ -53,9 +54,7 @@ import {
 
 import { 
   hoverFlags32_to_binary,
-  hoverHexStringToUTF8,
-  hoverNormalizedPDFname,
-  hoverPDFDateString
+  hoverHexStringToUTF8
 } from './utils/pdfHoverUtils';
 
 import {
@@ -66,11 +65,10 @@ import {
 import { debug } from "console";
 import { TextEncoder } from "util";
 import PDFParser, { PDFSectionType } from "./parser/PdfParser";
-import { PDFCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
+import type { PDFCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/pdfSemanticTokens';
-import PDFObject from './models/PdfObject';
+import type PDFObject from './models/PdfObject';
 import * as ohmParser from './ohmParser';
-import { isUint8Array } from 'util/types';
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
@@ -121,7 +119,7 @@ function updatePDFDataBasedOnEdit(document: TextDocument, pdfData: PDFDocumentDa
   }
 }
 
-function parseDocument(documentText: string) {
+function parseDocument(_documentText: string) {
   console.log(`parseDocument(...)`);
   // Your parsing logic here
   // This is just a placeholder. Replace it with your actual implementation.
@@ -214,7 +212,7 @@ connection.onInitialized(() => {
 connection.onRequest("textDocument/semanticTokens/full", (_params) => { 
   console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(_params.textDocument.uri);
-  if (!document) return null;
+  if (!document) { return null; }
   const text = document.getText();
   const tokens: PDFToken[] = ohmParser.getTokens(text);
   return tokens;
@@ -245,7 +243,7 @@ connection.onDidChangeConfiguration((_change) => {
 
 async function getDocumentSettings(): Promise<PDFCOSSyntaxSettings> {
   console.log(`server async getDocumentSettings()`);
-  const promise = new Promise<PDFCOSSyntaxSettings>((resolve, reject) => {
+  const promise = new Promise<PDFCOSSyntaxSettings>((resolve, _reject) => {
     const settings: PDFCOSSyntaxSettings = defaultSettings; 
     resolve(settings);
   });
@@ -268,9 +266,9 @@ connection.onCompletion(
   (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
     // The pass parameter contains the position of the text document in
     // which code-complete got requested. 
-    const cursor = _textDocumentPosition.position;
+    const _cursor = _textDocumentPosition.position;
     const doc = documents.get(_textDocumentPosition.textDocument.uri);
-    if (!doc) return [];
+    if (!doc) { return []; }
     return DictKeyCodeCompletion();
   }
 );
@@ -299,11 +297,11 @@ connection.onDefinition(
 
     const docData = pdfDocumentData.get(params.textDocument.uri);
     const document = documents.get(params.textDocument.uri);
-    if (!docData || !docData.xrefMatrix || !document) return null;
+    if (!docData || !document) { return null; }
 
     // Fetch the semantic token at the given position
     const token = getSemanticTokenAtPosition(document, params.position);
-    if (!token) return null;
+    if (!token) { return null; }
 
     let objectNumber: number;
     let genNumber: number;
@@ -314,7 +312,7 @@ connection.onDefinition(
       case "indirectReference": {
         // X Y R
         const objMatch = lineText.match(/(\d+) (\d+)/);
-        if (!objMatch) return null;
+        if (!objMatch) { return null; }
 
         objectNumber = parseInt(objMatch[1]);
         genNumber = parseInt(objMatch[2]);
@@ -323,7 +321,7 @@ connection.onDefinition(
       case "xrefTableEntry": {
         // only for in-use entries!
         const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
-        if (!match) return null;
+        if (!match) { return null; }
 
         const offset = parseInt(match[1]);
         genNumber = parseInt(match[2]);
@@ -335,8 +333,9 @@ connection.onDefinition(
         );
         break;
       }
-      default:
+      default: {
         return null;
+      }
     }
 
     // Sanity check object ID values
@@ -355,7 +354,7 @@ connection.onDefinition(
     );
 
     // Handle degenerate condition (no locations)
-    if (targetLocations.length == 0) {
+    if (targetLocations.length === 0) {
       console.warn(
         `No indirect objects "${objectNumber} ${genNumber} obj" where found!`
       );
@@ -376,11 +375,11 @@ connection.onReferences((params): Location[] | null => {
 
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
-  if (!docData || !docData.xrefMatrix || !document) return null;
+  if (!docData || !document) { return null; }
 
   const position = params.position;
   const token = getSemanticTokenAtPosition(document, position);
-  if (!token) return null;
+  if (!token) { return null; }
 
   let objectNumber: number;
   let genNumber: number;
@@ -391,7 +390,7 @@ connection.onReferences((params): Location[] | null => {
     case "indirectObject": {
       // X Y obj
       const objMatch = lineText.match(/(\d+) (\d+)/);
-      if (!objMatch) return null;
+      if (!objMatch) { return null; }
 
       objectNumber = parseInt(objMatch[1]);
       genNumber = parseInt(objMatch[2]);
@@ -400,7 +399,7 @@ connection.onReferences((params): Location[] | null => {
     case "xrefTableEntry": {
       // only for in-use entries!
       const match = lineText.match(/\b(\d{10}) (\d{5}) n\b/);
-      if (!match) return null;
+      if (!match) { return null; }
 
       const offset = parseInt(match[1]);
       genNumber = parseInt(match[2]);
@@ -428,7 +427,7 @@ connection.onReferences((params): Location[] | null => {
   const references = findAllReferences(objectNumber, genNumber, document);
 
   // Handle degenerate condition (no references found)
-  if (references.length == 0) {
+  if (references.length === 0) {
     console.warn(
       `No indirect references "${objectNumber} ${genNumber} R" where found!`
     );
@@ -447,11 +446,11 @@ connection.onHover((params): Hover | null => {
   console.log(`connection.onHover`);
   const docData = pdfDocumentData.get(params.textDocument.uri);
   const document = documents.get(params.textDocument.uri);
-  if (!docData || !docData.xrefMatrix || !document) return null;
+  if (!docData || !document) { return null; }
 
   const position = params.position;
   const token = getSemanticTokenAtPosition(document, position);
-  if (!token) return null;
+  if (!token) { return null; }
 
   const semanticTokenText = document.getText(token.range);
   const xRefInfo = docData.xrefMatrix;
@@ -460,7 +459,7 @@ connection.onHover((params): Hover | null => {
     case "xrefTableEntry": {
       // both in-use and free
       const match = semanticTokenText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
-      if (!match) return null;
+      if (!match) { return null; }
 
       const offset = parseInt(match[1]);
       const genNum = parseInt(match[2]);
@@ -481,46 +480,48 @@ connection.onHover((params): Hover | null => {
     case "indirectReference": {
       // X Y R
       const match = semanticTokenText.match(/\b(\d+) (\d+)\b/);
-      if (!match) return null;
+      if (!match) { return null; }
 
       const objectNumber = parseInt(match[1]);
       const genNumber = parseInt(match[2]);
       const objects = findAllDefinitions(objectNumber, genNumber, document);
-      if (objects.length == 0)
+      if (objects.length === 0) {
         return {
           contents: `No object found for indirect reference "${objectNumber} ${genNumber} R"`,
         };
-      else if (objects.length == 1)
+      } else if (objects.length === 1) {
         return {
           contents: `One object found for "${objectNumber} ${genNumber} R"`,
         };
-      else
+      } else {
         return {
           contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`,
         };
+      }
       break;
     }
 
     case "indirectObject": {
       // X Y obj
       const match = semanticTokenText.match(/\b(\d+) (\d+)\b/);
-      if (!match) return null;
+      if (!match) { return null; }
 
       const objectNumber = parseInt(match[1]);
       const genNumber = parseInt(match[2]);
       const references = findAllReferences(objectNumber, genNumber, document);
-      if (references.length == 0)
+      if (references.length === 0) {
         return {
           contents: `No indirect references to object ${objectNumber} ${genNumber} found.`,
         };
-      else if (references.length == 1)
+      } else if (references.length === 1) {
         return {
           contents: `One indirect reference to object ${objectNumber} ${genNumber}`,
         };
-      else
+      } else {
         return {
           contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`,
         };
+      }
       break;
     }
 
@@ -540,18 +541,19 @@ connection.onHover((params): Hover | null => {
 
     case "bitMask": {
       const match = semanticTokenText.match(/\/(F|Ff|Flags)[ \t\r\n\f\0]([+-]?\d+)/);
-      if (!match || match.length != 3) return null;
+      if (!match || match.length !== 3) { return null; }
       return { contents: hoverFlags32_to_binary(parseInt(match[2])) };
     }
 
     case "hexString": {
       const match = semanticTokenText.match(/<([0-9a-fA-F \t\n\r\f\0]+)>/);
-      if (!match || match.length != 2) return null;
+      if (!match || match.length !== 2) { return null; }
       return { contents: hoverHexStringToUTF8(match[1]) };
     }
 
-    default:
+    default: {
       break;
+    }
   }
 
   return null;
@@ -565,7 +567,7 @@ connection.onDocumentSymbol(
   console.log(`connection.onDocumentSymbol(${params.textDocument.uri}) = outline`);
   const { textDocument } = params;
   const document = documents.get(textDocument.uri);
-  if (!document) return [];
+  if (!document) { return []; }
 
   const pdfParser = new PDFParser(document);
   const symbols: DocumentSymbol[] = [];
@@ -576,13 +578,14 @@ connection.onDocumentSymbol(
       const children: DocumentSymbol[] = [];
       if (pdfParser.hasObjectStreamInside(obj)) {
         const r3 = pdfParser.getObjectStreamRange(obj);
-        if (r3)
+        if (r3) {
           children.push({
             name: "Stream",
             kind: SymbolKind.Method,
             range: r3,
             selectionRange: r3,
           });
+        }
       }
       const r4 = pdfParser.getObjectRange(obj);
       return {
@@ -599,9 +602,10 @@ connection.onDocumentSymbol(
   // discovered in the PDF file. DON'T ASSUME because editing can break things!!
   let r1: Range;
   for (let revision = 0; revision < pdfParser.getNumRevisions(); revision++) {
-    let revisionName: string = `Revision ${revision}`;
-    if (revision === 0)
+    let revisionName = `Revision ${revision}`;
+    if (revision === 0) {
       revisionName = `Original PDF`;
+    }
     // console.group(`Revision ${revision} = ${revisionName}`);
 
     // Top level container for this revision
@@ -690,9 +694,10 @@ connection.onDocumentSymbol(
             break;
           }
 
-        default:
+        default: {
           throw new Error(`Unexpected PDF section ${section.toString()}!`);
         }
+      }
     }
 
     symbols.push(revisionSymbol);
@@ -718,6 +723,7 @@ connection.listen();
  * 3. check last line for `%%EOF`
  * 4. check conventional PDF file: `xref`, `trailer` and `startxref` keywords need to exist
  * 5. check that a conventional cross-reference section is correct for an original PDF
+ * @param textDocument - the PDF document
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   console.log(`validateTextDocument for ${textDocument.uri}`);
@@ -730,7 +736,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     end: Position,
     message: string,
     severity: DiagnosticSeverity = DiagnosticSeverity.Error
-  ) => {
+  ): void => {
     diagnostics.push({
       severity,
       range: { start, end },
@@ -863,7 +869,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     const docData = pdfDocumentData.get(textDocument.uri);
     if (
       docData &&
-      docData.xrefMatrix &&
       docData.xrefMatrix.diagnostics.length > 0
     ) {
       diagnostics = diagnostics.concat(docData.xrefMatrix.diagnostics);
@@ -873,7 +878,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
-function updateXrefMatrixForDocument(uri: DocumentUri, content: string) {
+function updateXrefMatrixForDocument(uri: DocumentUri, content: string): void {
   console.log(`updateXrefMatrixForDocument(${uri}, ...)`);
   let docData: PDFDocumentData | undefined = pdfDocumentData.get(uri);
 

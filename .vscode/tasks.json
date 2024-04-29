@@ -28,6 +28,18 @@
 			"problemMatcher": [
 				"$tsc-watch"
 			]
+		},
+		{
+			"type": "npm",
+			"script": "lint",
+			"group": "test",
+			"presentation": {
+				"panel": "dedicated",
+				"reveal": "always"
+			},
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
 		}
 	]
 }

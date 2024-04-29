@@ -14,16 +14,17 @@
  * in this material are those of the author(s) and do not necessarily
  * reflect the views of the Defense Advanced Research Projects Agency
  * (DARPA). Approved for public release.
-*/
+ */
 'use strict';
 
-import { Range, TextDocument } from "vscode-languageserver-textdocument";
-import { DocumentUri, Location, Position } from "vscode-languageserver";
+import type { Range, TextDocument } from "vscode-languageserver-textdocument";
+import type { DocumentUri, Location } from "vscode-languageserver";
+import { Position } from "vscode-languageserver";
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
 
 
 /** PDF Whitespace from Table 1, ISO 32000-2:2020 */
-const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
+// const pdfWhitespaceRegex = new RegExp(/ \\t\\r\\n\\0\\x0C/);
 
 /**
  * Find all occurrences of "X Y R" in the text for a given object ID.
@@ -56,7 +57,7 @@ export function findAllReferences(
   let match;
 
   // Find all occurrences of "X Y R" in the text
-  while ((match = referencePattern.exec(text)) !== null) {
+  while ((match = referencePattern.exec(text)) != null) {
     const position = document.positionAt(match.index);
     references.push({
       uri: document.uri,
@@ -86,7 +87,7 @@ export function findAllDefinitions(
   genNum: number,
   document: TextDocument
 ): Location[] {
-  if (objNum <= 0 || genNum < 0) return [];
+  if (objNum <= 0 || genNum < 0) { return []; }
 
   const definitions: Location[] = [];
 
@@ -99,7 +100,7 @@ export function findAllDefinitions(
   let match;
 
   // Find all occurrences of "X Y obj" in the text
-  while ((match = objDefinitionPattern.exec(text)) !== null) {
+  while ((match = objDefinitionPattern.exec(text)) != null) {
     const position = document.positionAt(match.index);
     definitions.push({
       uri: document.uri,
@@ -139,8 +140,9 @@ export function findPreviousObjectLineNumber(
   // Find 1st occurence of "X Y obj" in the REVERSED lines
   for (let i = 0; i < topLines.length; i++) {
     const m = topLines[i].search(/\b\d+ \d+ obj\b/g);
-    if (m != -1)
+    if (m !== -1) {
       return (topLines.length - i - 1); 
+    }
   }
   
   return -1;
@@ -178,6 +180,8 @@ interface SemanticTokenInfo {
  * Only looks at the current line, but checks to ensure position is on
  * the token in case of multiple potential tokens on one line:
  * e.g. `[ 1 0 R 2 0 R 3 0 R ]` - which indirect reference is being queried?
+ * @param document - the PDF document
+ * @param position - the cursor position within the VSCode document
  */
 export function getSemanticTokenAtPosition(
   document: TextDocument,
@@ -192,7 +196,7 @@ export function getSemanticTokenAtPosition(
   let regex = /(\d+) (\d+) R(?=[^G])/g;
   let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(lineText)) !== null) {
+  while ((match = regex.exec(lineText)) != null) {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
 
@@ -273,7 +277,7 @@ export function getSemanticTokenAtPosition(
 
   // Check for a bitmask name: /F, /Ff, /Flags followed by a signed integer
   regex = /(\/(F|Ff|Flags))[ \t\r\n\f\0]([+-]?\d+)/g;
-  while ((match = regex.exec(lineText)) !== null) {
+  while ((match = regex.exec(lineText)) != null) {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
 
@@ -290,7 +294,7 @@ export function getSemanticTokenAtPosition(
 
   // Check for a hex string
   regex = /<[0-9a-fA-F \t\n\r\f\0]+>/g;
-  while ((match = regex.exec(lineText)) !== null) {
+  while ((match = regex.exec(lineText)) != null) {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
 

@@ -18,5 +18,11 @@
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
     "exactOptionalPropertyTypes": true
-  }
+  },
+  "exclude": [
+    "eslint.config.mjs",
+    "./server/src/grammar/*.d.ts", 
+    "./server/src/grammar/*bundle.ts", 
+    "./out/**"
+  ]
 }
