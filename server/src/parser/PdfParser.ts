@@ -75,7 +75,7 @@ export enum PDFSectionType {
   unset = '???', // must never occur!
   Header = 'Header',
   Body = 'Body',
-  CrossReference = 'Cross Reference Table',
+  CrossReference = 'Cross Reference Section',
   Footer = 'Footer',
 }
 
