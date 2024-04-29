@@ -304,11 +304,11 @@ export function convertLiteralToHexString(literal: string): string {
 
 
 /**
-  * Converts a PDF hex string to a literal string, using escape codes for unprintables.
-  * 
-  * @param hexString - PDF hex string including `<` and `>`
-  * @returns a PDF literal string including `(` and `)`
-  */
+ * Converts a PDF hex string to a literal string, using escape codes for unprintables.
+ * 
+ * @param hexString - PDF hex string including `<` and `>`
+ * @returns a PDF literal string including `(` and `)`
+ */
 export function convertHexToLiteralString(hexString: string): string {
   let lit = "(";
   const hex = hexString.slice(1, hexString.length - 1); // remove "<" and ">"
@@ -378,11 +378,11 @@ export async function convertImageToAscii85DCT(
 
     let width: number;
     let height: number;
-    const img = await sharp(imgFile[0].fsPath).withMetadata();
+    const img = sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+        if ((info.width !== undefined) && (info.height !== undefined)) {
           width = info.width;
           height = info.height;
         }
@@ -450,7 +450,7 @@ export async function convertImageToAsciiHexDCT(
 
     let width: number;
     let height: number;
-    const img = await sharp(imgFile[0].fsPath).withMetadata();
+    const img = sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
         // console.log(info);
@@ -524,12 +524,12 @@ export async function convertImageToRawAscii85(
 
     let width: number;
     let height: number;
-    let pdfCS: string = '/DeviceRGB % assumed!';
-    const img = await sharp(imgFile[0].fsPath).withMetadata();
+    let pdfCS = '/DeviceRGB % assumed!';
+    const img = sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+        if ((info.width !== undefined) && (info.height !== undefined)) {
           width = info.width;
           height = info.height;
         }
@@ -603,12 +603,12 @@ export async function convertImageToRawAsciiHex(
 
     let width: number;
     let height: number;
-    let pdfCS: string = '/DeviceRGB % assumed!';
-    const img = await sharp(imgFile[0].fsPath).withMetadata();
+    let pdfCS = '/DeviceRGB % assumed!';
+    const img = sharp(imgFile[0].fsPath).withMetadata();
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info !== undefined) && (info.width !== undefined) && (info.height !== undefined)) {
+        if ((info.width !== undefined) && (info.height !== undefined)) {
           width = info.width;
           height = info.height;
         }

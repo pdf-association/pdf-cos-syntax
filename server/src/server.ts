@@ -128,12 +128,12 @@ function parseDocument(_documentText: string) {
     xrefMatrix: {
       matrix: {},
       diagnostics: [],
-      dumpMatrix: function() { /* implementation here */ },
-      isObjectNumberValid: function() { /* implementation here */ },
-      isObjectIDInUse: function() { /* implementation here */ },
-      getObjectNumberBasedOnByteOffset: function() { /* implementation here */ },
-      getByteOffsetOfInuseObjectID: function() { /* implementation here */ },
-      getFirstLineNumberForObjectID: function() { /* implementation here */ },
+      dumpMatrix: function(): void { /* implementation here */ },
+      isObjectNumberValid: function(): boolean {  return true; /* implementation here */ },
+      isObjectIDInUse: function(): boolean { return true; /* implementation here */ },
+      getObjectNumberBasedOnByteOffset: function(): number { return 1; /* implementation here */ },
+      getByteOffsetOfInuseObjectID: function(): number { return 0; /* implementation here */ },
+      getFirstLineNumberForObjectID: function(): number { return 0; /* implementation here */ },
       // ... add the rest of the required methods and properties here
     },
   };

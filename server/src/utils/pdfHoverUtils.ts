@@ -112,8 +112,8 @@ export function hoverPDFDateString(d: string): string {
 
     }
     catch (e: any) {
-      console.log("ERROR: ", e.message);
-      s = 'ERROR: ' + e.message + ' - ' + s;
+      console.log("ERROR: ", e);
+      s = 'ERROR: ' + e + ' - ' + s;
     }
   }
 

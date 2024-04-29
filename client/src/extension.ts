@@ -232,68 +232,68 @@ export async function activate(context: vscode.ExtensionContext) {
     // Command palette custom command / editor context sub-menu options under "PDF"
     vscode.commands.registerCommand(
       "pdf-cos-syntax.exportXrefAsCSV", 
-      (uri) => commandHandler("exportXrefAsCSV", context, uri)
+      (uri: vscode.Uri) => commandHandler("exportXrefAsCSV", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.imageA85DCT", 
-      (uri) => commandHandler("imageA85DCT", context, uri)
+      (uri: vscode.Uri) => commandHandler("imageA85DCT", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.imageAHexDCT", 
-      (uri) => commandHandler("imageAHexDCT", context, uri)
+      (uri: vscode.Uri) => commandHandler("imageAHexDCT", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.imageA85", 
-      (uri) => commandHandler("imageA85", context, uri)
+      (uri: vscode.Uri) => commandHandler("imageA85", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.imageAHex", 
-      (uri) => commandHandler("imageAHex", context, uri)
+      (uri: vscode.Uri) => commandHandler("imageAHex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.dataA85", 
-      (uri) => commandHandler("dataA85", context, uri)
+      (uri: vscode.Uri) => commandHandler("dataA85", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.dataAHex", 
-      (uri) => commandHandler("dataAHex", context, uri)
+      (uri: vscode.Uri) => commandHandler("dataAHex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.convertLiteral2Hex",
-      (uri) => commandHandler("Literal2Hex", context, uri)
+      (uri: vscode.Uri) => commandHandler("Literal2Hex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.convertHex2Literal",
-      (uri) => commandHandler("Hex2Literal", context, uri)
+      (uri: vscode.Uri) => commandHandler("Hex2Literal", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.convert2ObjectStream",
-      (uri) => commandHandler("2objectStream", context, uri)
+      (uri: vscode.Uri) => commandHandler("2objectStream", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.convert2XrefStream",
-      (uri) => commandHandler("2XrefStream", context, uri)
+      (uri: vscode.Uri) => commandHandler("2XrefStream", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.2AsciiHex",
-      (uri) => commandHandler("2AsciiHex", context, uri)
+      (uri: vscode.Uri) => commandHandler("2AsciiHex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.2Ascii85", 
-      (uri) => commandHandler("2Ascii85", context, uri)
+      (uri: vscode.Uri) => commandHandler("2Ascii85", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.FromAsciiHex", 
-      (uri) => commandHandler("FromAsciiHex", context, uri)
+      (uri: vscode.Uri) => commandHandler("FromAsciiHex", context, uri)
     ),
     vscode.commands.registerCommand(
       "pdf-cos-syntax.FromAscii85", 
-      (uri) => commandHandler("FromAscii85", context, uri)
+      (uri: vscode.Uri) => commandHandler("FromAscii85", context, uri)
     ),
     // Status bar
     vscode.commands.registerCommand(
       "pdf-cos-syntax.StatusBarClick", 
-      (uri) => statusBarClick(context, uri)
+      (uri: vscode.Uri) => statusBarClick(context, uri)
     ),
     pdfStatusBarItem,
     vscode.window.onDidChangeActiveTextEditor(updateStatusBarItem),
@@ -313,7 +313,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
       async deserializeWebviewPanel(
         webviewPanel: vscode.WebviewPanel,
-        state: any
+        _state: any
       ) {
         // console.log(`Got state: ${state}`);
         // Reset the webview options so we use latest uri for `localResourceRoots`.
@@ -333,17 +333,17 @@ export async function activate(context: vscode.ExtensionContext) {
       // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
 
       // if cached semantic tokens apply to this document URI then reuse 
-      if (!semanticTokens || (document.uri !== semantic_doc_uri)) {
+      if (document.uri !== semantic_doc_uri) {
         fetch_semantic_tokens_from_LSP(document);
       }
       return semanticTokens;
     }
   };
 
-  const semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+  const _semanticPDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
     { language: "pdf" }, semanticProvider, legend
   );
-  const semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
+  const _semanticFDFTokenProvider = vscode.languages.registerDocumentSemanticTokensProvider(
     { language: "fdf" }, semanticProvider, legend
   );
 }
@@ -379,11 +379,11 @@ function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined): number
 /**
  * Action to peform when custom status bar item is clicked
  * @param _context - VSCode context (not used)
- * @param uri - the URI of the document
+ * @param _uri - the URI of the document (not used)
  */
 export function statusBarClick(
   _context: vscode.ExtensionContext,
-  uri: vscode.Uri
+  _uri: vscode.Uri
 ): void {
   const lines = getNumberOfSelectedLines(vscode.window.activeTextEditor);
   vscode.window.showInformationMessage(`${lines} line(s) selected.`);
@@ -392,14 +392,14 @@ export function statusBarClick(
 /**
  * Perform a custom command
  * @param option - the PDF COS Syntax extension custom command
- * @param context - the context
- * @param uri - uri of current document
+ * @param _context - the context (not used)
+ * @param _uri - uri of current document (not used)
  */
 export async function commandHandler(
   option: string,
-  context: vscode.ExtensionContext,
-  uri: vscode.Uri
-) {
+  _context: vscode.ExtensionContext,
+  _uri: vscode.Uri
+): Promise<void>   {
   const editor = vscode.window.activeTextEditor;
   if (editor === undefined) { return; }
   const selection = editor.selection;
@@ -484,14 +484,16 @@ export async function commandHandler(
     }
     case "Literal2Hex": {
       // Need to select a full literal string incl. `(`/`)`
-      if (inp[0] === "(" && inp[inp.length - 1] === ")")
+      if (inp[0] === "(" && inp[inp.length - 1] === ")") {
         out = pdf.convertLiteralToHexString(inp);
+      }
       break;
     }
     case "Hex2Literal": {
       // Need to select a full hex string incl. whitespace and `<`/`>`
-      if (inp.match(/^<[0-9a-fA-F \t\0\r\n\f]*>$/))
+      if (inp.match(/^<[0-9a-fA-F \t\0\r\n\f]*>$/)) {
         out = pdf.convertHexToLiteralString(inp);
+      }
       break;
     }
     default: {
@@ -508,7 +510,6 @@ export async function commandHandler(
 }
 
 
-export function deactivate(): Thenable<void> | undefined {
-  if (!client) { return undefined; }
+export function deactivate(): Thenable<void> {
   return client.stop();
 }
