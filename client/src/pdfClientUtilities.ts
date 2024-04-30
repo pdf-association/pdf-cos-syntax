@@ -60,7 +60,7 @@ export function convertFromAscii85Filter(a85: string): string {
   try {
     if (a85.slice(a85.length - 2, a85.length - 1) !== '~>') {
       console.error(`Error: ASCII-85 data did not with '~>' end of data marker!`);
-      vscode.window.showErrorMessage(`Error: ASCII-85 data did not with '~>' end of data marker!`);
+      vscode.window.showErrorMessage(`Error: ASCII-85 data did not with '~>' end of data marker!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return '';
     }
 
@@ -68,9 +68,9 @@ export function convertFromAscii85Filter(a85: string): string {
     // console.log(`_convertFromAscii85filter: ${s}`); 
     return s;
   }
-  catch (error: any) {
-    console.error(`_convertFromAscii85filter: Error ${error}`); 
-    vscode.window.showErrorMessage(`ASCII-85 decompression error: ${error}!`);
+  catch (error) {
+    console.error(`_convertFromAscii85filter: Error ${(error as Error).message}`); 
+    vscode.window.showErrorMessage(`ASCII-85 decompression error: ${(error as Error).message}!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return '';
   }
 }
@@ -102,9 +102,8 @@ function _stringToChunks(string: string, chunkSize: number): string[] {
  */
 export function convertToAsciiHexFilter(data: Buffer): string[] {
   let s = "";
-  for (let i = 0; i < data.length; i++) {
-    const b = data[i];
-    s = s + b.toString(16);
+  for (const d of data) {
+    s = s + d.toString(16);
   }
   s = s + ">";
   const res = _stringToChunks(s, 32);
@@ -121,9 +120,9 @@ export function convertToAsciiHexFilter(data: Buffer): string[] {
  */
 export function convertFromAsciiHexFilter(aHex: string): string {
   try {
-    if (aHex[aHex.length - 1] !== '>') {
-      console.error(`Error: ASCII-Hex data did not end with '>' end of data marker!`);
-      vscode.window.showErrorMessage(`Error: ASCII-Hex data did not end with '>' end of data marker!`);
+    if (aHex.endsWith('>')) {
+      console.error(`Error: ASCII-Hex data did not end with '>' end-of-data marker!`);
+      vscode.window.showErrorMessage(`Error: ASCII-Hex data did not end with '>' end-of-data marker!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return '';
     }
     aHex = aHex.slice(0, aHex.length - 1);  // remove EOD '>'
@@ -144,7 +143,7 @@ export function convertFromAsciiHexFilter(aHex: string): string {
       else if (!' \t\r\n\f\0'.includes(aHex[i])) {
         // Bad data!
         console.error(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
-        vscode.window.showErrorMessage(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`);
+        vscode.window.showErrorMessage(`Error: ASCII-Hex data had unexpected character '${aHex[i]}'!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
         return '';
       }
       i++;
@@ -152,9 +151,9 @@ export function convertFromAsciiHexFilter(aHex: string): string {
     // console.log(`convertFromAsciiHexFilter: ${res}`); 
     return res;
   }
-  catch (error: any) {
-    console.error(`convertFromAsciiHexFilter: Error ${error}`); 
-    vscode.window.showErrorMessage(`Error: ASCII-Hex ${error}!`);
+  catch (error) {
+    console.error(`convertFromAsciiHexFilter: Error ${(error as Error).message}`); 
+    vscode.window.showErrorMessage(`Error: ASCII-Hex ${(error as Error).message}!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return '';
   }
 }
@@ -372,7 +371,7 @@ export async function convertImageToAscii85DCT(
     
     if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      vscode.window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
     }
 
@@ -406,13 +405,13 @@ export async function convertImageToAscii85DCT(
         extras.push(`  /Height ${height}`);
         pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum, '/DCTDecode', extras);
         console.log(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]`);
-        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCII85Decode /DCTDecode ]`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     });
     return pdfObj;
   }
   catch (error) {
-      console.error(`Failed to convert image to [ /ASCII85Decode /DCTDecode ]. Error: ${error}`);
-      vscode.window.showErrorMessage(`Failed to convert to [ /ASCII85Decode /DCTDecode ]. Error: ${error}`);
+      console.error(`Failed to convert image to [ /ASCII85Decode /DCTDecode ]. Error: ${(error as Error).message}`);
+      vscode.window.showErrorMessage(`Failed to convert to [ /ASCII85Decode /DCTDecode ]. Error: ${(error as Error).message}`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
   }
 }
@@ -444,7 +443,7 @@ export async function convertImageToAsciiHexDCT(
     
     if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      vscode.window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
     }
 
@@ -480,13 +479,13 @@ export async function convertImageToAsciiHexDCT(
         pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum, '/DCTDecode', extras);
         extras.push(`endobj`);
         console.log(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]`);
-        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to [ /ASCIIHexDecode /DCTDecode ]`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     });
     return pdfObj;
   }
   catch (error) {
-      console.error(`Failed to convert image to [ /ASCIIHexDecode /DCTDecode ]. Error: ${error}`);
-      vscode.window.showErrorMessage(`Failed to convert to [ /ASCIIHexDecode /DCTDecode ]. Error: ${error}`);
+      console.error(`Failed to convert image to [ /ASCIIHexDecode /DCTDecode ]. Error: ${(error as Error).message}`);
+      vscode.window.showErrorMessage(`Failed to convert to [ /ASCIIHexDecode /DCTDecode ]. Error: ${(error as Error).message}`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
   }
 }
@@ -518,7 +517,7 @@ export async function convertImageToRawAscii85(
     
     if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      vscode.window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
     }
 
@@ -560,13 +559,13 @@ export async function convertImageToRawAscii85(
         extras.push(`  /Height ${height}`);
         pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum, '', extras);
         console.log(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode`);
-        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCII85Decode`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     });
     return pdfObj;
   }
   catch (error) {
-      console.error(`Failed to convert image to /ASCII85Decode. Error: ${error}`);
-      vscode.window.showErrorMessage(`Failed to convert to /ASCII85Decode. Error: ${error}`);
+      console.error(`Failed to convert image to /ASCII85Decode. Error: ${(error as Error).message}`);
+      vscode.window.showErrorMessage(`Failed to convert to /ASCII85Decode. Error: ${(error as Error).message}`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
   }
 }
@@ -597,7 +596,7 @@ export async function convertImageToRawAsciiHex(
     
     if (imgFile == null || imgFile.length < 1) {
       console.error(`Valid image file not selected!`);
-      vscode.window.showErrorMessage(`Valid image file not selected!`);
+      vscode.window.showErrorMessage(`Valid image file not selected!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
     }    
 
@@ -640,13 +639,13 @@ export async function convertImageToRawAsciiHex(
         extras.push(`  /Height ${height}`);
         pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum, '', extras);
         console.log(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode`);
-        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode`);
+        vscode.window.showInformationMessage(`Successfully converted image ${imgFile[0].fsPath} to /ASCIIHexDecode`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     });
     return pdfObj;
   }
   catch (error) {
-      console.error(`Failed to convert image to /ASCIIHexDecode. Error: ${error}`);
-      vscode.window.showErrorMessage(`Failed to convert to /ASCIIHexDecode. Error: ${error}`);
+      console.error(`Failed to convert image to /ASCIIHexDecode. Error: ${(error as Error).message}`);
+      vscode.window.showErrorMessage(`Failed to convert to /ASCIIHexDecode. Error: ${(error as Error).message}`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
   }
 }
@@ -676,7 +675,7 @@ export async function convertDataToAscii85(
 
     if (dataFile == null || dataFile.length < 1) {
       console.error(`Valid data file not selected!`);
-      vscode.window.showErrorMessage(`Valid data file not selected!`);
+      vscode.window.showErrorMessage(`Valid data file not selected!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
     }
 
@@ -687,13 +686,13 @@ export async function convertDataToAscii85(
         pdfObj = convertDataToAscii85Stream(eol, data, objNum, genNum);
         pdfObj.splice(0, 0, `% ${dataFile[0].fsPath}`);
         console.log(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode`);
-        vscode.window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode`);
+        vscode.window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCII85Decode`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       });
     return pdfObj;
   }
-  catch (error: any) {
-    console.error(`Failed to convert to ASCII-85. Error: ${error}`);
-    vscode.window.showErrorMessage(`Failed to convert to ASCII-85. Error: ${error}`);
+  catch (error) {
+    console.error(`Failed to convert to ASCII-85. Error: ${(error as Error).message}`);
+    vscode.window.showErrorMessage(`Failed to convert to ASCII-85. Error: ${(error as Error).message}`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 }
@@ -723,7 +722,7 @@ export async function convertDataToAsciiHex(
 
     if (dataFile == null || dataFile.length < 1) {
       console.error(`Valid data file not selected!`);
-      vscode.window.showErrorMessage(`Valid data file not selected!`);
+      vscode.window.showErrorMessage(`Valid data file not selected!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return [];
     }
 
@@ -734,13 +733,13 @@ export async function convertDataToAsciiHex(
         pdfObj = convertDataToAsciiHexStream(eol, data, objNum, genNum);
         pdfObj.splice(0, 0, `% ${dataFile[0].fsPath}`);
         console.log(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode`);
-        vscode.window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode`);
+        vscode.window.showInformationMessage(`Successfully converted ${dataFile[0].fsPath} to /ASCIIHexDecode`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       });
     return pdfObj;
   }
   catch (error) {
-    console.error(`Failed to convert to ASCIIHex. Error: ${error}`);
-    vscode.window.showErrorMessage(`Failed to convert to ASCIIHex. Error: ${error}`);
+    console.error(`Failed to convert to ASCIIHex. Error: ${(error as Error).message}`);
+    vscode.window.showErrorMessage(`Failed to convert to ASCIIHex. Error: ${(error as Error).message}`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 }
@@ -765,7 +764,7 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
   const endstream = inpString.match(/[ \t\r\n\f\0]endstream[ \t\r\n\f\0]/g);
   if ((stream && (stream.length > 0)) || (endstream && (endstream.length > 0))) {
     console.error(`Stream objects cannot be converted to object streams!`);
-    vscode.window.showErrorMessage(`Stream objects cannot be converted to object streams!`);
+    vscode.window.showErrorMessage(`Stream objects cannot be converted to object streams!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 
@@ -776,7 +775,7 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
       (obj && endobj && obj.length !== endobj.length)))) 
   {
     console.error(`No or partial objects were found. Cannot convert to an object stream!`);
-    vscode.window.showErrorMessage(`No or partial objects were found. Cannot convert to an object stream!`);
+    vscode.window.showErrorMessage(`No or partial objects were found. Cannot convert to an object stream!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 
@@ -827,7 +826,7 @@ export function objectsToObjectStream(eol: vscode.EndOfLine, inp: string[]): str
   out.push(`  /First ${first} % required: byte offset in stream of the 1st object.`);
   out.push(`>>`);
   out.push(`stream`);
-  out.push(`${firstLine}`);
+  out.push(firstLine);
   out = out.concat(objStm);
   out.push(`endstream`);
   out.push(`endobj`);
@@ -860,26 +859,26 @@ export function xrefToXRefStream(
 
   if (!inp[0].startsWith("xref")) {
     console.error(`Conventional cross reference table must start with 'xref'!`);
-    vscode.window.showErrorMessage(`Conventional cross reference table must start with 'xref'!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must start with 'xref'!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 
   const trailerIdx = inp.findIndex((s) => (s.trim() === 'trailer'));
   if (trailerIdx === -1) {
     console.error(`Conventional cross reference table must include a 'trailer'!`);
-    vscode.window.showErrorMessage(`Conventional cross reference table must include a 'trailer'!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must include a 'trailer'!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 
   if (!inp[inpLinesLen - 3].startsWith("startxref")) {
     console.error(`Conventional cross reference table must include 'startxref' as 3rd last line!`);
-    vscode.window.showErrorMessage(`Conventional cross reference table must include 'startxref' as 3rd last line!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must include 'startxref' as 3rd last line!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 
   if (!inp[inpLinesLen - 1].startsWith("%%EOF")) {
     console.error(`Conventional cross reference table must end with '%%EOF'!`);
-    vscode.window.showErrorMessage(`Conventional cross reference table must end with '%%EOF'!`);
+    vscode.window.showErrorMessage(`Conventional cross reference table must end with '%%EOF'!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 
@@ -965,8 +964,8 @@ export function xrefToXRefStream(
     return xrefStm;
   }
   catch (error) {
-    console.error(`ERROR: Conventional cross reference table conversion failed: ${error}!`);
-    vscode.window.showErrorMessage(`ERROR: Conventional cross reference table conversion failed: ${error}!`);
+    console.error(`ERROR: Conventional cross reference table conversion failed: ${(error as Error).message}!`);
+    vscode.window.showErrorMessage(`ERROR: Conventional cross reference table conversion failed: ${(error as Error).message}!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
     return [];
   }
 }
@@ -974,6 +973,6 @@ export function xrefToXRefStream(
 /**
  * Exports the PDF documents full cross-reference table as a CSV
  */
-export async function exportXrefAsCSV() {
+export async function exportXrefAsCSV(): Promise<void> {
   /** @todo see server XrefInfoMatrix.ts XrefInfoMatrix.saveToCSV() */
 }

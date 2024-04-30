@@ -230,9 +230,7 @@ connection.onDidChangeConfiguration((_change) => {
       documents.all().forEach(validateTextDocument);
     });
   } else {
-    globalSettings = <PDFCOSSyntaxSettings>(
-      (_change.settings.pdfcossyntax || defaultSettings)
-    );
+    globalSettings = (_change.settings.pdfcossyntax as PDFCOSSyntaxSettings || defaultSettings);
     // Revalidate all open text documents with new settings
     documents.all().forEach(validateTextDocument);
   }
@@ -471,14 +469,13 @@ connection.onHover((params): Hover | null => {
       );
       if (flag === "n") {
         return { contents: `Object ${objNum} is at byte offset ${offset}` };
-      } else {
+      } else if (flag === "f") {
         return { contents: `Object ${objNum} is a free object` };
       }
       break;
     }
 
-    case "indirectReference": {
-      // X Y R
+    case "indirectReference": { // X Y R
       const match = semanticTokenText.match(/\b(\d+) (\d+)\b/);
       if (!match) { return null; }
 
@@ -493,16 +490,13 @@ connection.onHover((params): Hover | null => {
         return {
           contents: `One object found for "${objectNumber} ${genNumber} R"`,
         };
-      } else {
-        return {
-          contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`,
-        };
       }
-      break;
+      return {
+        contents: `${objects.length} objects found for "${objectNumber} ${genNumber} R"`,
+      };
     }
 
-    case "indirectObject": {
-      // X Y obj
+    case "indirectObject": { // X Y obj
       const match = semanticTokenText.match(/\b(\d+) (\d+)\b/);
       if (!match) { return null; }
 
@@ -513,16 +507,10 @@ connection.onHover((params): Hover | null => {
         return {
           contents: `No indirect references to object ${objectNumber} ${genNumber} found.`,
         };
-      } else if (references.length === 1) {
-        return {
-          contents: `One indirect reference to object ${objectNumber} ${genNumber}`,
-        };
-      } else {
-        return {
-          contents: `${references.length} indirect references to object ${objectNumber} ${genNumber}`,
-        };
-      }
-      break;
+      } 
+      return {
+        contents: `${references.length} indirect reference(s) to object ${objectNumber} ${genNumber}`,
+      };
     }
 
     case "endobjKeyword":       // `endobj`
@@ -725,7 +713,7 @@ connection.listen();
  * 5. check that a conventional cross-reference section is correct for an original PDF
  * @param textDocument - the PDF document
  */
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+function validateTextDocument(textDocument: TextDocument): void {
   console.log(`validateTextDocument for ${textDocument.uri}`);
   let diagnostics: Diagnostic[] = [];
 

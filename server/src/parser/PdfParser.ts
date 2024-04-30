@@ -158,16 +158,16 @@ export default class PDFParser {
     this._NumRevisions = -1;
     let currentSection: PDFSectionType = PDFSectionType.unset;
 
-    for (let i = 0; i < this._markers.length; i++) {
-      switch (this._markers[i].marker) {
+    for (const mrk of this._markers) {
+      switch (mrk.marker) {
         case "stream": {
           if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer)) {
             this._NumRevisions++;
           }
           currentSection = PDFSectionType.Body;
           if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
-          this._markers[i].revision = this._NumRevisions;
-          this._markers[i].section = currentSection; 
+          mrk.revision = this._NumRevisions;
+          mrk.section = currentSection; 
           break;
         }
         case "xref": {
@@ -176,28 +176,28 @@ export default class PDFParser {
           }
           currentSection = PDFSectionType.CrossReference;
           if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
-          this._markers[i].revision = this._NumRevisions;
-          this._markers[i].section = currentSection; 
+          mrk.revision = this._NumRevisions;
+          mrk.section = currentSection; 
           break;
         }
         case "trailer":
         case "startxref":
         case "%%EOF": {
           currentSection = PDFSectionType.Footer;
-          this._markers[i].revision = this._NumRevisions;
-          this._markers[i].section = currentSection; 
+          mrk.revision = this._NumRevisions;
+          mrk.section = currentSection; 
           break;
         }
         default: {
           // variable text for "%[PF]DF-x.y" and "X Y obj"!
-          if (this._markers[i].marker.startsWith("%PDF-") || this._markers[i].marker.startsWith("%FDF-")) {
+          if (mrk.marker.startsWith("%PDF-") || mrk.marker.startsWith("%FDF-")) {
             if (currentSection !== PDFSectionType.Header) {
               currentSection = PDFSectionType.Header;
               this._NumRevisions++;
             }
             if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
-            this._markers[i].revision = this._NumRevisions;
-            this._markers[i].section = currentSection; 
+            mrk.revision = this._NumRevisions;
+            mrk.section = currentSection; 
           }
           else { // "X Y obj"
             if ((this._NumRevisions === -1) || (currentSection === PDFSectionType.Footer)) {
@@ -205,8 +205,8 @@ export default class PDFParser {
             }
             currentSection = PDFSectionType.Body;
             if (this._NumRevisions === -1) { this._NumRevisions = 0; } // malformed file 
-            this._markers[i].revision = this._NumRevisions;
-            this._markers[i].section = currentSection; 
+            mrk.revision = this._NumRevisions;
+            mrk.section = currentSection; 
           }
           break;
         }
@@ -227,7 +227,7 @@ export default class PDFParser {
 
 
   /**
-   * @param revision - the PDF file revision (>= 0)
+   * @param revision - the PDF file revision (\>= 0)
    * @returns the ordered set of sections for the given revision. 
    * Order is based on the PDF file, which can be illogical when
    * editting. 
@@ -258,7 +258,7 @@ export default class PDFParser {
   /** 
    * Convert an absolute byte offset to a Line/Character Position.
    * Note that Line and Character numbering are 0-based!
-   * @param offset - the byte offset into the PDF file (>= 0)
+   * @param offset - the byte offset into the PDF file (\>= 0)
    * @returns the Position into the VSCode document
    */
   convertOffsetToPosition(offset: number): Position {
@@ -273,7 +273,7 @@ export default class PDFParser {
 
 
   /** 
-   * @param revision - the PDF file revision (>= 0)
+   * @param revision - the PDF file revision (\>= 0)
    * @returns range from `%[PF]DF-x.y` to next section for a given revision of the PDF.
    * This range is **not** minimal and may include cavities, etc.
    */
@@ -297,7 +297,7 @@ export default class PDFParser {
 
 
   /**
-   * @param revision - the PDF file revision (>= 0)
+   * @param revision - the PDF file revision (\>= 0)
    * @returns the range for all sections in a given revision. 
    * This range is **not** minimal and may include cavities, etc.
    */
@@ -331,7 +331,7 @@ export default class PDFParser {
 
 
   /**
-   * @param revision - the PDF file revision (>= 0)
+   * @param revision - the PDF file revision (\>= 0)
    * @returns the range for all body objects starting with 1st full object `X Y obj` 
    * to `endobj` in the file, up to the 1st marker which is not a `X Y obj` for a
    * given revision. This range is **not** minimal and may include cavities, etc.
@@ -367,7 +367,7 @@ export default class PDFParser {
 
 
   /**
-   * @param revision - the PDF file revision (>= 0)
+   * @param revision - the PDF file revision (\>= 0)
    * @returns every object in the specified revision of the PDF file.
    * Partitions from `X Y obj` marker to the next `endobj` keyword. 
    */
@@ -459,7 +459,7 @@ export default class PDFParser {
 
 
   /**
-   * @param revision revision of a file (>= 0)
+   * @param revision - revision of a file (\>= 0)
    * @returns the range for all footer subsections for a given revision.
    * A "footer" section can include `trailer`, `startxref` and `%%EOF`. 
    * This range is **not** minimal and may include cavities, etc.
@@ -531,7 +531,7 @@ export default class PDFParser {
 
   /**
    * Gets a conventional cross reference table range within a Footer section.
-   * @param revision - revision of a file (>= 0)
+   * @param revision - revision of a file (\>= 0)
    * @returns the Range of the requested revision
    */
   getCrossReferenceTableRange(revision: number): Range {
@@ -566,7 +566,7 @@ export default class PDFParser {
 
 
   /**
-   * @param revision - revision of a file (>= 0)
+   * @param revision - revision of a file (\>= 0)
    * @returns which Footer subsections are present and in what order 
    */
   getFooterSubsections(revision: number): string[] {
@@ -597,8 +597,8 @@ export default class PDFParser {
   /**
    * Gets a footer subsection (`trailer`, `startxref`, `%%EOF`) range for a 
    * specified revision.
-   * @param revision - revision of a file (>= 0)
-   * @param subsection - footer marker string to searcg for
+   * @param revision - revision of a file (\>= 0)
+   * @param subsection - footer marker string to search for
    * @returns the Range. May throw an Error.
    */
   getFooterSubsectionRange(revision: number, subsection: string): Range {

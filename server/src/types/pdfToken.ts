@@ -30,5 +30,5 @@ export interface PDFToken {
   end: number;
 
   /** custom properties, depends on {@link "type"} */
-  [key: string]: any;
+  [key: string]: number | string | boolean;
 }

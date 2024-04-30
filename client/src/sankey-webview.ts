@@ -18,6 +18,11 @@
 
 import * as vscode from "vscode";
 
+interface PDFMessage {
+  type: string;
+  value: string;
+}
+
 export function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
   // console.log(`getWebviewOptions = ${vscode.Uri.joinPath(extensionUri, 'media')}`);
   return {
@@ -58,12 +63,12 @@ export class SankeyPanel
     const panel = vscode.window.createWebviewPanel(
       SankeyPanel.viewType,
       'Sankey Flow Diagram',
-      column || vscode.ViewColumn.One,
+      column ?? vscode.ViewColumn.One,
       getWebviewOptions(context.extensionUri),
     );
 
     panel.webview.onDidReceiveMessage(
-      message => {
+      (message: PDFMessage) => {
         switch (message.type) {
           default:
             console.log(`onDidReceiveMessage: ${message.type} ${message.value}`); break;
@@ -74,7 +79,7 @@ export class SankeyPanel
     );
     
     SankeyPanel.currentPanel = new SankeyPanel(panel, context);
-    panel.webview.postMessage({ type: {type: 'CSV-Data', value: csvData } });
+    panel.webview.postMessage({ type: {type: 'CSV-Data', value: csvData } }).then(null, () => {console.error(`postMessage() was rejected!`);});
   }
 
   public static revive(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): void {
@@ -89,7 +94,7 @@ export class SankeyPanel
 
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programmatically
-    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    this._panel.onDidDispose(() => { this.dispose() }, null, this._disposables);
 
     // Update the content based on view changes
     this._panel.onDidChangeViewState(
@@ -104,7 +109,7 @@ export class SankeyPanel
 
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
-      message => {
+      (message: PDFMessage) => {
         switch (message.type) {
           case 'alert':
             // console.log(`onDidReceiveMessage: ${message.type} ${message.value}`); 
@@ -119,10 +124,10 @@ export class SankeyPanel
   }
 
   public sendDataToWebview(): void {
-    // console.log(`sendDataToWebview`);
+    console.log(`sendDataToWebview`);
     // Send a message to the webview 
     // You can send any JSON serializable data.
-    this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' });
+    this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' }).then(null, () => {console.error(`postMessage() was rejected!`);});
   }
 
   public dispose(): void {
@@ -172,7 +177,7 @@ export class SankeyPanel
           content="default-src 'none'; style-src ${webview.cspSource}; img-src ${webview.cspSource} 
           https:; script-src 'nonce-${nonce}'; frame-src 'self';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="${cssMainUri}" rel="stylesheet">
+        <link href="${cssMainUri.toString()}" rel="stylesheet">
         <script nonce="${nonce}"> const tsvscode = acquireVsCodeApi(); </script>
         <title>Sankey Flow Diagram</title>
       </head>
@@ -216,10 +221,10 @@ export class SankeyPanel
           </label></td>
          </tr>
         </table>
-        <script nonce="${nonce}" src="${scriptUri}"></script>
-        <script nonce="${nonce}" src="${d3Uri}"></script>
-        <script nonce="${nonce}" src="${d3SankeyUri}"></script>
-        <script nonce="${nonce}" src="${mainJSUri}"></script>
+        <script nonce="${nonce}" src="${scriptUri.toString()}"></script>
+        <script nonce="${nonce}" src="${d3Uri.toString()}"></script>
+        <script nonce="${nonce}" src="${d3SankeyUri.toString()}"></script>
+        <script nonce="${nonce}" src="${mainJSUri.toString()}"></script>
         </body>
       </html>`;
     }

@@ -22,7 +22,8 @@ export default tseslint.config(
       ['@typescript-eslint']: tseslint.plugin,
       ['deprecation']: deprecationPlugin,
       ['eslint-comments']: eslintCommentsPlugin,
-      ['jsdoc']: jsdocPlugin
+      ['jsdoc']: jsdocPlugin,
+      ['tsdoc']: tsdocPlugin
     },
   },
   {
@@ -51,17 +52,13 @@ export default tseslint.config(
           'tsconfig.json',
         ],
         tsconfigRootDir: __dirname,
-        warnOnUnsupportedTypeScriptVersion: false,
+        warnOnUnsupportedTypeScriptVersion: true,
       },
     },
 
     rules: {
       // avoid deprecated APIs
       'deprecation/deprecation': 'error',
-
-      // TODO(#7130): Investigate changing these in or removing these from presets
-      '@typescript-eslint/no-confusing-void-expression': 'off',
-      '@typescript-eslint/prefer-string-starts-ends-with': 'off',
 
       '@typescript-eslint/ban-ts-comment': [
         'error',
@@ -86,13 +83,6 @@ export default tseslint.config(
       '@typescript-eslint/no-unnecessary-condition': [
         'error',
         { allowConstantLoopConditions: true },
-      ],
-      '@typescript-eslint/no-var-requires': 'off',
-      '@typescript-eslint/prefer-literal-enum-member': [
-        'error',
-        {
-          allowBitwiseExpressions: true,
-        },
       ],
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/restrict-template-expressions': [
@@ -172,7 +162,9 @@ export default tseslint.config(
       'jsdoc/require-param': 'warn',
       'jsdoc/require-returns': 'off',
       'jsdoc/require-yields': 'off',
-      'jsdoc/tag-lines': 'off'
+      'jsdoc/tag-lines': 'off',
+
+      'tsdoc/syntax': 'warn'
     }
   }
 );

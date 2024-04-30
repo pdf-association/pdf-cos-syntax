@@ -128,7 +128,7 @@ let semanticTokens:vscode.SemanticTokens;
 const legend = new vscode.SemanticTokensLegend(TOKEN_TYPES, TOKEN_MODIFIERS);
 
  
-async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
+async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument): Promise<void> {
   // console.log(`fetch semantic tokens for ${document.uri}`);
   const tokens: PDFToken[] = await client
     .sendRequest("textDocument/semanticTokens/full", {
@@ -137,14 +137,12 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument) {
   pdf_tokens = tokens;
   console.log('Client: fetch_semantic_tokens_from_LSP', pdf_tokens);
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-  for (let i = 0; i < pdf_tokens.length; i ++) {
-    const token = pdf_tokens[i];
+  for (const token of pdf_tokens) {
     if (TOKEN_TYPES.includes(token.type)) {
       const range = new vscode.Range(
         new vscode.Position(token.line - 1, token.start),
         new vscode.Position(token.line - 1, token.end)
       );
-
       tokensBuilder.push(range, token.type);
     }
   }
@@ -180,10 +178,6 @@ export async function activate(context: vscode.ExtensionContext) {
       { scheme: "untitled", language: "pdf" },
       { scheme: "untitled", language: "fdf" },
     ]
-    // synchronize: {
-    //   // Notify the server about file changes to '.clientrc files contained in the workspace
-    //   fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
-    // },
   };
 
   function getExtensionSettings(): PDFCOSSyntaxSettings {
@@ -308,22 +302,18 @@ export async function activate(context: vscode.ExtensionContext) {
   // update status bar item once at start
   updateStatusBarItem();
 
-  if (vscode.window.registerWebviewPanelSerializer) {
-    // Make sure we register a serializer in activation event
-    vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
-      async deserializeWebviewPanel(
-        webviewPanel: vscode.WebviewPanel,
-        _state: any
-      ) {
-        // console.log(`Got state: ${state}`);
-        // Reset the webview options so we use latest uri for `localResourceRoots`.
-        webviewPanel.webview.options = sankey.getWebviewOptions(
-          context.extensionUri
-        );
-        sankey.SankeyPanel.revive(webviewPanel, context);
-      },
-    });
-  }
+  // Make sure we register a serializer in activation event
+  vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
+    async deserializeWebviewPanel(
+      webviewPanel: vscode.WebviewPanel,
+      _state: any
+    ) {
+      // console.log(`Got state: ${state}`);
+      // Reset the webview options so we use latest uri for `localResourceRoots`.
+      webviewPanel.webview.options = sankey.getWebviewOptions(context.extensionUri);
+      sankey.SankeyPanel.revive(webviewPanel, context);
+    },
+  });
   
   // analyze the document and return semantic tokens
   const semanticProvider: vscode.DocumentSemanticTokensProvider = {
@@ -334,7 +324,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // if cached semantic tokens apply to this document URI then reuse 
       if (document.uri !== semantic_doc_uri) {
-        fetch_semantic_tokens_from_LSP(document);
+        fetch_semantic_tokens_from_LSP(document); 
       }
       return semanticTokens;
     }
@@ -381,12 +371,12 @@ function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined): number
  * @param _context - VSCode context (not used)
  * @param _uri - the URI of the document (not used)
  */
-export function statusBarClick(
+export async function statusBarClick(
   _context: vscode.ExtensionContext,
   _uri: vscode.Uri
-): void {
+): Promise<void> {
   const lines = getNumberOfSelectedLines(vscode.window.activeTextEditor);
-  vscode.window.showInformationMessage(`${lines} line(s) selected.`);
+  vscode.window.showInformationMessage(`${lines} line(s) selected.`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
 }
 
 /**
@@ -484,7 +474,7 @@ export async function commandHandler(
     }
     case "Literal2Hex": {
       // Need to select a full literal string incl. `(`/`)`
-      if (inp[0] === "(" && inp[inp.length - 1] === ")") {
+      if (inp.startsWith("(") && inp.endsWith(")")) {
         out = pdf.convertLiteralToHexString(inp);
       }
       break;
@@ -505,7 +495,7 @@ export async function commandHandler(
   if (out.trim().length > 0) {
     editor.edit((editBuilder) => {
       editBuilder.replace(selection, out);
-    });
+    }).then(null, () => {console.error(`editor.edit() was rejected!`);});
   }
 }
 

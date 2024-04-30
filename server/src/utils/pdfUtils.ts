@@ -213,8 +213,8 @@ export function getSemanticTokenAtPosition(
 
   // Check for "X Y obj" pattern - see clause 7.3.10 Indirect objects
   const objMatch = lineText.match(/(\d+) (\d+) obj/);
-  if (objMatch) {
-    const matchStart = objMatch.index!;
+  if (objMatch?.index) {
+    const matchStart = objMatch.index;
     return {
       type: "indirectObject",
       range: {
@@ -229,8 +229,8 @@ export function getSemanticTokenAtPosition(
 
   // Check for conventional cross reference table entry pattern - both in-use and free objects
   const xrefMatch = lineText.match(/\b(\d{10}) (\d{5}) (n|f)\b/);
-  if (xrefMatch) {
-    const matchStart = xrefMatch.index!;
+  if (xrefMatch?.index) {
+    const matchStart = xrefMatch.index;
     return {
       type: "xrefTableEntry",
       range: {
@@ -245,8 +245,8 @@ export function getSemanticTokenAtPosition(
 
   // "endobj" keyword
   const endobjMatch = lineText.match(/\b(endobj)\b/);
-  if (endobjMatch) {
-    const matchStart = endobjMatch.index!;
+  if (endobjMatch?.index) {
+    const matchStart = endobjMatch.index;
     return {
       type: "endobjKeyword",
       range: {
@@ -261,8 +261,8 @@ export function getSemanticTokenAtPosition(
 
   // "endstream" keyword
   const endstreamMatch = lineText.match(/\b(endstream)\b/);
-  if (endstreamMatch) {
-    const matchStart = endstreamMatch.index!;
+  if (endstreamMatch?.index) {
+    const matchStart = endstreamMatch.index;
     return {
       type: "endstreamKeyword",
       range: {
@@ -281,7 +281,7 @@ export function getSemanticTokenAtPosition(
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
 
-    if (matchStart <= position.character && position.character <= matchEnd) {
+    if ((matchStart <= position.character) && (position.character <= matchEnd)) {
       return {
         type: "bitMask",
         range: {

@@ -135,15 +135,15 @@ export class XrefInfoMatrix {
     for (let objNum = 0; objNum < this.matrix.length; objNum++) {
       if (this.matrix[objNum]) {
         line = `${objNum}`;
-        for (let revNum = 0; revNum < this.matrix[objNum].length; revNum++) {
-          if (this.matrix[objNum][revNum]) {
-            if (this.matrix[objNum][revNum].inUse) {
+        for (const objRev of this.matrix[objNum]) {
+          if (objRev) {
+            if (objRev.inUse) {
               // in-use object
-              line = line + `,"in-use @ offset ${this.matrix[objNum][revNum].first} (line ${this.matrix[objNum][revNum].lineNbr})"`;
+              line = line + `,"in-use @ offset ${objRev.first} (line ${objRev.lineNbr})"`;
             }
             else {
               // free object
-              line = line + `,"free (line ${this.matrix[objNum][revNum].lineNbr})"`;
+              line = line + `,"free (line ${objRev.lineNbr})"`;
             }
           }
           else {
@@ -164,7 +164,9 @@ export class XrefInfoMatrix {
     fname = path.normalize(fname + "-xref.csv");
     fs.writeFile(fname, csv.toString(), function(err) {
       if (err) {
-          return console.error(err);
+        console.log(`File "${fname}" failed!`);
+        console.error(err);
+        return;
       }
       console.log(`File "${fname}" created!`);
     });
@@ -174,7 +176,7 @@ export class XrefInfoMatrix {
   /** 
    * Has this Object Number (with ANY generation number) ever been explicitly defined 
    * as free or in-use in any sub-section of any revision?
-   * @param objectNumber - PDF object number (> 0)
+   * @param objectNumber - PDF object number (\> 0)
    * @returns true iff this object has been explicitly defined in any revision as free or in-use
    */
   public isObjectNumberValid(objectNumber: number): boolean {
@@ -185,8 +187,8 @@ export class XrefInfoMatrix {
    * Was this object ID (object number and generation number pair) ever defined as in-use?
    * This means `X Y obj`...`endobj` should exist somewhere in the PDF, even if it is free in the
    * final version PDF.
-   * @param objectNumber - PDF object number > 0
-   * @param generationNumber - PDF generation number >= 0
+   * @param objectNumber - PDF object number (\> 0)
+   * @param generationNumber - PDF generation number (\>= 0)
    * @returns true iff this specific object ID was defined as an in-use object in any revision
    */
   public isObjectIDInUse(objectNumber: number, generationNumber: number): boolean {
@@ -206,7 +208,7 @@ export class XrefInfoMatrix {
    * ensuring to match the generation number. 
    * @param byteOffset - byte offset (_as PDF byte offset, not VSCode offset!_) of start of `X Y obj` in a body section of the PDF.
    *     Note that due to VSCode mangling binary data, VSCode offsets need to be converted to PDF byte offsets. 
-   * @param generationNumber - the generation number `Y` of `X Y obj` in a body section of the PDF
+   * @param generationNumber - the generation number `Y` of `X Y obj` in a body section of the PDF. \>= 0
    * @param flag - either `n` for an in-use object or `f` for a free object
    * @returns the object number as determined by the cross-reference table data or -1 if not found.
    */
@@ -226,8 +228,8 @@ export class XrefInfoMatrix {
   /** 
    * Was this **object ID** (object number and generation number pair) ever defined as in-use?
    * This means a `X Y obj` should also exist in PDF. 
-   * @param objectNumber  - a PDF object number (> 0)
-   * @param generationNumber - a PDF generation number (>= 0) 
+   * @param objectNumber  - a PDF object number (\> 0)
+   * @param generationNumber - a PDF generation number (\>= 0) 
    * 
    * @returns the byte offset in the PDF or -1 if not found.
    * This PDF byte offset then needs to be converted to a VSCode line number to estimate where 
@@ -246,8 +248,8 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * @param objectNumber  - a PDF object number (> 0)
-   * @param generationNumber - a PDF generation number (>= 0) 
+   * @param objectNumber  - a PDF object number (\> 0)
+   * @param generationNumber - a PDF generation number (\>= 0) 
    * @returns the _first_ cross reference section entry line number for a given Object ID (object number and 
    * generation number pair, such as from `X Y R` or `X Y obj`). Returns -1 if no match.
    */
@@ -264,8 +266,8 @@ export class XrefInfoMatrix {
   }
 
   /**
-   * @param objectNumber  - a PDF object number (> 0)
-   * @param generationNumber - a PDF generation number (>= 0) 
+   * @param objectNumber  - a PDF object number (\> 0)
+   * @param generationNumber - a PDF generation number (\>= 0) 
    * @returns Get the complete list of in-use object ID's across all revisions. 
    * Might be empty array `[]` if the object ID was not in any cross reference section. 
    */
@@ -283,7 +285,7 @@ export class XrefInfoMatrix {
   }
 
   /** 
-   * @param objectNumber  - a PDF object number (> 0)
+   * @param objectNumber  - a PDF object number (\> 0)
    * @returns Get the complete revision list of an object's changes across all revisions. 
    * Might be empty array `[]` if the object number was not in any cross reference section. 
    */

@@ -111,9 +111,9 @@ export function hoverPDFDateString(d: string): string {
       }
 
     }
-    catch (e: any) {
-      console.log("ERROR: ", e);
-      s = 'ERROR: ' + e + ' - ' + s;
+    catch (error) {
+      console.log("ERROR: ", (error as Error).message);
+      s = 'ERROR: ' + (error as Error).message + ' - ' + s;
     }
   }
 
@@ -160,10 +160,10 @@ export function hoverNormalizedPDFname(name: string): string {
   const m = name.match(/(#[0-9a-fA-F][0-9a-fA-F])/g);
   if (m == null) { return name; }
   let newName: string = name;
-  for(let i = 0; i < m.length; i++) {
-    const hexDigits: string = m[i].slice(1, 3); // get the 2 hex digits
+  for(const i of m) {
+    const hexDigits: string = i.slice(1, 3); // get the 2 hex digits
     const hexCode: number = parseInt(hexDigits, 16);
-    newName = newName.replace(m[i], String.fromCharCode(hexCode));
+    newName = newName.replace(i, String.fromCharCode(hexCode));
   }
   // console.log(`hoverNormalizedPDFname(${name}) --> ${newName}`);
   return newName;

@@ -10,6 +10,7 @@
       "./server/src"
     ],
     "moduleResolution": "node",
+    "strictNullChecks": true,
     "alwaysStrict": true,
     "strict": true,
     "composite": true,
@@ -17,12 +18,12 @@
     "allowJs": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
   },
   "exclude": [
     "eslint.config.mjs",
-    "./server/src/grammar/*.d.ts", 
-    "./server/src/grammar/*bundle.ts", 
+    "./server/src/grammar/*-bundle.d.ts", 
+    "./server/src/grammar/*-bundle.js", 
     "./out/**"
   ]
 }
