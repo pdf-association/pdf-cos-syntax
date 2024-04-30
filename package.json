@@ -512,7 +512,7 @@
     "install": "^0.13.0",
     "mocha": "^10.4.0",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.7.1"
+    "typescript-eslint": "^7.8.0"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
