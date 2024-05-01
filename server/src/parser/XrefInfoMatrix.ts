@@ -412,11 +412,11 @@ export class XrefInfoMatrix {
       }
 
       if (entryStr.trim().startsWith("trailer") || entryStr.trim().startsWith("startxref") || entryStr.trim().startsWith("%%EOF")) {
-        // came to the end of this cross reference table
+        // came to the end of this cross reference section
         break;
       }
 
-      // Check if cross-reference table contains any prohibited stuff such as
+      // Check if cross-reference section contains any prohibited stuff such as
       // comments, names, dicts, etc. (i.e. anything that is NOT: '0'-'9', 'f', 'n', or
       // PDF whitespace or PDF EOLs).
       let entryPatternMatch = entryStr.match(/([^0-9 fn\t\r\n\0\f]+)/);
@@ -424,7 +424,7 @@ export class XrefInfoMatrix {
         this.diagnostics.push({
           severity: DiagnosticSeverity.Warning,
           range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-          message: `PDF cross reference table contains illegal characters: "${entryPatternMatch[1]}"`,
+          message: `PDF cross reference section contains illegal characters: "${entryPatternMatch[1]}"`,
           source: "pdf-cos-syntax"
         });
       }
@@ -442,6 +442,16 @@ export class XrefInfoMatrix {
           });
           startLineNbr++;
           continue;
+        }
+
+        // Check for invalid generation numbers for both free and in-use (0 <= genNum <= 65535)
+        if (genNum > 65535) {
+          this.diagnostics.push({
+            severity: DiagnosticSeverity.Error,
+            message: `Generation number for object ${currentObjectNum} exceeds 65,535: ${genNum}`,
+            range: { start: Position.create(startLineNbr, 11), end: Position.create(startLineNbr, 15) },
+            source: "pdf-cos-syntax"
+          });
         }
 
         // Check chaining of free list (singly linked list by \d{10} object numbers)
@@ -506,7 +516,7 @@ export class XrefInfoMatrix {
         const newCurrentObjectNum = parseInt(subsectionMatch[1], 10);
         const newEntryCount = parseInt(subsectionMatch[2], 10);
 
-        // Special case for "X 0" subsection marker (no objects)
+        // Special case for "X 0" subsection marker (no objects; likely only trailer is changing)
         if (newEntryCount === 0) {
           entryCount = null;
           currentObjectNum = null;
@@ -553,14 +563,14 @@ export class XrefInfoMatrix {
       } // \d+ \d+ = subsection marker
 
       startLineNbr++;
-    } // for-each line in this cross reference table
+    } // for-each line in this cross reference section
 
     // Was free list terminated with an object number of 0?
     if (nextFreeObj && (nextFreeObj !== 0)) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Warning,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
-        message: `Expected next free object to be object ${nextFreeObj}, but cross reference table ended. Free list of objects not chained correctly`,
+        message: `Expected next free object to be object ${nextFreeObj}, but cross reference section ended. Free list of objects not chained correctly`,
         source: "pdf-cos-syntax"
       });
     }
@@ -569,7 +579,7 @@ export class XrefInfoMatrix {
     if ((entryCount != null) && (entryCount > 0)) {
       this.diagnostics.push({
         severity: DiagnosticSeverity.Error,
-        message: `Expected ${entryCount} more entries before end of cross reference table`,
+        message: `Expected ${entryCount} more entries before end of cross reference section`,
         range: { start: Position.create(startLineNbr, 0), end: Position.create(startLineNbr, Number.MAX_VALUE) },
         source: "pdf-cos-syntax"
       });
