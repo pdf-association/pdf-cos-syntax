@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.88.0"
+    "vscode": "^1.89.0"
   },
   "icon": "assets/pdf-light.png",
   "main": "./out/client/src/extension",
@@ -497,11 +497,11 @@
     "generate": "npx ohm generateBundles --withTypes ./server/src/grammar/grammar_pdfTokens.ohm"
   },
   "devDependencies": {
-    "@eslint/js": "^9.1.1",
+    "@eslint/js": "^9.2.0",
     "@ohm-js/cli": "^2.0.0",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.7",
-    "@types/vscode": "^1.88.0",
+    "@types/node": "^20.12.8",
+    "@types/vscode": "^1.89.0",
     "@vscode/test-electron": "^2.3.9",
     "copyfiles": "^2.4.1",
     "eslint": "^8.57.0",
