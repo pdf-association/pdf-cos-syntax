@@ -30,6 +30,7 @@ const grammar = ohm.grammar(grammarString);
 function getTokens(text: string): PDFToken[] {
   console.log(`getTokens(..) - Ohm`);
   let lineNbr = 1;
+  let nesting_depth = 0;
 
   const semantics = grammar.createSemantics();
 
@@ -47,41 +48,49 @@ function getTokens(text: string): PDFToken[] {
       return [];
     },
     header(_1, majorVer, _3, minorVer, _5) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "header",
+        depth: nesting_depth,
         content: majorVer.sourceString + "." + minorVer.sourceString,
       };
       return [token];
     },
     endobj(_1) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "endobj",
+        depth: nesting_depth,
       };
       return [token];
     },
-    indirect_object_start(objNum, _2, genNum, _4, _5) {
+    direct_object_start(objNum, _2, genNum, _4, _5) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
-        type: "indirect_object_start",
+        type: "direct_object_start",
+        depth: nesting_depth,
         objNum: parseInt(objNum.sourceString),
         genNum: parseInt(genNum.sourceString),
       };
       return [token];
     },
     stream(_1) {
+      nesting_depth = 1;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "stream",
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -91,15 +100,19 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "endstream",
+        depth: nesting_depth,
       };
+      nesting_depth = 0;
       return [token];
     },
     dict_start(_1) {
+      nesting_depth = nesting_depth + 1;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "dict_start",
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -109,15 +122,19 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "dict_end",
+        depth: nesting_depth,
       };
+      nesting_depth = nesting_depth - 1;
       return [token];
     },
     array_start(_1) {
+      nesting_depth = nesting_depth + 1;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "array_start",
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -127,7 +144,9 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "array_end",
+        depth: nesting_depth,
       };
+      nesting_depth = nesting_depth - 1;
       return [token];
     },
     name(_1, characters) {
@@ -137,6 +156,7 @@ function getTokens(text: string): PDFToken[] {
         end: this.source.endIdx,
         type: "name",
         content: characters.sourceString,
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -147,6 +167,7 @@ function getTokens(text: string): PDFToken[] {
         end: this.source.endIdx,
         type: "string_literal",
         content: content.sourceString,
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -157,6 +178,7 @@ function getTokens(text: string): PDFToken[] {
         end: this.source.endIdx,
         type: "hex_string",
         content: content.sourceString,
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -166,6 +188,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "indirect_ref",
+        depth: nesting_depth,
         objNum: parseInt(objNum.sourceString),
         genNum: parseInt(genNum.sourceString),
       };
@@ -177,6 +200,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "integer",
+        depth: nesting_depth,
         content: parseInt(sign.sourceString + digits.sourceString)
       };
       return [token];
@@ -187,6 +211,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "real",
+        depth: nesting_depth,
         content: parseFloat(
             sign.sourceString +
             part1.sourceString +
@@ -202,6 +227,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "bool",
+        depth: nesting_depth,
         content: value.sourceString === "true",
       };
       return [token];
@@ -212,15 +238,18 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "null",
+        depth: nesting_depth,
       };
       return [token];
     },
     xref(_1) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "xref",
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -233,11 +262,13 @@ function getTokens(text: string): PDFToken[] {
       return [];
     },
     xref_entry(tenEntry, _1, fiveEntry, _2, status) {
+      nesting_depth = 1;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "xref_entry",
+        depth: nesting_depth,
         tenEntry: parseInt(tenEntry.sourceString),
         fiveEntry: parseInt(fiveEntry.sourceString),
         status: status.sourceString,
@@ -245,29 +276,35 @@ function getTokens(text: string): PDFToken[] {
       return [token];
     },
     trailer(_1) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "trailer",
+        depth: nesting_depth,
       };
       return [token];
     },
     eof(_1) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "eof",
+        depth: nesting_depth,
       };
       return [token];
     },
     startxref(_1) {
+      nesting_depth = 0;
       const token: PDFToken = {
         line: lineNbr,
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "startxref",
+        depth: nesting_depth,
       };
       return [token];
     },
@@ -277,6 +314,7 @@ function getTokens(text: string): PDFToken[] {
         start: this.source.startIdx,
         end: this.source.endIdx,
         type: "comment",
+        depth: nesting_depth,
         // content: commentText.sourceString, // no need to keep comment itself
       };
       return [token];

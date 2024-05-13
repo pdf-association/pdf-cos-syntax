@@ -15,7 +15,10 @@
 'use strict';
 
 
-/** Ohm parser semantic token object */
+/** 
+ * Ohm.js parser semantic token object.
+ * Currently does not support tokens that can span lines. 
+ */
 export interface PDFToken {
   /** the type of semantic token */
   type: string;
@@ -28,6 +31,13 @@ export interface PDFToken {
 
   /** ending offset of token in {@link line} in VSCode. \>= 0, \>= {@link start} */
   end: number;
+
+  /**
+   * Nesting depth: 0 = structural keywords, markers, direct objects. 1 = streams, xref entries and data inside direct objects.
+   * Always >= 0. Relative to CORRECTNESS, not actual PDF.
+   * Dictionary and array start/end tokens are at +1 depth. 
+   */
+  depth: number;
 
   /** custom properties, depends on {@link "type"} */
   [key: string]: number | string | boolean;

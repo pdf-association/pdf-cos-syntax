@@ -41,11 +41,11 @@ PDFObject {
   revision = body* xref* trailer? startxref eof
 
   // Body
-  body = indirect_object_start | object | stream | indirect_object_end 
+  body = direct_object_start | object | stream | indirect_object_end 
   
   // Parts of indirect objects - allows editing so extra lenient 
-  indirect_object_start = ws_incl_eol* digit+ ws_incl_eol digit+ ws_incl_eol "obj" ws_incl_eol*
-  indirect_object_end = ws_incl_eol* "endobj" ws_incl_eol 
+  direct_object_start = ws_incl_eol* digit+ ws_incl_eol digit+ ws_incl_eol "obj" ws_incl_eol*
+  direct_object_end = ws_incl_eol* "endobj" ws_incl_eol 
   stream = ws_incl_eol* "stream" ws_incl_eol (~"endstream" any)* ws_incl_eol? "endstream" ws_incl_eol
     
   // PDF objects NOT incl. streams (i.e. things allowed as array elements or dict key values)

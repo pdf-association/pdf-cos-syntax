@@ -45,16 +45,13 @@ export interface PDFCOSSyntaxSettings {
 
 
 /** 
- * cached data about each PDF document that is open in VSCode 
+ * Cached data about each PDF document that is open in VSCode 
  */
 export interface PDFDocumentData {
-  /** current settings */
-  settings: PDFCOSSyntaxSettings;
-
   /** cross reference table data */
   xrefMatrix: XrefInfoMatrix;
 
-  /** Ohm parser results */
+  /** Ohm parser semantic tokens & modifiers */
   ohmParseResults: PDFToken[]; 
 
   /** diagnostics from parsing, cross reference table, etc. */

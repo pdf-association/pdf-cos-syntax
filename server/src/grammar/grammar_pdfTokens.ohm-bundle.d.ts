@@ -14,7 +14,7 @@ import {
 export interface PDFTokenizerActionDict<T> extends BaseActionDict<T> {
   pdf_token?: (this: NonterminalNode, arg0: IterationNode) => T;
   header?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: NonterminalNode, arg4: IterationNode) => T;
-  indirect_object_start?: (this: NonterminalNode, arg0: IterationNode, arg1: NonterminalNode, arg2: IterationNode, arg3: NonterminalNode, arg4: TerminalNode) => T;
+  direct_object_start?: (this: NonterminalNode, arg0: IterationNode, arg1: NonterminalNode, arg2: IterationNode, arg3: NonterminalNode, arg4: TerminalNode) => T;
   endobj?: (this: NonterminalNode, arg0: TerminalNode) => T;
   stream?: (this: NonterminalNode, arg0: TerminalNode) => T;
   endstream?: (this: NonterminalNode, arg0: TerminalNode) => T;

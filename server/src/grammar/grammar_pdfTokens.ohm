@@ -43,7 +43,7 @@ PDFTokenizer {
               array_end |
               name |
               xref_entry |
-              indirect_object_start |
+              direct_object_start |
               endobj |
               indirect_ref |
               string_literal |
@@ -58,8 +58,8 @@ PDFTokenizer {
   // File header
   header = "%PDF-" digit "." digit (~eol any)* 
     
-  // Parts of indirect objects - allows editing so extra lenient 
-  indirect_object_start = digit+ ws_incl_eol digit+ ws_incl_eol "obj" 
+  // Parts of direct objects - allows editing so extra lenient 
+  direct_object_start = digit+ ws_incl_eol digit+ ws_incl_eol "obj" 
   endobj = "endobj"  
   stream = "stream"
   endstream = "endstream"

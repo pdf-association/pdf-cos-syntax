@@ -55,8 +55,8 @@
         "description": "Represents the PDF 'endobj' keyword"
       },
       {
-        "id": "indirect_object_start",
-        "description": "Represents start of a PDF indirect object 'X Y obj'"
+        "id": "direct_object_start",
+        "description": "Represents start of a PDF object 'X Y obj'"
       },
       {
         "id": "stream",
@@ -155,6 +155,10 @@
       {
         "id": "isArrayElement",
         "description": "Token is an element of an array object"
+      },
+      {
+        "id": "isStream",
+        "description": "Token is the start of an object that has a stream"
       }
     ],
     "semanticTokenStyleDefaults": [
