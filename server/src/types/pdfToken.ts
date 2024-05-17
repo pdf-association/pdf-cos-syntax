@@ -34,7 +34,7 @@ export interface PDFToken {
 
   /**
    * Nesting depth: 0 = structural keywords, markers, direct objects. 1 = streams, xref entries and data inside direct objects.
-   * Always >= 0. Relative to CORRECTNESS, not actual PDF.
+   * Always \>= 0. Relative to CORRECTNESS, not actual PDF.
    * Dictionary and array start/end tokens are at +1 depth. 
    */
   depth: number;

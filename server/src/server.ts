@@ -17,26 +17,29 @@
  */
 'use strict';
 
-import {
-  createConnection,
-  TextDocuments,
-  Diagnostic,
-  DiagnosticSeverity,
-  ProposedFeatures,
-  InitializeParams,
-  DidChangeConfigurationNotification,
+import type {
   CompletionItem,
-  TextDocumentPositionParams,
-  TextDocumentSyncKind,
-  InitializeResult,
-  Position,
   Definition,
+  Diagnostic,
+  DocumentSymbol,
+  DocumentSymbolParams,
+  DocumentUri,
+  InitializeParams,
+  InitializeResult,
   Location,
   Hover,
-  DocumentSymbolParams,
-  DocumentSymbol,
+  TextDocumentPositionParams,
+} from "vscode-languageserver/node";
+
+import {
+  createConnection,
+  DiagnosticSeverity,
+  DidChangeConfigurationNotification,
+  Position,
+  ProposedFeatures,
   SymbolKind,
-  DocumentUri,
+  TextDocuments,
+  TextDocumentSyncKind,
 } from "vscode-languageserver/node";
 
 import type { Range } from "vscode-languageserver-textdocument";

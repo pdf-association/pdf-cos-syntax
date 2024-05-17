@@ -54,7 +54,7 @@ export function DictKeyCodeCompletion() : CompletionItem[] {
     else {
       // Multiple objects have a key with this name. Clean out the specifics.
       alreadyExist.documentation = "";
-      if (alreadyExist.detail !== "Many...") {
+      if (alreadyExist.detail && (alreadyExist.detail !== "Many...")) {
         alreadyExist.detail = alreadyExist.detail + ", " + k.Object;
         // Too many objects so don't list them all
         if (alreadyExist.detail.length > 90) { alreadyExist.detail = "Many..."; }
