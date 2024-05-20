@@ -501,7 +501,7 @@
     "generate": "npx ohm generateBundles --withTypes ./server/src/grammar/grammar_pdfTokens.ohm"
   },
   "devDependencies": {
-    "@eslint/js": "^9.2.0",
+    "@eslint/js": "^9.3.0",
     "@ohm-js/cli": "^2.0.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.12",
