@@ -517,7 +517,7 @@
     "mocha": "^10.4.0",
     "npm": "^10.8.0",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.9.0"
+    "typescript-eslint": "^7.10.0"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
