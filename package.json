@@ -511,13 +511,13 @@
     "eslint": "^8.57.0",
     "eslint-plugin-deprecation": "^2.0.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-jsdoc": "^48.2.5",
+    "eslint-plugin-jsdoc": "^48.2.6",
     "eslint-plugin-tsdoc": "^0.2.17",
     "install": "^0.13.0",
     "mocha": "^10.4.0",
     "npm": "^10.8.0",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.10.0"
+    "typescript-eslint": "^7.11.0"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
