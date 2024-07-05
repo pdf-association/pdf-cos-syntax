@@ -34,10 +34,11 @@ function getTokens(text: string): PDFToken[] {
 
   const semantics = grammar.createSemantics();
 
-  semantics.addOperation("extract()", {
+  semantics.addOperation<PDFToken[]>("extract", {
     _iter(...children) {
       let childTokenList: PDFToken[] = [];
       children.forEach((child, _index) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const childTokens: PDFToken[] = child.extract();
         childTokenList = childTokenList.concat(childTokens);
       });
@@ -345,6 +346,7 @@ function getTokens(text: string): PDFToken[] {
         /** @todo - Could retry by stitching a few lines together, but VSCode SemanticTokens wants per line */
         console.log(`Line ${lineNbr}: getTokens() failed! "${line.trim()}"`);
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const lineTokens: PDFToken[] = semantics(matchResult).extract();
         // console.log(`Line ${lineNbr}: tokenized "${line.trim()}": `, lineTokens);
         // When encounter a "stream" token, skip until "endstream" (or "endobj" or "X Y obj")

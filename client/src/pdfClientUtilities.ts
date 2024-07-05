@@ -43,6 +43,7 @@ function _EOLtoBytes(eol: vscode.EndOfLine): number {
  * @param bytes - the Buffer of bytes to encode as ASCII-85
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const a85encoded: string = Ascii85.encode(bytes, { delimiter: false });
   const res = _stringToChunks(a85encoded + '~>', 70);
   // console.log(`_convertToAscii85filter: ${res}`); 
@@ -59,11 +60,12 @@ export function convertToAscii85Filter(bytes: Buffer): string[] {
 export function convertFromAscii85Filter(a85: string): string {
   try {
     if (a85.slice(a85.length - 2, a85.length - 1) !== '~>') {
-      console.error(`Error: ASCII-85 data did not with '~>' end of data marker!`);
-      vscode.window.showErrorMessage(`Error: ASCII-85 data did not with '~>' end of data marker!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
+      console.error(`Error: ASCII-85 data did not end with '~>' end of data marker!`);
+      vscode.window.showErrorMessage(`Error: ASCII-85 data did not end with '~>' end of data marker!`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
       return '';
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const s: string = Ascii85.decode(a85);
     // console.log(`_convertFromAscii85filter: ${s}`); 
     return s;

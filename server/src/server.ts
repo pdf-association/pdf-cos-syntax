@@ -105,7 +105,7 @@ const defaultSettings: PDFCOSSyntaxSettings = {
 let globalSettings: PDFCOSSyntaxSettings = defaultSettings;
 
 // Global map of URIs --> PDF file data (semantic tokens, xref, outline, diagnostics, etc)
-const pdfFileData: Map<string, PDFDocumentData> = new Map();
+const pdfFileData = new Map<string, PDFDocumentData>();
 
 
 // Look up a URI to fetch cached information
@@ -177,9 +177,7 @@ connection.onInitialize((_params: InitializeParams) => {
   );
 
   hasDiagnosticRelatedInformationCapability = !!(
-    capabilities.textDocument &&
-    capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation
+    capabilities.textDocument?.publishDiagnostics?.relatedInformation
   );
 
   console.log(`hasConfigurationCapability=${hasConfigurationCapability}, hasDiagnosticRelatedInformationCapability=${hasDiagnosticRelatedInformationCapability}`);
@@ -242,7 +240,7 @@ connection.onDidChangeConfiguration((_change) => {
       documents.all().forEach(validateTextDocument);
     });
   } else {
-    globalSettings = (_change.settings.pdfcossyntax as PDFCOSSyntaxSettings || defaultSettings);
+    globalSettings = _change.settings.pdfcossyntax;
     // Revalidate all open text documents with new settings
     documents.all().forEach(validateTextDocument);
   }

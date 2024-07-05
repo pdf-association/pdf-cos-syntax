@@ -92,7 +92,7 @@ export class EntryNode {
 
 export class XrefInfoMatrix {
   /** 
-   * 2D sparse matrix cross reference table for the PDF 
+   * 2D sparse matrix cross reference table for the PDF mat
    * (all sections + sub-sections):
    * - 1st index = object number (all generation numbers)
    * - 2nd index = file revision: 
@@ -135,15 +135,16 @@ export class XrefInfoMatrix {
     for (let objNum = 0; objNum < this.matrix.length; objNum++) {
       if (this.matrix[objNum]) {
         line = `${objNum}`;
-        for (const objRev of this.matrix[objNum]) {
-          if (objRev) {
-            if (objRev.inUse) {
+        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+        for (let rev = 0; rev < this.matrix[objNum].length; rev++) {
+          if (this.matrix[objNum][rev]) {
+            if (this.matrix[objNum][rev].inUse) {
               // in-use object
-              line = line + `,"in-use @ offset ${objRev.first} (line ${objRev.lineNbr})"`;
+              line = line + `,"in-use @ offset ${this.matrix[objNum][rev].first} (line ${this.matrix[objNum][rev].lineNbr})"`;
             }
             else {
               // free object
-              line = line + `,"free (line ${objRev.lineNbr})"`;
+              line = line + `,"free (line ${this.matrix[objNum][rev].lineNbr})"`;
             }
           }
           else {
@@ -180,7 +181,10 @@ export class XrefInfoMatrix {
    * @returns true iff this object has been explicitly defined in any revision as free or in-use
    */
   public isObjectNumberValid(objectNumber: number): boolean {
-    return this.matrix[objectNumber] !== undefined;
+    if ((this.matrix.length) && (objectNumber >= 0) && (this.matrix[objectNumber])) {
+      return true;
+    }
+    return false;
   }
 
   /** 
@@ -192,7 +196,7 @@ export class XrefInfoMatrix {
    * @returns true iff this specific object ID was defined as an in-use object in any revision
    */
   public isObjectIDInUse(objectNumber: number, generationNumber: number): boolean {
-    if (this.matrix[objectNumber] !== undefined) {
+    if ((objectNumber >= 0) && (this.matrix[objectNumber])) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if ((generationNumber === e.generationNumber) && e.inUse) {
@@ -236,7 +240,7 @@ export class XrefInfoMatrix {
    * the PDF object `X Y obj` ... `endobj` is approximately located.
    */
   public getByteOffsetOfInuseObjectID(objectNumber: number, generationNumber: number): number {
-    if (this.matrix[objectNumber] !== undefined) {
+    if ((objectNumber >= 0) && (this.matrix[objectNumber])) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if ((generationNumber === e.generationNumber) && e.inUse) {
@@ -254,7 +258,7 @@ export class XrefInfoMatrix {
    * generation number pair, such as from `X Y R` or `X Y obj`). Returns -1 if no match.
    */
   public getFirstLineNumberForObjectID(objectNumber: number, generationNumber: number): number {
-    if (this.matrix[objectNumber] !== undefined) {
+    if ((objectNumber >= 0) && (this.matrix[objectNumber])) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if ((generationNumber === e.generationNumber) && e.inUse) {
@@ -273,7 +277,7 @@ export class XrefInfoMatrix {
    */
   public getInUseEntriesForObjectID(objectNumber: number, generationNumber: number): EntryNode[] {
     const entries: EntryNode[] = [];
-    if (this.matrix[objectNumber] !== undefined) {
+    if ((objectNumber >= 0) && (this.matrix[objectNumber])) {
       let e: EntryNode;
       for (e of this.matrix[objectNumber]) {
           if ((generationNumber === e.generationNumber) && e.inUse) {

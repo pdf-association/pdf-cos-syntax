@@ -133,7 +133,7 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument): Pr
   const tokens: PDFToken[] = await client
     .sendRequest("textDocument/semanticTokens/full", {
       textDocument: { uri: document.uri.toString() },
-  }) as PDFToken[];
+  });
   pdf_tokens = tokens;
   console.log('Client: fetch_semantic_tokens_from_LSP', pdf_tokens);
   const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
@@ -151,7 +151,7 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument): Pr
   semantic_doc_uri = document.uri;
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join("out", "server", "src", "server.js")
@@ -207,8 +207,8 @@ export async function activate(context: vscode.ExtensionContext) {
   vscode.workspace.onDidChangeConfiguration(event => {
     console.log('Client onDidChangeConfiguration');
     if (event.affectsConfiguration('pdf-cos-syntax')) {
-      const updatedSettings = getExtensionSettings();
-      console.log('Client new settings: ${updatedSettings}');
+      // const updatedSettings = getExtensionSettings();
+      // console.log('Client new settings: ${updatedSettings}');
     }
   });
   
