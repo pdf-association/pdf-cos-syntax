@@ -7,7 +7,6 @@ import url from 'node:url';
 
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import deprecationPlugin from 'eslint-plugin-deprecation';
 import eslintCommentsPlugin from 'eslint-plugin-eslint-comments';
 import jsdocPlugin from 'eslint-plugin-jsdoc';
 import tsdocPlugin from 'eslint-plugin-tsdoc';
@@ -20,7 +19,6 @@ export default tseslint.config(
   {
     plugins: {
       ['@typescript-eslint']: tseslint.plugin,
-      ['deprecation']: deprecationPlugin,
       ['eslint-comments']: eslintCommentsPlugin,
       ['jsdoc']: jsdocPlugin,
       ['tsdoc']: tsdocPlugin
@@ -37,10 +35,10 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
-  jsdocPlugin.configs['flat/recommended-typescript-error'],
 
   // base config
   {
+    // files: [ 'client/src/*.tx', 'server/src/*.ts', 'server/src/grammar/*.ts'],
     languageOptions: {
       globals: {
         ...globals.es2020,
@@ -57,9 +55,6 @@ export default tseslint.config(
     },
 
     rules: {
-      // avoid deprecated APIs
-      'deprecation/deprecation': 'error',
-
       '@typescript-eslint/ban-ts-comment': [
         'error',
         {
