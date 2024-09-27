@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.92.0"
+    "vscode": "^1.93.0"
   },
   "icon": "assets/pdf-light.png",
   "main": "./out/client/src/extension",
@@ -501,24 +501,24 @@
     "generate": "npx ohm generateBundles --withTypes ./server/src/grammar/grammar_pdfTokens.ohm"
   },
   "devDependencies": {
-    "@eslint/js": "^9.10.0",
+    "@eslint/js": "^9.11.1",
     "@ohm-js/cli": "^2.0.0",
     "@types/eslint__js": "^8.42.3",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "^22.5.4",
+    "@types/mocha": "^10.0.8",
+    "@types/node": "^22.7.3",
     "@types/vscode": "^1.93.0",
     "@vscode/test-electron": "^2.4.1",
     "copyfiles": "^2.4.1",
-    "eslint": "^9.10.0",
+    "eslint": "^9.11.1",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-jsdoc": "^48.11.0",
     "eslint-plugin-tsdoc": "^0.3.0",
     "install": "^0.13.0",
-    "typescript": "^5.5.4",
-    "typescript-eslint": "^8.4.0"
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.7.0"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
+    "eslint-plugin-jsdoc": "^50.3.0",
     "fs": "^0.0.1-security",
     "ohm-js": "^17.1.0",
     "sharp": "^0.33.5",
