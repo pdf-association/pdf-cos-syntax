@@ -17,6 +17,7 @@
 'use strict';
 
 import * as vscode from "vscode";
+import { URI, Utils} from "vscode-uri";
 
 interface PDFMessage {
   type: string;
@@ -79,7 +80,7 @@ export class SankeyPanel
     );
     
     SankeyPanel.currentPanel = new SankeyPanel(panel, context);
-    panel.webview.postMessage({ type: {type: 'CSV-Data', value: csvData } }).then(null, () => {console.error(`postMessage() was rejected!`);});
+    panel.webview.postMessage({ type: {type: 'CSV-Data', value: csvData } }).then(undefined, () => {console.error(`postMessage() was rejected!`);});
   }
 
   public static revive(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): void {
@@ -127,7 +128,7 @@ export class SankeyPanel
     console.log(`sendDataToWebview`);
     // Send a message to the webview 
     // You can send any JSON serializable data.
-    this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' }).then(null, () => {console.error(`postMessage() was rejected!`);});
+    this._panel.webview.postMessage({ type: 'refactor', value: 'Do it now!' }).then(undefined, () => {console.error(`postMessage() was rejected!`);});
   }
 
   public dispose(): void {

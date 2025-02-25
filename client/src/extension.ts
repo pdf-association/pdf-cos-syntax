@@ -376,7 +376,7 @@ export async function statusBarClick(
   _uri: vscode.Uri
 ): Promise<void> {
   const lines = getNumberOfSelectedLines(vscode.window.activeTextEditor);
-  vscode.window.showInformationMessage(`${lines} line(s) selected.`).then(null, () => {console.error(`showErrorMessage() was rejected!`);});
+  vscode.window.showInformationMessage(`${lines} line(s) selected.`).then(undefined, () => {console.error(`showErrorMessage() was rejected!`);});
 }
 
 /**
@@ -481,7 +481,7 @@ export async function commandHandler(
     }
     case "Hex2Literal": {
       // Need to select a full hex string incl. whitespace and `<`/`>`
-      if (inp.match(/^<[0-9a-fA-F \t\0\r\n\f]*>$/)) {
+      if (/^<[0-9a-fA-F \t\0\r\n\f]*>$/.exec(inp)) {
         out = pdf.convertHexToLiteralString(inp);
       }
       break;
@@ -495,7 +495,7 @@ export async function commandHandler(
   if (out.trim().length > 0) {
     editor.edit((editBuilder) => {
       editBuilder.replace(selection, out);
-    }).then(null, () => {console.error(`editor.edit() was rejected!`);});
+    }).then(undefined, () => {console.error(`editor.edit() was rejected!`);});
   }
 }
 

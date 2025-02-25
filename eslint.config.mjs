@@ -73,13 +73,14 @@ export default tseslint.config(
         'error',
         { allowIIFEs: true },
       ],
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       'no-constant-condition': 'off',
       '@typescript-eslint/no-unnecessary-condition': [
         'error',
         { allowConstantLoopConditions: true },
       ],
       '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off', // MAY NEED TO BE CHANGED IN CODE for performance!
       '@typescript-eslint/restrict-template-expressions': [
         'error',
         {
