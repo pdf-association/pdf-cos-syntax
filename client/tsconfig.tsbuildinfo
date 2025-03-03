@@ -1,0 +1,1 @@
+{"root":["./src/pdffoldingrangeprovider.ts","./src/extension.ts","./src/pdfclientutilities.ts","./src/sankey-webview.ts","./src/test/completion.test.ts","./src/test/diagnostics.test.ts","./src/test/helper.ts","./src/test/index.ts","./src/test/runtest.ts","./src/types/constants.ts","./src/types/index.ts","./src/types/tokentypes.ts"],"version":"5.8.2"}
