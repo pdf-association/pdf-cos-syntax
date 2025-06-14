@@ -383,7 +383,7 @@ export async function convertImageToAscii85DCT(
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info.width !== undefined) && (info.height !== undefined)) {
+        if (info.width && info.height) {
           width = info.width;
           height = info.height;
         }
@@ -455,7 +455,7 @@ export async function convertImageToAsciiHexDCT(
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info.width !== undefined) && (info.height !== undefined)) {
+        if (info.width && info.height) {
           width = info.width;
           height = info.height;
         }
@@ -530,18 +530,17 @@ export async function convertImageToRawAscii85(
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info.width !== undefined) && (info.height !== undefined)) {
+        if (info.width && info.height) {
           width = info.width;
           height = info.height;
-        }
-        if (info.space) {
+          
           if ((info.space === 'cmyk') && (info.channels === 4)) {
             pdfCS = '/DeviceCMYK';
           }
           else if ((info.space === 'srgb') && (info.channels === 3)) {
             pdfCS = '/DeviceRGB';
           }
-          else if ((info.space === 'b-w') || (info.space === 'bw')) {
+          else if ((info.space === 'b-w') && (info.channels === 1)) {
             pdfCS = '/DeviceGray';
           }
         }
@@ -609,19 +608,17 @@ export async function convertImageToRawAsciiHex(
     await img.metadata()
       .then((info) => {
         // console.log(info);
-        if ((info.width !== undefined) && (info.height !== undefined)) {
+        if (info.width && info.height) {
           width = info.width;
           height = info.height;
-        }
 
-        if (info.space) {
           if ((info.space === 'cmyk') && (info.channels === 4)) {
             pdfCS = '/DeviceCMYK';
           }
           else if ((info.space === 'srgb') && (info.channels === 3)) {
             pdfCS = '/DeviceRGB';
           }
-          else if ((info.space === 'b-w') || (info.space === 'bw')) {
+          else if ((info.space === 'b-w') && (info.channels === 1)) {
             pdfCS = '/DeviceGray';
           }
         }
