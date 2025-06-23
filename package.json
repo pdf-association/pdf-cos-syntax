@@ -28,7 +28,7 @@
     "Adobe PDF"
   ],
   "engines": {
-    "vscode": "^1.84.2"
+    "vscode": "^1.101.0"
   },
   "icon": "assets/pdf-light.png",
   "main": "./client/out/extension",
@@ -472,10 +472,5 @@
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.3",
-    "@types/vscode": "^1.101.0",
-    "typescript": "^5.8.3"
   }
 }
