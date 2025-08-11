@@ -693,7 +693,7 @@ connection.onDocumentSymbol(
           }
 
         default: {
-          throw new Error(`Unexpected PDF section ${section.toString()}!`);
+          throw new Error(`Unexpected PDF section ${section}!`);
         }
       }
     }

@@ -163,7 +163,7 @@ export class XrefInfoMatrix {
     let fname = uri.replace("file:///", ""); 
     fname = fname.replace("%3A", ":");
     fname = path.normalize(fname + "-xref.csv");
-    fs.writeFile(fname, csv.toString(), function(err) {
+    fs.writeFile(fname, csv, function(err) {
       if (err) {
         console.log(`File "${fname}" failed!`);
         console.error(err);

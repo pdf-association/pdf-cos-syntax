@@ -584,7 +584,7 @@ export default class PDFParser {
     while ((i < this._markers.length) &&
            (this._markers[i].section === PDFSectionType.Footer) && 
            (this._markers[i].revision === revision)) {
-      if (this._markers[i].marker !== subsections[subsections.length - 1].toString()) {
+      if (this._markers[i].marker !== subsections[subsections.length - 1]) {
         subsections.push(this._markers[i].marker);
       }
       i++;

@@ -17,7 +17,6 @@
 'use strict';
 
 import * as vscode from "vscode";
-import { URI, Utils} from "vscode-uri";
 
 interface PDFMessage {
   type: string;

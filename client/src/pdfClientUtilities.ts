@@ -540,7 +540,7 @@ export async function convertImageToRawAscii85(
           else if ((info.space === 'srgb') && (info.channels === 3)) {
             pdfCS = '/DeviceRGB';
           }
-          else if ((info.space === 'b-w') && (info.channels === 1)) {
+          else if (info.space === 'b-w') {
             pdfCS = '/DeviceGray';
           }
         }
@@ -618,7 +618,7 @@ export async function convertImageToRawAsciiHex(
           else if ((info.space === 'srgb') && (info.channels === 3)) {
             pdfCS = '/DeviceRGB';
           }
-          else if ((info.space === 'b-w') && (info.channels === 1)) {
+          else if (info.space === 'b-w') {
             pdfCS = '/DeviceGray';
           }
         }
