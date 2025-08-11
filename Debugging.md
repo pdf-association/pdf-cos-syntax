@@ -132,14 +132,47 @@ The [Ohm.js](https://ohmjs.org/) files (`*.ohm`) need to be physically included 
 
 ## Supporting Sharp across multiple platforms
 
-[Sharp](https://www.npmjs.com/package/sharp) is used to read image files such as JPEG, PNG, PPM, etc. and depends it on `libvips` which is a platform-dependent DLLs, dylibs, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be installed locally - see https://sharp.pixelplumbing.com/install: 
+[Sharp](https://www.npmjs.com/package/sharp) is used to read image files such as JPEG, PNG, PPM, TIFF, etc. and it depends on the C++ `libvips` library which is supplied as a platform-dependent DLL, dylib, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be installed locally - see https://sharp.pixelplumbing.com/install. These cross-platform `libvips` libraries will be installed in `./node_modules/@img/sharp-<os>-<cpu>/...` (from https://github.com/lovell/sharp-libvips/releases)
 
-```
-npm install --os=win32 --cpu=x64 sharp
-npm install --os=darwin --cpu=arm64 sharp
-npm install --os=darwin --cpu=x64 sharp
-npm install --os=linux --cpu=arm64 sharp
-npm install --os=linux --cpu=x64 sharp
+**Note that on Windows (at least), NPM fails to install cross-platform binary support libraries! This means there will be missing sub-folders below `./node_modules/@img/`. Further - currently even `--force --os linux` also doesn't install Sharp or anything below `@img`!! Only `npm install --force --os linux --cpu x64 @img/sharp-libvips-linux-x64` works under Windows but I don't know how to manually merge...**
+
+```cmd
+mkdir TEMP-sharp
+cd TEMP-sharp
+
+mkdir win32-x64
+cd win32-x64
+npm install --os win32  --cpu x64   sharp
+tree /F node_modules\@img
+cd ..
+
+mkdir darwin-arm64
+cd darwin-arm64
+npm install --os darwin --cpu arm64 sharp 
+tree /F node_modules\@img
+cd ..
+
+mkdir darwin-x64
+cd darwin-x64
+npm install --os darwin --cpu x64   sharp 
+tree /F node_modules\@img
+cd ..
+
+mkdir linux-arm64
+cd linux-arm64
+npm install --force --os linux --cpu arm64 @img/sharp-libvips-linux-arm64
+tree /F node_modules\@img
+cd ..
+
+mkdir linux-x64
+cd linux-x64
+npm install --force --os linux --cpu x64 @img/sharp-libvips-linux-x64
+tree /F node_modules\@img
+cd ..
+REM del /F/S/Q *.*
 ```
 
-This makes the VSIX package much bigger as it is multi-platform including `libvips` runtimes!
+This is noticable as it makes the VSIX package _much bigger_ as it includes all the necessary multi-platform `libvips` binary runtime libraries (.dll, .dylib, etc.)! If the VSIX is only ~10MB then the cross-platform support is missing!
+
+Note that `--cpu ia32` (32 bit) is not supported to keep the VSIX package size down - everyone should be on 64 bit CPU by now.
+
