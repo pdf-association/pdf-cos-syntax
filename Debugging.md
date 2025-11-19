@@ -1,16 +1,15 @@
-# Extension debugging and development environment 
+# Extension debugging and development environment
 
-Heavily documented sample code for https://code.visualstudio.com/api/language-extensions/language-server-extension-guide
+Heavily documented sample code for <https://code.visualstudio.com/api/language-extensions/language-server-extension-guide>
 
-- https://code.visualstudio.com/api
-- https://code.visualstudio.com/api/language-extensions/language-server-extension-guide 
-- https://langserver.org/
-- https://microsoft.github.io/language-server-protocol/
-
+- <https://code.visualstudio.com/api>
+- <https://code.visualstudio.com/api/language-extensions/language-server-extension-guide>
+- <https://langserver.org/>
+- <https://microsoft.github.io/language-server-protocol/>
 
 ## Structure
 
-```
+```text
 .
 ├── package.json // The extension manifest.
 ├── node_modules
@@ -29,11 +28,11 @@ Heavily documented sample code for https://code.visualstudio.com/api/language-ex
         └── ... other server-side files and folders ...
 ```
 
-## Running 
+## Running
 
 - Run `npm install` in the root folder. This installs all necessary NPM modules.
-   - In order to make a VSIX package additional Sharp modules for other platforms must also be installed. See [below](#supporting-sharp-across-multiple-platforms) 
-   - Check the dev vs production packages list: `npm list` vs `npm list --omit=dev`
+  - In order to make a VSIX package additional Sharp modules for other platforms must also be installed. See [below](#supporting-sharp-across-multiple-platforms)
+  - Check the dev vs production packages list: `npm list` vs `npm list --omit=dev`
 - Open VS Code on this folder.
 - Press Ctrl+Shift+B to start compiling the client and server in [watch mode](https://code.visualstudio.com/docs/editor/tasks#:~:text=The%20first%20entry%20executes,the%20HelloWorld.js%20file.).
 - Switch to the Run and Debug View in the Sidebar (Ctrl+Shift+D).
@@ -54,38 +53,37 @@ vsce package
 vsce publish
 ```
 
-See also https://code.visualstudio.com/api/working-with-extensions/publishing-extension.
+See also <https://code.visualstudio.com/api/working-with-extensions/publishing-extension>.
 
-# Development Notes for PDF/FDF
+## Development Notes for PDF/FDF
 
 - cannot use "FirstLine" in `package.json` because otherwise new PDFs cannot use the "PDF-" snippets as file type is not recognized and snippets don't work inside comments. Same goes for FDF.
 
-- bytes are always interpreted as UTF-8 by VSCode!! This is a big problem for bytes > 0x7F that then form invalid UTF-8 sequences with subsequent bytes since these get completely eaten up by VSCode and replaced with an alternative UTF-8 symbol using different bytes! 
-    - For valid UTF-8 byte sequences, can use a `TextEncoder()` to convert the UTF-8 codepoints (as returned by `Strings.slice()`, etc) back into their original bytes. See the binary marker comment validation code in `server/src/server.ts`. See also the discussion in `README.md`
+- bytes are always interpreted as UTF-8 by VSCode!! This is a big problem for bytes > 0x7F that then form invalid UTF-8 sequences with subsequent bytes since these get completely eaten up by VSCode and replaced with an alternative UTF-8 symbol using different bytes!
+  - For valid UTF-8 byte sequences, can use a `TextEncoder()` to convert the UTF-8 codepoints (as returned by `Strings.slice()`, etc) back into their original bytes. See the binary marker comment validation code in `server/src/server.ts`. See also the discussion in `README.md`
 
-# Notes on JavaScript/TypeScript regex
+## Notes on JavaScript/TypeScript regex
 
-Working in VSCode is heavily TS/JS centric, however JS regex special characters are NOT the same as PDF and thus **extreme caution** must be used: 
+Working in VSCode is heavily TS/JS centric, however JS regex special characters are NOT the same as PDF and thus **extreme caution** must be used:
 
 - JS `\b` (word boundary special char assertion) is **_NOT_** how anything in PDF is defined! According to [this Mozilla JS link](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Word_boundary_assertion) `\b` is anything that is not in `[a-zA-Z0-9_]`. And we definitely do NOT want to enable Unicode because of how VSCode treats binary data in PDFs.  
-    - Note that it is OK to use `\b` between `xref` and `trailer` keywords in conventional cross-reference tables, such as when parsing the cross-reference table entries or sub-section marker lines, because this section of PDFs has **_very_** strict rules (`[0-9fn \r\n]`) - but nowhere else is suitable!
-- JS `\s` (whitespace special char assertion) is also not the same as PDF whitespace, as it includes far more whitespace than PDF allows - see [this Mozilla JS link](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Assertions). 
-    - PDF needs just the 6 characters in Table 1: `[\0\t\n\f\n ]` but if demarcating a "next token" then the set needs to be extended by the 8 PDF delimiters `[\(\)<>\[\]\/%]` (and if it is in a Type 4 PostScript function the `[\{\}]` also needs to be added).
+  - Note that it is OK to use `\b` between `xref` and `trailer` keywords in conventional cross-reference tables, such as when parsing the cross-reference table entries or sub-section marker lines, because this section of PDFs has **_very_** strict rules (`[0-9fn \r\n]`) - but nowhere else is suitable!
+- JS `\s` (whitespace special char assertion) is also not the same as PDF whitespace, as it includes far more whitespace than PDF allows - see [this Mozilla JS link](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Assertions).
+  - PDF needs just the 6 characters in Table 1: `[\0\t\n\f\n ]` but if demarcating a "next token" then the set needs to be extended by the 8 PDF delimiters `[\(\)<>\[\]\/%]` (and if it is in a Type 4 PostScript function the `[\{\}]` also needs to be added).
 
 - `xref` is a substring in `startxref` - this can be addressed be avoided the letter `t` before `xref` as in `(?:[^t])xref`, or looking for PDF whitespace before `xref` as in `(?:\0|\t|\n|\f|\n| )xref`. Depending on use-case, non-capturing of the preceding character may also be desirable as shown here with `(?:`...`)`
 
 - due to PDFs with binary data, various "end" symbols can be missed since VSCode sees some of the bytes as part of a UTF-8 multi-byte sequence and thus misses the end symbol. For this reason, some dictionary and object ending sequences also include `endobj` (and possibly other keywords or symbols) in an attempt to isolate the confusion within a single PDF object. Non-capturing of these backups may also be helpful...
 
-# Node modules
+## Node modules
 
-All Node module are in the root folder `./node_modules`. This ensures that client and server are both using identical modules and keeps VSIX package size as small as possible. 
+All Node module are in the root folder `./node_modules`. This ensures that client and server are both using identical modules and keeps VSIX package size as small as possible.
 
 There should be no `./client/node_modules/` or `./server/node_modules/`!  
 
-# Packaging
+## Packaging
 
-Most NPM modules are development-time-only packages and sharing modules between client and server helps keep the VSIX package size down significantly. 
-
+Most NPM modules are development-time-only packages and sharing modules between client and server helps keep the VSIX package size down significantly.
 
 ```bash
 $ npm list
@@ -123,16 +121,15 @@ pdf-cos-syntax@0.1.6 C:\Temp\share\pdf-cos-syntax
 
 ## Ohm grammars
 
-The [Ohm.js](https://ohmjs.org/) files (`*.ohm`) need to be physically included in the VSIX. This is accomplished via `package.josn` using the [copyfiles](https://www.npmjs.com/package/copyfiles) NPM module (as a devDependency only!):
+The [Ohm.js](https://ohmjs.org/) files (`*.ohm`) need to be physically included in the VSIX. This is accomplished via `package.json` using the [copyfiles](https://www.npmjs.com/package/copyfiles) NPM module (as a devDependency only!):
 
 ```json
 "compile": "tsc -b && npx copyfiles -V \"./server/src/grammar/*.ohm\" ./out"
 ```
 
-
 ## Supporting Sharp across multiple platforms
 
-[Sharp](https://www.npmjs.com/package/sharp) is used to read image files such as JPEG, PNG, PPM, TIFF, etc. and it depends on the C++ `libvips` library which is supplied as a platform-dependent DLL, dylib, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be installed locally - see https://sharp.pixelplumbing.com/install. These cross-platform `libvips` libraries will be installed in `./node_modules/@img/sharp-<os>-<cpu>/...` (from https://github.com/lovell/sharp-libvips/releases)
+[Sharp](https://www.npmjs.com/package/sharp) is used to read image files such as JPEG, PNG, PPM, TIFF, etc. and it depends on the C++ `libvips` library which is supplied as a platform-dependent DLL, dylib, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be installed locally - see <https://sharp.pixelplumbing.com/install>. These cross-platform `libvips` libraries will be installed in `./node_modules/@img/sharp-<os>-<cpu>/...` (from <https://github.com/lovell/sharp-libvips/releases>)
 
 **Note that on Windows (at least), NPM fails to install cross-platform binary support libraries! This means there will be missing sub-folders below `./node_modules/@img/`. Further - currently even `--force --os linux` also doesn't install Sharp or anything below `@img`!! Only `npm install --force --os linux --cpu x64 @img/sharp-libvips-linux-x64` works under Windows but I don't know how to manually merge...**
 
@@ -172,7 +169,6 @@ cd ..
 REM del /F/S/Q *.*
 ```
 
-This is noticable as it makes the VSIX package _much bigger_ as it includes all the necessary multi-platform `libvips` binary runtime libraries (.dll, .dylib, etc.)! If the VSIX is only ~10MB then the cross-platform support is missing!
+This is noticeable as it makes the VSIX package _much bigger_ as it includes all the necessary multi-platform `libvips` binary runtime libraries (.dll, .dylib, etc.)! If the VSIX is only ~10MB then the cross-platform support is missing!
 
 Note that `--cpu ia32` (32 bit) is not supported to keep the VSIX package size down - everyone should be on 64 bit CPU by now.
-
