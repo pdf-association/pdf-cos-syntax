@@ -60,7 +60,7 @@ See also <https://code.visualstudio.com/api/working-with-extensions/publishing-e
 - cannot use "FirstLine" in `package.json` because otherwise new PDFs cannot use the "PDF-" snippets as file type is not recognized and snippets don't work inside comments. Same goes for FDF.
 
 - bytes are always interpreted as UTF-8 by VSCode!! This is a big problem for bytes > 0x7F that then form invalid UTF-8 sequences with subsequent bytes since these get completely eaten up by VSCode and replaced with an alternative UTF-8 symbol using different bytes!
-  - For valid UTF-8 byte sequences, can use a `TextEncoder()` to convert the UTF-8 codepoints (as returned by `Strings.slice()`, etc) back into their original bytes. See the binary marker comment validation code in `server/src/server.ts`. See also the discussion in `README.md`
+  - For valid UTF-8 byte sequences, can use a `TextEncoder()` to convert the UTF-8 code points (as returned by `Strings.slice()`, etc) back into their original bytes. See the binary marker comment validation code in `server/src/server.ts`. See also the discussion in `README.md`
 
 ## Notes on JavaScript/TypeScript regex
 

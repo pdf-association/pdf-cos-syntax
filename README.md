@@ -107,13 +107,13 @@ To inspect the tokens that the TextMate syntax highlighter has recognized, selec
 | Content stream operators (_only between `stream` and `endstream` keywords_) | `keyword.section.content-stream.pdf`</br> `keyword.operator.content-stream.pdf` |
 | Comment | `comment.line.percent.pdf` |
 | Dictionary `<<` `>>` | `punctuation.definition.dictionary.pdf` |
-| Hex string `<` `>`| `string.quoted.hex.pdf` |
+| Hex string `<` `>` | `string.quoted.hex.pdf` |
 | Indirect reference `X Y R` (_not inside content streams_) | `keyword.control.reference.pdf` |
 | Inline image data (_only between `ID` and `EI` operators_) | `binary.data.inlineimage.pdf` |
 | Integer | `"constant.numeric.integer.pdf` |
 | Keywords `endobj`, `false`, `null`, `X Y obj`, `startxref`, `true` | `keyword.control.pdf` |
 | Literal string `(` `)` | `string.quoted.literal.pdf` |
-| Literal string escape sequences |  `constant.character.escape.backslash.pdf`</br> `constant.character.escape.backspace.pdf`</br> `constant.character.escape.eol.pdf`</br> `constant.character.escape.formfeed.pdf`</br> `constant.character.escape.linefeed.pdf`</br> `constant.character.escape.octal.pdf`</br> `constant.character.escape.return.pdf`</br> `constant.character.escape.tab.pdf`|
+| Literal string escape sequences | `constant.character.escape.backslash.pdf`</br> `constant.character.escape.backspace.pdf`</br> `constant.character.escape.eol.pdf`</br> `constant.character.escape.formfeed.pdf`</br> `constant.character.escape.linefeed.pdf`</br> `constant.character.escape.octal.pdf`</br> `constant.character.escape.return.pdf`</br> `constant.character.escape.tab.pdf` |
 | Name (_starts with `/`_) | `variable.other.name.pdf` |
 | Real number | `constant.numeric.real.pdf` |
 | Conventional cross-reference section (_between `xref` and `trailer` keywords_) | `keyword.section.xref-trailer.pdf`</br> `keyword.control.xref-subsection.pdf`</br> `keyword.control.free-object.pdf`</br> `keyword.control.inuse-object.pdf` |
@@ -323,7 +323,7 @@ The extension provides various custom commands via the Command Palette (`CTRL`+`
   - The new object stream is **uncompressed** (so it remains fully readable in VSCode) and thus will **_not_** work with certain viewers, such as Adobe.
 
 - conversion of a selected conventional cross reference section starting with the `xref` keyword all the way to the `%%EOF` marker to a cross reference stream with `/ASCIIHexDecode` compression.
-  - The fixed layout with whitespace of the resulting hex data makes this specific format amenible to easy reading in VSCode. Refer to Table 18 in ISO 32000-2:2020.
+  - The fixed layout with whitespace of the resulting hex data makes this specific format amenable to easy reading in VSCode. Refer to Table 18 in ISO 32000-2:2020.
   - Be sure to select _everything_ from `xref` to `%%EOF` inclusive! This includes the `xref` keyword, all the cross reference section lines, the `trailer` keyword and trailer dictionary, the `startxref` keyword and byte offset, and the `%%EOF` marker.
   - Note that Adobe does **_not_** support cross reference streams with `/ASCIIHexDecode` filters!
 
