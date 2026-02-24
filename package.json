@@ -472,8 +472,5 @@
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
-  },
-  "dependencies": {
-    "typescript": "^5.5.4"
   }
 }

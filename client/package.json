@@ -13,16 +13,16 @@
 		"vscode": "*"
 	},
 	"devDependencies": {
-		"@types/node": "^24.10.1",
-		"@types/vscode": "^1.106.1",
-		"typescript": "5.5.4"
+		"@types/vscode": "^1.106.1"
 	},
 	"dependencies": {
+		"@types/node": "^25.3.0",
 		"ascii85": "^1.0.2",
 		"deasync": "^0.1.29",
-		"glob": "^12.0.0",
+		"glob": "^13.0.6",
+		"minimatch": "^10.2.2",
 		"sharp": "^0.34.5",
 		"vscode-jsonrpc": "^9.0.0-next.10",
-		"vscode-languageclient": "^9.0.1"
+		"vscode-languageclient": "^10.0.0-next.20"
 	}
 }
