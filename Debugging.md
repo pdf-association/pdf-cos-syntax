@@ -32,6 +32,8 @@ It also includes an End-to-End test.
 
 ## Running
 
+Currently building with NPM v11.10.1 and TypeScript 5.5.4.
+
 - Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
 - Open VS Code on this folder.
 - Press Ctrl+Shift+B to start compiling the client and server in [watch mode](https://code.visualstudio.com/docs/editor/tasks#:~:text=The%20first%20entry%20executes,the%20HelloWorld.js%20file.).
