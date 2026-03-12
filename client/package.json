@@ -13,14 +13,14 @@
 		"vscode": "*"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.106.1"
+		"@types/vscode": "^1.110.0"
 	},
 	"dependencies": {
-		"@types/node": "^25.3.0",
+		"@types/node": "^25.5.0",
 		"ascii85": "^1.0.2",
 		"deasync": "^0.1.29",
 		"glob": "^13.0.6",
-		"minimatch": "^10.2.2",
+		"minimatch": "^10.2.4",
 		"sharp": "^0.34.5",
 		"vscode-jsonrpc": "^9.0.0-next.10",
 		"vscode-languageclient": "^10.0.0-next.20"
