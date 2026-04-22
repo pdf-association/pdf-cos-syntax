@@ -19,7 +19,7 @@
 import * as vscode from "vscode";
 import * as fs from 'fs';
 import * as util from 'util';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import Ascii85 from 'ascii85';
 
 
@@ -43,7 +43,6 @@ function _EOLtoBytes(eol: vscode.EndOfLine): number {
  * @param bytes - the Buffer of bytes to encode as ASCII-85
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const a85encoded: string = Ascii85.encode(bytes, { delimiter: false });
   const res = _stringToChunks(a85encoded + '~>', 70);
   // console.log(`_convertToAscii85filter: ${res}`); 
@@ -54,7 +53,7 @@ export function convertToAscii85Filter(bytes: Buffer): string[] {
 /**
  * Converts a buffer of `/ASCII85Decode` encoded data back
  * to raw bytes as a UTF-8 string. Requires data end with "~\>".
- * @param a85 - an ASCIII-85 encoded PDF string
+ * @param a85 - an ASCII-85 encoded PDF string
  * @returns string of decoded data (could be empty)
  */
 export function convertFromAscii85Filter(a85: string): string {
@@ -65,7 +64,6 @@ export function convertFromAscii85Filter(a85: string): string {
       return '';
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const s: string = Ascii85.decode(a85);
     // console.log(`_convertFromAscii85filter: ${s}`); 
     return s;
@@ -109,7 +107,6 @@ export function convertToAsciiHexFilter(data: Buffer): string[] {
   }
   s = s + ">";
   const res = _stringToChunks(s, 32);
-  // console.log(`_convertToAsciiHexfilter: ${res}`); 
   return res;
 }
 
@@ -251,7 +248,7 @@ export function convertLiteralToHexString(literal: string): string {
   let hex = "<";
   const lit = literal.slice(1, literal.length - 1); // remove "(" and ")"
   let i = 0; 
-  let ch = -1;
+  let ch;
   while (i < lit.length) {
     if (lit[i] === "\\") {
       // Literal string escape sequence - Table 3 ISO 32000-2:2020
@@ -305,7 +302,7 @@ export function convertLiteralToHexString(literal: string): string {
 
 
 /**
- * Converts a PDF hex string to a literal string, using escape codes for unprintables.
+ * Converts a PDF hex string to a literal string, using escape codes for non-printable characters.
  * 
  * @param hexString - PDF hex string including `<` and `>`
  * @returns a PDF literal string including `(` and `)`
@@ -337,7 +334,7 @@ export function convertHexToLiteralString(hexString: string): string {
       }
     }
     catch { 
-      // supress any hex conversion fails but keep going (fall through)
+      // suppress any hex conversion fails but keep going (fall through)
     }
     i = i + 2;
   }
@@ -651,7 +648,7 @@ export async function convertImageToRawAsciiHex(
 
 
 /**
- * Convert arbitary binary data loaded directly from a file to `/ASCII85Decode`
+ * Convert arbitrary binary data loaded directly from a file to `/ASCII85Decode`
  * compressed stream object. The PDF stream object is returned as `string[]` without `\n`.
  * @param objNum - PDF object number for stream
  * @param genNum - PDF generation number for stream
@@ -698,7 +695,7 @@ export async function convertDataToAscii85(
 
 
 /**
- * Convert arbitary binary data loaded directly from a file to an `/ASCIIHexDecode` 
+ * Convert arbitrary binary data loaded directly from a file to an `/ASCIIHexDecode` 
  * compressed stream object. The PDF stream object is returned as `string[]` without `\n`.
  * @param objNum - PDF object number for PDF stream
  * @param genNum - generation number for PDF stream

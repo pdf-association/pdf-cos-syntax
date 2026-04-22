@@ -15,7 +15,7 @@
 'use strict';
 
 import { ArlingtonPDFModel } from "../models/ArlingtonPDFModel";
-import type { AlringtonItem } from "../models/ArlingtonPDFModel";
+import type { ArlingtonItem } from "../models/ArlingtonPDFModel";
 
 import type {
   CompletionItem
@@ -37,7 +37,7 @@ import {
 export function DictKeyCodeCompletion() : CompletionItem[] {
   const dictKeys: CompletionItem[] = [];
 
-  let k: AlringtonItem;
+  let k: ArlingtonItem;
   for (k of ArlingtonPDFModel) {
     if (k.Key.includes("*")) { continue; } // skip wildcards
     const alreadyExist = dictKeys.find((obj) => { return obj.label === k.Key; });
@@ -73,7 +73,7 @@ export function DictKeyCodeCompletion() : CompletionItem[] {
 export function DictKeyValueCodeCompletion(dictKey: string) : CompletionItem[] {
   const dictKeyValues: CompletionItem[] = [];
 
-  let k: AlringtonItem;
+  let k: ArlingtonItem;
   for (k of ArlingtonPDFModel) {
     if (k.Key.includes("*")) { continue; } // skip wildcards
 

@@ -54,7 +54,7 @@
  *  - a "section" is either a "header", "body", "cross-reference", or "footer" where:
  *     - "header" starts with `%[PF]DF-x.y` and continues until the next section
  *     - "body" starts with an indirect object `X Y obj` and ends when either a "cross 
- *       reference" or "footer" section starts. Revsion 0 should have a body (but may not 
+ *       reference" or "footer" section starts. Revision 0 should have a body (but may not 
  *       during editing) whereas incremental updates do _not_ require a body (e.g. if only
  *       the trailer dictionary is being modified). 
  *     - "cross reference" is _optional_ and is for conventional cross reference tables
@@ -230,7 +230,7 @@ export default class PDFParser {
    * @param revision - the PDF file revision (\>= 0)
    * @returns the ordered set of sections for the given revision. 
    * Order is based on the PDF file, which can be illogical when
-   * editting. 
+   * editing. 
    */
   getRevisionSectionOrder(revision: number): PDFSectionType[] {
     const order: PDFSectionType[] = [];
@@ -427,8 +427,8 @@ export default class PDFParser {
 
         const objData = this._content.slice(startObjOffset, endObjOffset);
 
-        let localRegexNotSticly = new RegExp(this._endobjRegex);
-        const matchEndobj = localRegexNotSticly.exec(objData);
+        let localRegexNotSticky = new RegExp(this._endobjRegex);
+        const matchEndobj = localRegexNotSticky.exec(objData);
         if (matchEndobj) {
           endObjOffset = startObjOffset + matchEndobj.index + "endobj".length;
         }
@@ -436,8 +436,8 @@ export default class PDFParser {
           console.warn(`"endobj" was not found via regex!`);
         }
 
-        localRegexNotSticly = new RegExp(this._endstreamRegex);
-        const matchEndstream = localRegexNotSticly.exec(objData);
+        localRegexNotSticky = new RegExp(this._endstreamRegex);
+        const matchEndstream = localRegexNotSticky.exec(objData);
         if (matchEndstream) {
           endStmOffset = startObjOffset + matchEndstream.index + "endstream".length;
           if (startStmOffset === -1) {

@@ -28,8 +28,8 @@ export interface PDFCOSSyntaxSettings {
   maxNumberOfProblems: number;
 
   /** 
-   * whether or not to ignore premable (before `%PDF-x.y`) and 
-   * postamble (after last `%%EOF`) junk bytes 
+   * whether or not to ignore preamble (before `%PDF-x.y`) and 
+   * post-amble (after last `%%EOF`) junk bytes 
    */
   ignorePreambleAndPostamble: boolean;
 

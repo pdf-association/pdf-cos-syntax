@@ -137,7 +137,7 @@ export function findPreviousObjectLineNumber(
   let topLines = topOfFile.split('\n');
   topLines = topLines.reverse();
 
-  // Find 1st occurence of "X Y obj" in the REVERSED lines
+  // Find 1st occurrence of "X Y obj" in the REVERSED lines
   for (let i = 0; i < topLines.length; i++) {
     const m = topLines[i].search(/\b\d+ \d+ obj\b/g);
     if (m !== -1) {

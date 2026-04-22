@@ -18,7 +18,7 @@
     "allowJs": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
   },
   "exclude": [
     "./server/src/grammar/*-bundle.d.ts", 

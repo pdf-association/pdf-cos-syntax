@@ -28,7 +28,6 @@ export function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptio
   return {
     // Enable JavaScript and forms in the webview
     enableScripts: true,
-    enableForms: true,
     // And restrict the webview to only loading content from our extension's `media` directory.
     localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
   };

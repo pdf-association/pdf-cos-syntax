@@ -71,7 +71,7 @@ import PDFParser, { PDFSectionType } from "./parser/PdfParser";
 import type { PDFCOSSyntaxSettings, PDFDocumentData, PDFToken } from './types';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from './types/pdfSemanticTokens';
 import type PDFObject from './models/PdfObject';
-import * as ohmParser from './ohmParser';
+const ohm = require('ohm-js');
 
 if (process.env.NODE_ENV === "development") {
   debug(`Using development version of the language server`);
@@ -218,13 +218,13 @@ connection.onInitialized(() => {
 });
 
 
-// Entry point for full Semantic Token parsing triggred by client-side
+// Entry point for full Semantic Token parsing triggered by client-side
 connection.onRequest("textDocument/semanticTokens/full", (_params) => { 
   console.log(`Server onRequest "textDocument/semanticTokens/full"`);
   const document = documents.get(_params.textDocument.uri);
   if (!document) { return null; }
   const text = document.getText();
-  const tokens: PDFToken[] = ohmParser.getTokens(text);
+  const tokens: PDFToken[] = ohm.getTokens(text);
   return tokens;
 });
 

@@ -518,7 +518,6 @@
     "globals": "^17.5.0",
     "ohm-js": "^17.5.0",
     "sharp": "^0.34.5",
-    "vscode": "^1.1.37",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"

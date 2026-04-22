@@ -33,7 +33,7 @@
  *      cross reference subsection marker line should be `0 \\d+` where \\d+
  *      are the number of objects in the original PDF  
  * 
- * - object number = mostly \> 0 (as object 0 is the start of freelist in the original PDF)
+ * - object number = mostly \> 0 (as object 0 is the start of the free list in the original PDF)
  * 
  * - generation number = always \>= 0
  * 
@@ -135,7 +135,6 @@ export class XrefInfoMatrix {
     for (let objNum = 0; objNum < this.matrix.length; objNum++) {
       if (this.matrix[objNum]) {
         line = `${objNum}`;
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let rev = 0; rev < this.matrix[objNum].length; rev++) {
           if (this.matrix[objNum][rev]) {
             if (this.matrix[objNum][rev].inUse) {

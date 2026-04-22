@@ -24,7 +24,7 @@
 /**
  * An Arlington data row. See https://github.com/pdf-association/arlington-pdf-model 
  */
-export interface AlringtonItem {
+export interface ArlingtonItem {
   Object: string,
   Key: string,
   Type: string,
@@ -46,7 +46,7 @@ export interface AlringtonItem {
 /**
  * Arlington PDF Model data snapshot 4 Sept 2023
  */
-export const ArlingtonPDFModel : AlringtonItem[] =
+export const ArlingtonPDFModel : ArlingtonItem[] =
 [
   {
     "Object":"3DActivation",
