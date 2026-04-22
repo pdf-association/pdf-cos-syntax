@@ -306,12 +306,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   vscode.window.registerWebviewPanelSerializer(sankey.SankeyPanel.viewType, {
     async deserializeWebviewPanel(
       webviewPanel: vscode.WebviewPanel,
-      _state: any
-    ) {
+      _state: unknown
+    ): Promise<void> {
       // console.log(`Got state: ${state}`);
       // Reset the webview options so we use latest uri for `localResourceRoots`.
       webviewPanel.webview.options = sankey.getWebviewOptions(context.extensionUri);
       sankey.SankeyPanel.revive(webviewPanel, context);
+      return Promise.resolve();
     },
   });
   
@@ -371,10 +372,7 @@ function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined): number
  * @param _context - VSCode context (not used)
  * @param _uri - the URI of the document (not used)
  */
-export async function statusBarClick(
-  _context: vscode.ExtensionContext,
-  _uri: vscode.Uri
-): Promise<void> {
+export function statusBarClick(_context: vscode.ExtensionContext, _uri: vscode.Uri): void {
   const lines = getNumberOfSelectedLines(vscode.window.activeTextEditor);
   vscode.window.showInformationMessage(`${lines} line(s) selected.`).then(undefined, () => {console.error(`showErrorMessage() was rejected!`);});
 }
