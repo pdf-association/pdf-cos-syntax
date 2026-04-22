@@ -11,16 +11,21 @@ Heavily documented sample code for <https://code.visualstudio.com/api/language-e
 
 ```text
 .
+├── assets       // images used in MD documentation (not needed by VSIX)
+├── syntaxes     // Syntax highlighting (JSON) files only
+├── snippets     // Snippets (JSON) files only
+├── media        // Support for the generation of Sankey diagrams via D3.js
+├── scripts      // Utility scripts (not needed by VSIX)
 ├── package.json // The extension manifest.
 ├── node_modules
-│   └── ... modules needed by BOTH client and server
+│   └── ... NPM modules needed by EITHER or BOTH client and server
 ├── out 
 │   └── ... compiled output for BOTH client and server
-├── client // Language Client
+├── client       // LSP Language Client
 │   └── src
 │       └── extension.ts // Language Client entry point
 |       └── ... other client-side files and folders ...
-└── server // Language Server
+└── server      // LSP Language Server
     └── src
         └── grammar 
             └── ... Ohm.js grammar files ...
@@ -40,9 +45,13 @@ Heavily documented sample code for <https://code.visualstudio.com/api/language-e
 - Press ▷ to run the launch config (F5).
 - In the [Extension Development Host](https://code.visualstudio.com/api/get-started/your-first-extension#:~:text=Then%2C%20inside%20the%20editor%2C%20press%20F5.%20This%20will%20compile%20and%20run%20the%20extension%20in%20a%20new%20Extension%20Development%20Host%20window.) instance of VSCode, open a PDF document in 'plain text' language mode.
 
+## TSDoc
+
+[TSDoc](https://tsdoc.org/) is Doxygen-like structured comments for Typescript. This helps keep code documentation aligned with implementation.
+
 ## Linting
 
-Converted to a relatively strict version of eslint 9.1.1
+Converted to a relatively strict version of eslint 11.12.1.
 "compilerOptions" currently does NOT include `"noUncheckedIndexedAccess": true` in tsconfig.json
 
 ## Packaging as VSIX
@@ -85,38 +94,39 @@ There should be no `./client/node_modules/` or `./server/node_modules/`!
 
 Most NPM modules are development-time-only packages and sharing modules between client and server helps keep the VSIX package size down significantly.
 
-```bash
+```console
 $ npm list
 pdf-cos-syntax@0.1.6 C:\Temp\share\pdf-cos-syntax
-+-- @ohm-js/cli@2.0.0
-+-- @types/mocha@10.0.6
-+-- @types/node@20.11.20
-+-- @types/vscode@1.86.0
-+-- @vscode/test-electron@2.3.9
-+-- @typescript-eslint/eslint-plugin@7.0.2
-+-- @typescript-eslint/parser@7.0.2
-+-- @vscode/test-electron@2.3.9
++-- @eslint/js@10.0.1
++-- @ohm-js/cli@2.0.1
++-- @types/mocha@10.0.10
++-- @types/node@25.6.0
++-- @types/vscode@1.116.0
 +-- ascii85@1.0.2
 +-- copyfiles@2.4.1
-+-- eslint@8.57.0
-+-- install@0.13.0
-+-- mocha@10.3.0
-+-- npm@10.4.0
-+-- ohm-js@17.1.0
-+-- sharp@0.33.2
-+-- typescript@5.3.3
++-- eslint-plugin-eslint-comments@3.2.0
++-- eslint-plugin-jsdoc@62.9.0
++-- eslint-plugin-tsdoc@0.5.2
++-- eslint@10.2.1
++-- globals@17.5.0
++-- ohm-js@17.5.0
++-- sharp@0.34.5
++-- typescript-eslint@8.59.0
 +-- vscode-languageclient@9.0.1
-+-- vscode-languageserver-textdocument@1.0.11
-`-- vscode-languageserver@9.0.1
++-- vscode-languageserver-textdocument@1.0.12
++-- vscode-languageserver@9.0.1
+`-- vscode@1.1.37
 
 $ npm list --omit=dev
 pdf-cos-syntax@0.1.6 C:\Temp\share\pdf-cos-syntax
 +-- ascii85@1.0.2
-+-- ohm-js@17.1.0
-+-- sharp@0.33.2
++-- globals@17.5.0
++-- ohm-js@17.5.0
++-- sharp@0.34.5
 +-- vscode-languageclient@9.0.1
-+-- vscode-languageserver-textdocument@1.0.11
-`-- vscode-languageserver@9.0.1
++-- vscode-languageserver-textdocument@1.0.12
++-- vscode-languageserver@9.0.1
+`-- vscode@1.1.37
 ```
 
 ## Ohm grammars
@@ -131,7 +141,7 @@ The [Ohm.js](https://ohmjs.org/) files (`*.ohm`) need to be physically included 
 
 [Sharp](https://www.npmjs.com/package/sharp) is used to read image files such as JPEG, PNG, PPM, TIFF, etc. and it depends on the C++ `libvips` library which is supplied as a platform-dependent DLL, dylib, etc. To ensure the packaged VSIX is cross-platform, all supported platforms need to be installed locally - see <https://sharp.pixelplumbing.com/install>. These cross-platform `libvips` libraries will be installed in `./node_modules/@img/sharp-<os>-<cpu>/...` (from <https://github.com/lovell/sharp-libvips/releases>)
 
-**Note that on Windows (at least), NPM fails to install cross-platform binary support libraries! This means there will be missing sub-folders below `./node_modules/@img/`. Further - currently even `--force --os linux` also doesn't install Sharp or anything below `@img`!! Only `npm install --force --os linux --cpu x64 @img/sharp-libvips-linux-x64` works under Windows but I don't know how to manually merge...**
+**Note that on Windows (at least), NPM v11.12.1 fails to install multiple cross-platform binary support libraries! This means there will be missing sub-folders below `./node_modules/@img/`. Current NPM v11.12.1 behavior is that only a _single_ platform gets installed! Only `npm install --force --os linux --cpu x64 @img/sharp-libvips-linux-x64` works under Windows but I don't know how to manually merge...**
 
 ```cmd
 mkdir TEMP-sharp
