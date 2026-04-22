@@ -1,0 +1,5 @@
+# Custom Dictionary Words
+Sankey
+DARPA
+startxref
+libvips

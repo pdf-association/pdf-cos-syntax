@@ -125,7 +125,7 @@ function renderSankeyDiagram() {
     const data = {nodes: Array.from(nodeByName.values()), links: links_};
 
     d3.select("body").selectAll("svg").remove();
-    const svg = d3.select("body").append("svg") // append the SVG to the HMTL body
+    const svg = d3.select("body").append("svg") // append the SVG to the HTML body
         .attr("width", width)
         .attr("height", sankeyHeight)
         .attr("preserveAspectRatio", "xMinYMin")
@@ -225,7 +225,7 @@ function highlightLinks(event, node) {
     allLinks.style("stroke-opacity", 0.4);
     allNodes.style("fill-opacity", 0.4);
 
-    // Restore ancestors and descendents to normal opacity
+    // Restore ancestors and descendants to normal opacity
     let currentLevel = [];
     let nextLevel;
 

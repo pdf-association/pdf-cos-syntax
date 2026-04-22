@@ -13,7 +13,7 @@
 
 ## Syntax highlighting
 
-Text-based PDF-centric grammars to test: COS, Content Streams, XMP (XML), PS Type 4 Functions, CMaps, JavaScript, other embedded XML (e.g. ZUGFeRD, Order-X, Fractur-X)
+Text-based PDF-centric grammars to test: COS, Content Streams, XMP (XML), PS Type 4 Functions, CMaps, JavaScript, other embedded XML (e.g. ZUGFeRD, Order-X, Factur-X)
 
 - check with test-based PDFs
 - check syntax highlight for the basic PDF data types
