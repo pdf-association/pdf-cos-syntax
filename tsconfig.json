@@ -2,14 +2,14 @@
   "compilerOptions": {
     "target": "es2020",
     "lib": ["es2020"],
-    "module": "commonjs",
+    "module": "node16",
     "sourceMap": true,
     "outDir": "out",
     "rootDirs": [
       "./client/src",
       "./server/src"
     ],
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "strictNullChecks": true,
     "alwaysStrict": true,
     "strict": true,
@@ -21,7 +21,6 @@
     "exactOptionalPropertyTypes": true,
   },
   "exclude": [
-    "eslint.config.mjs",
     "./server/src/grammar/*-bundle.d.ts", 
     "./server/src/grammar/*-bundle.js", 
     "./out/**"
