@@ -202,7 +202,7 @@
         "pdf-cos-syntax.ignoreXRefLineLength": {
           "type": "boolean",
           "default": false,
-          "description": "Ignore all length length of cross reference table entries in diagnostics."
+          "description": "Ignore all lengths in cross reference table entries in diagnostics."
         },
         "pdf-cos-syntax.verboseLogging": {
           "type": "boolean",
