@@ -27,17 +27,17 @@
 export function hoverPDFDateString(d: string): string {
   /** @todo - hex strings! */ 
 
-  // Parse a PDF Date string into consistuent fields
+  // Parse a PDF Date string into constituent fields
   const PDFDateRegex = /^D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+Z])?(\d{2})?(')?(\d{2})?(')?/gm;
 
   let errorInFormat = false;
-  let year = -1;
+  let year;
   let month = 1;
   let day = 1;
   let hour = 0;
   let minute = 0;
   let second = 0;
-  let utc_char = ''; // Z, + or -
+  let utc_char;      // Z, + or -
   let utc_hour = 0;
   let utc_minute = 0;
   let s = '';
@@ -172,11 +172,11 @@ export function hoverNormalizedPDFname(name: string): string {
 
 /**
  * Convert a PDF hex string to human-readable UTF-8 string
- * @param hexstring - the PDF hex string (can include whitespace)
+ * @param hex_string - the PDF hex string (can include whitespace)
  * @returns UTF-8 equivalent 
  */
-export function hoverHexStringToUTF8(hexstring: string): string {
-  let s = hexstring.trim().replace(/ \t\n\r\f\0/g, ""); // remove all whitespace
+export function hoverHexStringToUTF8(hex_string: string): string {
+  let s = hex_string.trim().replace(/ \t\n\r\f\0/g, ""); // remove all whitespace
   if (s.length === 0) { return `Empty hex string` };
 
   s = s.length % 2 ? s + "0" : s;
@@ -187,6 +187,6 @@ export function hoverHexStringToUTF8(hexstring: string): string {
     asUTF8 += ch;
   }
   asUTF8 += "'";
-  // console.log(`hoverHexStringToUTF8(${hexstring}) --> ${asUTF8}`);
+  // console.log(`hoverHexStringToUTF8(${hex_string}) --> ${asUTF8}`);
   return asUTF8;
 }
