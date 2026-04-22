@@ -21,9 +21,9 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
   provideFoldingRanges(document: TextDocument): ProviderResult<FoldingRange[]> {
     const ranges: FoldingRange[] = [];
 
-    let startObjLine = -1;
-    let startStreamLine = -1;
-    let startxrefLine = -1;
+    let startObjLine: number = -1;
+    let startStreamLine: number = -1;
+    let startxrefLine: number = -1;
     let startDictLines = [];
     let startQLines = [];
     let startBTLines = [];

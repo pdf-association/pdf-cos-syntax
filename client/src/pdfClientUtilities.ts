@@ -16,7 +16,7 @@
  */
 'use strict';
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as util from 'util';
 import sharp from 'sharp';
@@ -65,7 +65,6 @@ export function convertFromAscii85Filter(a85: string): string {
     }
 
     const s: string = Ascii85.decode(a85);
-    // console.log(`_convertFromAscii85filter: ${s}`); 
     return s;
   }
   catch (error) {
@@ -247,8 +246,8 @@ export function convertDataToAsciiHexStream(
 export function convertLiteralToHexString(literal: string): string {
   let hex = "<";
   const lit = literal.slice(1, literal.length - 1); // remove "(" and ")"
-  let i = 0; 
-  let ch;
+  let i: number = 0; 
+  let ch: number;
   while (i < lit.length) {
     if (lit[i] === "\\") {
       // Literal string escape sequence - Table 3 ISO 32000-2:2020

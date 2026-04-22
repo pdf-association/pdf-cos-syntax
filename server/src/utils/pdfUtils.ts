@@ -319,7 +319,7 @@ export function getSemanticTokenAtPosition(
  * @param docURI - URI of PDF document
  * @param content - PDF document text content
  */
-export function buildXrefMatrix(docURI: DocumentUri, content: string): XrefInfoMatrix {
+export function buildXrefMatrix(_docURI: DocumentUri, content: string): XrefInfoMatrix {
   console.log(`buildXrefMatrix(...)`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();

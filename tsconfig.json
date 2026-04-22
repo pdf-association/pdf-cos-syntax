@@ -21,8 +21,8 @@
     "exactOptionalPropertyTypes": true,
   },
   "exclude": [
-    "./server/src/grammar/*-bundle.d.ts", 
-    "./server/src/grammar/*-bundle.js", 
+    "./server/src/grammar/*.ohm-bundle.d.ts", 
+    "./server/src/grammar/*.ohm-bundle.js", 
     "./out/**"
   ]
 }

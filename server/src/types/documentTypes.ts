@@ -29,7 +29,7 @@ export interface PDFCOSSyntaxSettings {
 
   /** 
    * whether or not to ignore preamble (before `%PDF-x.y`) and 
-   * post-amble (after last `%%EOF`) junk bytes 
+   * postamble (after last `%%EOF`) junk bytes 
    */
   ignorePreambleAndPostamble: boolean;
 

@@ -27,6 +27,12 @@ export default defineConfig(
           "ignoreRestSiblings": true
         }
       ]
-    }
+    },
+  },
+  {
+    ignores: [
+      "./server/src/grammar/*.ohm-bundle.d.ts", 
+      "./server/src/grammar/*.ohm-bundle.js", 
+    ]
   },
 );

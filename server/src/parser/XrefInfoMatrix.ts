@@ -311,8 +311,8 @@ export class XrefInfoMatrix {
     pdf = pdf.replace('\\r\\n', ' \\n');
     pdf = pdf.replace('\\r', '\\n');
 
-    let xrefStart = 0;
-    let startXref = 0;
+    let xrefStart: number;
+    let startXref: number = 0;
     do {
       // NOTE: indexOf("xref") will ALSO match "startxref" so need special handling!!!
       xrefStart = pdf.indexOf("xref", startXref + "startxref".length);

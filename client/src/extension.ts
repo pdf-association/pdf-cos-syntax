@@ -18,10 +18,10 @@
  */
 'use strict';
 
-import * as vscode from "vscode";
-import * as path from "path";
-import * as pdf from "./pdfClientUtilities";
-import * as sankey from "./sankey-webview";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as pdf from './pdfClientUtilities';
+import * as sankey from './sankey-webview';
 
 // Import shared definitions from server-side
 import type { PDFToken, PDFCOSSyntaxSettings } from "../../server/src/types";
@@ -367,7 +367,7 @@ function getNumberOfSelectedLines(editor: vscode.TextEditor | undefined): number
 }
 
 /**
- * Action to peform when custom status bar item is clicked
+ * Action to perform when custom status bar item is clicked
  * @param _context - VSCode context (not used)
  * @param _uri - the URI of the document (not used)
  */
@@ -396,7 +396,7 @@ export async function commandHandler(
   const inp = editor.document.getText(editor.selection);
 
   // When inserting new content, need to account for current "editor.eol" setting: \r, \r\n
-  // so length key values can be adjusted accordinly.
+  // so length key values can be adjusted accordingly.
   const eol: vscode.EndOfLine = editor.document.eol;
 
   /** Pick a random object ID. @todo determine appropriately from PDF... */

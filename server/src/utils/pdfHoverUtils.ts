@@ -31,15 +31,15 @@ export function hoverPDFDateString(d: string): string {
   const PDFDateRegex = /^D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+Z])?(\d{2})?(')?(\d{2})?(')?/gm;
 
   let errorInFormat = false;
-  let year;
-  let month = 1;
-  let day = 1;
-  let hour = 0;
-  let minute = 0;
-  let second = 0;
-  let utc_char;      // Z, + or -
-  let utc_hour = 0;
-  let utc_minute = 0;
+  let year: number;
+  let month: number = 1;
+  let day: number = 1;
+  let hour: number = 0;
+  let minute: number = 0;
+  let second: number = 0;
+  let utc_char: string;      // Z, + or -
+  let utc_hour: number = 0;
+  let utc_minute: number = 0;
   let s = '';
 
   const m = PDFDateRegex.exec(d);

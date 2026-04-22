@@ -177,7 +177,7 @@ export class SankeyPanel
           https:; script-src 'nonce-${nonce}'; frame-src 'self';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="${cssMainUri.toString()}" rel="stylesheet">
-        <script nonce="${nonce}"> const tsvscode = acquireVsCodeApi(); </script>
+        <script nonce="${nonce}"> const vscode_api = acquireVsCodeApi(); </script>
         <title>Sankey Flow Diagram</title>
       </head>
       <body>
