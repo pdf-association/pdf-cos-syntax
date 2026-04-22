@@ -6,7 +6,7 @@
     "languageId": "*",
     "language": "en-US",
     "ignorePaths": [ 
-        "*.pdf", "*.plantuml"
+        "*.pdf", ".gitignore"
     ],
     "dictionaryDefinitions": [
         {
