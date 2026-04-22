@@ -1,6 +1,5 @@
-out
-node_modules
-client/server
+out/
+node_modules/
 .vscode-test
 .DS_Store
 *.vsix
