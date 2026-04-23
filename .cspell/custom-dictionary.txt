@@ -1,7 +1,16 @@
 # Custom Dictionary Words
+Annot
+Annots
+Extn
+Flate
 Sankey
 DARPA
 startxref
 libvips
 PDFCOS
 postamble
+nonterminal
+CMaps
+CMYK
+Ozzy
+Kirkby
