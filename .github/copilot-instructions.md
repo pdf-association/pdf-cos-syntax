@@ -27,6 +27,8 @@ This is a VS Code extension built with TypeScript that provides comprehensive su
 - Strict mode enabled with `strictNullChecks`, `exactOptionalPropertyTypes`
 - Target ES2020, Node16 modules
 - Separate compilation for client and server with composite project
+- Only spaces, no TABs. Indentation is 2 spaces for each level.
+- No trailing commas.
 
 **ESLint Rules:**
 
@@ -40,6 +42,9 @@ This is a VS Code extension built with TypeScript that provides comprehensive su
 - Semantic tokens for PDF object highlighting
 - Custom commands accessible via Command Palette
 - Webview for Sankey diagram visualization
+- Ohm.js-based parsing with grammar files in `server/src/grammar/`
+- Arlington PDF Model integration for code completion of PDF name objects
+- Key files: `server/src/parser/PdfParser.ts` (main parsing logic), `client/src/extension.ts` (client entry), `server/src/server.ts` (server entry)
 
 ### PDF-Specific Knowledge
 
@@ -61,6 +66,12 @@ This is a VS Code extension built with TypeScript that provides comprehensive su
 - Support for PostScript-style operators
 - Folding and highlighting for operator pairs
 
+**Custom Commands:**
+
+- Image/data import and encoding conversions (ASCII85, hex)
+- PDF structure analysis and visualization
+- Arlington PDF Model integration for name object completion
+
 ### Common Pitfalls
 
 - When editing a PDF file, edits can temporarily cause syntax errors
@@ -68,10 +79,14 @@ This is a VS Code extension built with TypeScript that provides comprehensive su
 - Cross-reference offsets must be real byte positions, not the UTF-8 byte offsets that VSCode wants
 - Object streams and cross-reference streams not fully supported
 - NPM does not include multi-platform libraries for sharp
+- Sharp library import style: Use `import sharp from 'sharp'` not `import * as sharp` (causes TypeScript errors)
+- VS Code API compatibility: `Uri.joinPath` requires vscode ^1.116.0 or later; check package.json for version conflicts
+- Parser synchronization with PDF file may de-synchronize due to binary data in PDFs
+- Incremental updates with multiple trailers complicate object resolution
 
 ### Testing
 
-- Done manually. Do not automate or attempt to use an agent.
+- Done manually. Do not automate or attempt to use an AI agent.
 
 ## Links to Documentation
 
