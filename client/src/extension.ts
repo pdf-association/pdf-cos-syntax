@@ -151,7 +151,28 @@ async function fetch_semantic_tokens_from_LSP(document: vscode.TextDocument): Pr
   semantic_doc_uri = document.uri;
 }
 
+
+async function isFileTooLarge(uri: vscode.Uri): Promise<boolean> {
+  try {
+    const stat = await vscode.workspace.fs.stat(uri);
+    return stat.size > 1 * 1024 * 1024; // 1 MB threshold for "too large"
+  } catch {
+    return false;
+  }
+}
+
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // Before doing too much work, check if the file is too large to practically handle
+  const editor = vscode.window.activeTextEditor;
+  if (editor) {
+    const tooBig = await isFileTooLarge(editor.document.uri);
+    if (tooBig) {
+      vscode.window.showWarningMessage("PDF file is too large - pdf-cos-syntax extension is disabled for this file.");
+      return; // Do not register any features
+    }
+  }
+
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join("out", "server", "src", "server.js")
@@ -160,12 +181,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // If the extension is launched in debug mode then the debug server options are used
   // Otherwise the run options are used
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.ipc },
+    run: { 
+      module: serverModule, 
+      transport: TransportKind.ipc 
+    },
     debug: {
       module: serverModule,
       transport: TransportKind.ipc,
       options: { execArgv: ["--nolazy", "--inspect=6009"] },
-    },
+    }
   };
 
 
@@ -180,6 +204,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ]
   };
 
+  /** @todo - this is not used!!! */
   function getExtensionSettings(): PDFCOSSyntaxSettings {
     const configuration = vscode.workspace.getConfiguration('pdf-cos-syntax');
     const maxNumberOfProblems = configuration.get<number>('maxNumberOfProblems', 100);
@@ -323,9 +348,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ): vscode.ProviderResult<vscode.SemanticTokens> {
       // console.log(`provideDocumentSemanticTokens for ${document.uri}`);
 
-      // if cached semantic tokens apply to this document URI then reuse 
+      // if cached semantic tokens apply to this document URI then reuse. Need to wait for it.
       if (document.uri !== semantic_doc_uri) {
-        fetch_semantic_tokens_from_LSP(document); 
+        fetch_semantic_tokens_from_LSP(document)
+          .then(() => {})
+          .catch(err => console.error(`client semanticProvider: ${err}`));
       }
       return semanticTokens;
     }

@@ -213,7 +213,9 @@ connection.onInitialized(() => {
   console.log(`connection.onInitialized()`);
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
-    connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    connection.client.register(DidChangeConfigurationNotification.type, undefined)
+      .then(() => {})
+      .catch((error) => { console.error(`connection.onInitialized: ${error}`)});
   }
 });
 
@@ -234,11 +236,15 @@ connection.onDidChangeConfiguration((_change) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     pdfFileData.clear();
-    getDocumentSettings().then((fetchedSettings) => {
-      globalSettings = fetchedSettings;
-      // Revalidate all open text documents with new settings
-      documents.all().forEach(validateTextDocument);
-    });
+    getDocumentSettings()
+      .then((fetchedSettings) => {
+        globalSettings = fetchedSettings;
+        // Revalidate all open text documents with new settings
+        documents.all().forEach(validateTextDocument);
+      })
+      .catch((error) => {
+        console.error(`connection.onDidChangeConfiguration: ${error}`);
+      });
   } else {
     globalSettings = _change.settings.pdfcossyntax;
     // Revalidate all open text documents with new settings
@@ -873,7 +879,8 @@ function validateTextDocument(textDocument: TextDocument): void {
     }
   }
 
-  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+  // Ignore promise
+  void connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
 function updatePDFdata(uri: DocumentUri, content: string): void {

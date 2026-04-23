@@ -43,9 +43,8 @@ function _EOLtoBytes(eol: vscode.EndOfLine): number {
  * @param bytes - the Buffer of bytes to encode as ASCII-85
  */
 export function convertToAscii85Filter(bytes: Buffer): string[] {
-  const a85encoded: string = Ascii85.encode(bytes, { delimiter: false });
+  const a85encoded = Ascii85.encode(bytes, { delimiter: false });
   const res = _stringToChunks(a85encoded + '~>', 70);
-  // console.log(`_convertToAscii85filter: ${res}`); 
   return res;
 }
 
@@ -60,16 +59,16 @@ export function convertFromAscii85Filter(a85: string): string {
   try {
     if (a85.slice(a85.length - 2, a85.length - 1) !== '~>') {
       console.error(`Error: ASCII-85 data did not end with '~>' end of data marker!`);
-      vscode.window.showErrorMessage(`Error: ASCII-85 data did not end with '~>' end of data marker!`).then(undefined, () => {console.error(`showErrorMessage() was rejected!`);});
+      vscode.window.showErrorMessage(`Error: ASCII-85 data did not end with '~>' end of data marker!`);
       return '';
     }
 
-    const s: string = Ascii85.decode(a85);
-    return s;
+    const s = Ascii85.decode(a85);
+    return s.toString();
   }
   catch (error) {
     console.error(`_convertFromAscii85filter: Error ${(error as Error).message}`); 
-    vscode.window.showErrorMessage(`ASCII-85 decompression error: ${(error as Error).message}!`).then(undefined, () => {console.error(`showErrorMessage() was rejected!`);});
+    vscode.window.showErrorMessage(`ASCII-85 decompression error: ${(error as Error).message}!`);
     return '';
   }
 }
