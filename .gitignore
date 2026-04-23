@@ -4,3 +4,4 @@ node_modules/
 .DS_Store
 .eslintcache
 *.vsix
+server/src/grammar/*.ohm-bundle.*s
