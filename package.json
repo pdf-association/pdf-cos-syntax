@@ -498,7 +498,7 @@
     "compile": "tsc -b && npx copyfiles -V \"./server/src/grammar/*.ohm\" ./out",
     "watch": "tsc -b -w",
     "lint": "eslint --config ./eslintrc.config.mjs ./client/src/ ./server/src/",
-    "generate": "npx ohm generateBundles --withTypes ./server/src/grammar/grammar_pdfTokens.ohm"
+    "generate": "npx ohm generateBundles --withTypes --esm ./server/src/grammar/*.ohm"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
