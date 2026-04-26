@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "esnext",
     "lib": ["es2020"],
-    "module": "node16",
+    "module": "nodenext",
     "sourceMap": true,
     "outDir": "out",
     "rootDirs": [
@@ -18,7 +18,11 @@
     "allowJs": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
-    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "rewriteRelativeImportExtensions": true,
   },
   "exclude": [
     "./server/src/grammar/*.ohm-bundle.d.ts", 
