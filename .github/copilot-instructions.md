@@ -75,7 +75,8 @@ This is a VS Code extension built with TypeScript that provides comprehensive su
 ### Common Pitfalls
 
 - When editing a PDF file, edits can temporarily cause syntax errors
-- PDF files are arbitrary binary by definition but VSCode assumes the binary data is UTF-8 sequences which is wrong. This results in incorrect file offsets and byte counting from  the VSCode TypeScript code
+- PDF files are defined by the standard as binary files with no fixed encoding
+- VSCode assumes all files are UTF-8 which is incorrect for PDF. As a result of invalid UTF-8 byte sequences that can occur in arbitrary binary data, VSCode file offsets and byte counting from in VSCode TypeScript code are incorrect.
 - Cross-reference offsets must be real byte positions, not the UTF-8 byte offsets that VSCode wants
 - Object streams and cross-reference streams not fully supported
 - NPM does not include multi-platform libraries for sharp
