@@ -4,3 +4,5 @@ client/server
 .vscode-test
 .DS_Store
 *.vsix
+*-bundle.d.ts
+*-bundle.js
