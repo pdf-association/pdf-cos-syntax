@@ -1,0 +1,131 @@
+// This material is based upon work supported by the Defense Advanced 
+// Research Projects Agency (DARPA) under Contract No. HR001119C0079. 
+// Any opinions, findings and conclusions or recommendations expressed 
+// in this material are those of the author(s) and do not necessarily 
+// reflect the views of the Defense Advanced Research Projects Agency 
+// (DARPA). Approved for public release.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Original author: Ozzy Kirkby
+// Author: Peter Wyatt
+//
+// Test online at: https://ohmjs.org/editor/
+//
+// https://ohmjs.org/docs/syntax-reference#syntactic-lexical:
+// lowercase = lexical rule   - Ohm.js' definition of whitespace NOT skipped
+// uppercase = syntactic rule - Ohm.js' definition of whitespace IS skipped. AVOID!
+//
+// Grammar is quite picky over white space and EOLs. 
+// Grammar understands file layout and structure and thus may fail when PDFs are mid-edit.
+// Naming needs to avoid JS collisions.
+//
+PDFFile {
+  PDF = header binary_marker? revision* 
+    
+  // File headers
+  header = ( "%PDF-" | "%FDF-" ) digit "." digit (~eol any)* eol
+
+  // Binary file marker comment (4 bytes minimum)
+  binary_marker = "%" "\x80".."\xFF" "\x80".."\xFF" "\x80".."\xFF" "\x80".."\xFF" (~eol any)* eol 
+
+  // File revision (original file or an incremental update) 
+  revision = direct_object* xref* trailer? startxref
+
+  // Indirect reference `<obj-num> <gen-num> R` (e.g. 12 0 R).
+  // Object and generation numbers are not supposed to have leading zeros but this is not checked here.
+  indirect_ref = ws_incl_eol_comment* digit+ ws_incl_eol_comment+ digit+ ws_incl_eol_comment+ "R"
+
+  // Parts of direct objects  
+  direct_object = obj_start (stream | pdf_object)? "endobj" ws_incl_eol_comment*
+  obj_start = ws_incl_eol_comment* digit+ ws_incl_eol_comment digit+ ws_incl_eol_comment "obj"
+
+  stream      = dictionary ws_incl_eol_comment* "stream" ws_incl_eol* eol stream_data "endstream" ws_incl_eol_comment*
+  stream_data = (~"endstream" any)*
+    
+  // PDF objects NOT incl. streams (i.e. things allowed as array elements or dict key values)
+  pdf_object = indirect_ref | dictionary | array | string_object | name_object | number_object | bool_object | null_keyword
+  
+  // PDF dictionary - of key/value pairs
+  // Specifically look for Type and Subtype (or S) entries so VSCode can do intelligent code completion
+  dictionary     = "<<" (ws_incl_eol_comment key_value_pair ws_incl_eol_comment)* ">>" (ws_incl_eol_comment* | &delimiter) 
+  key_value_pair = type_pair | subtype_pair | dict_pair
+  dict_pair      = &"/" name_object (ws_incl_eol_comment* | &start_delimiter) pdf_object
+  type_pair      = "/Type"             (ws_incl_eol_comment* | &"/") name_object
+  subtype_pair   = ("/Subtype" | "/S") (ws_incl_eol_comment* | &"/") name_object
+
+  // PDF arrays - empty arrays are valid
+  array = "[" ((ws_incl_eol_comment* | &start_delimiter) pdf_object)* ws_incl_eol_comment* "]" (ws_incl_eol_comment* | &delimiter)
+  
+  // PDF Name - empty name is valid. 2 digit hex codes preceded by '#'.
+  name_object     = "/" (~(&delimiter | ws_incl_eol) valid_name_char)* 
+  valid_name_char = name_hex_escape | (~("#" | &delimiter) any) 
+  name_hex_escape = "#" hexDigit hexDigit 
+
+  string_object   = string_literal | hex_string
+
+  // PDF string literal - empty string is valid
+  string_literal        = "(" (~")" (string_literal_char | any))* ")" (ws_incl_eol_comment* | &delimiter)
+  string_literal_char   = string_literal_escape | string_literal
+  string_literal_escape = "\\n" | "\\r" | "\\b" | "\\f" | "\\(" | "\\)" | "\\\\" | octal | escaped_eol 
+  octal       = "\\" octal_digit octal_digit octal_digit
+  octal_digit = "0".."7"
+  escaped_eol = "\\" eol 
+
+  // PDF hex string - empty hex string is valid. Comments are NOT valid inside hex strings.
+  hex_string = "<" (hexDigit | ws_incl_eol)* ">" (ws_incl_eol_comment* | &delimiter)
+  
+  // PDF Numeric object - integer or real. Can have leading zeros.
+  number_object  = integer_object | real_object
+  integer_object = ("+" | "-")? digit+
+  real_object    = ("+" | "-")? ((digit* "."? digit+) | (digit+ "."? digit*))
+
+  // PDF Boolean object (case-sensitive keywords)
+  bool_object = "true" | "false"
+  
+  // PDF null object (case-sensitive keyword)
+  null_keyword = "null"
+
+  // Conventional cross reference tables. Comments not allowed inside (i.e. not AFTER "xref", but OK before).
+  // "xref", "0 0" is valid - xref entries are optional!
+  // Entry lines MUST be 20 chars exactly
+  xref                   = ws_incl_eol_comment* eol "xref" ws_no_eol+ eol xref_subsection+
+  xref_subsection        = xref_subsection_marker xref_entry* 
+  xref_subsection_marker = ws_no_eol* digit+ " " digit+ ws_no_eol* eol
+  xref_10entry = digit digit digit digit digit digit digit digit digit digit 
+  xref_5entry  = digit digit digit digit digit 
+  xref_entry   = xref_10entry " " xref_5entry " " ("f" | "n") ("\r" "\n" | ws_no_eol "\n" | ws_no_eol "\r")
+  
+  // trailer, startxref and %%EOF. %%EOF does not need following EOL (as could be EOF).
+  // Keywords are case-sensitive.
+  trailer   = eol "trailer"   ws_incl_eol_comment* dictionary ws_incl_eol_comment*
+  startxref = eol "startxref" ws_incl_eol_comment* eol ws_no_eol* digit+ ws_incl_eol_comment* eof
+  eof       = eol "%%EOF"     ws_incl_eol_comment*
+  
+  // PDF delimiters NOT including whitespace, EOLs or comments. NOT including PS delimiters "{" or "}"
+  // Use with look-ahead "&start_delimiter"
+  delimiter       = start_delimiter | end_delimiter
+  start_delimiter = "<<" | "<" | "[" | "(" | "%"
+  end_delimiter   = ">>" | ">" | "]" | ")"
+
+  // Single PDF whitespace combinations, including with and without EOLs and comments. ISO 32000-2, Table 1. 
+  // DO NOT USE Ohm.js or Typescript/JS understanding of "white space"!
+  ws_incl_eol_comment = (" " | "\t" | "\x0C" | "\x00" | eol | comment)
+  ws_incl_eol         = (" " | "\t" | "\x0C" | "\x00" | eol)
+  ws_no_eol           = (" " | "\t" | "\x0C" | "\x00")
+
+  // PDF comment but also includes EOL
+  comment = "%" (~eol any)* eol
+
+  // Single specific PDF EOL sequences.
+  eol = "\r\n" | "\n" | "\r"
+}
