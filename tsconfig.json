@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": ["es2020"],
+    "lib": ["es2024"],
     "module": "nodenext",
     "sourceMap": true,
     "outDir": "out",
@@ -9,7 +9,7 @@
       "./client/src",
       "./server/src"
     ],
-    "moduleResolution": "node16",
+    "moduleResolution": "nodenext",
     "strictNullChecks": true,
     "alwaysStrict": true,
     "strict": true,
@@ -21,10 +21,10 @@
     "esModuleInterop": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
     "rewriteRelativeImportExtensions": true,
   },
   "exclude": [
+    "eslintrc.config.mjs",
     "./server/src/grammar/*.ohm-bundle.d.ts", 
     "./server/src/grammar/*.ohm-bundle.js", 
     "./out/**"
