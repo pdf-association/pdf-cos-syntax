@@ -507,19 +507,22 @@
     "@types/node": "^25.9.1",
     "@types/vscode": "^1.120.0",
     "copyfiles": "^2.4.1",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-jsdoc": "^63.0.0",
+    "eslint-plugin-jsdoc": "^63.0.1",
     "eslint-plugin-tsdoc": "^0.5.2",
-    "typescript-eslint": "^8.60.0"
+    "typescript-eslint": "^8.60.1"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
     "globals": "^17.6.0",
     "ohm-js": "^17.5.0",
     "sharp": "^0.34.5",
-    "vscode-languageclient": "^9.0.1",
-    "vscode-languageserver": "^9.0.1",
+    "vscode-languageclient": "^10.0.0",
+    "vscode-languageserver": "^10.0.0",
     "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
   }
 }
