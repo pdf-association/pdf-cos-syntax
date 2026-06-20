@@ -504,7 +504,7 @@
     "@eslint/js": "^10.0.1",
     "@ohm-js/cli": "^2.0.1",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "@types/vscode": "^1.125.0",
     "copyfiles": "^2.4.1",
     "eslint": "^10.5.0",
@@ -517,7 +517,7 @@
     "ascii85": "^1.0.2",
     "globals": "^17.6.0",
     "ohm-js": "^17.5.0",
-    "sharp": "^0.35.1",
+    "sharp": "^0.35.2",
     "vscode-languageclient": "^10.0.0",
     "vscode-languageserver": "^10.0.0",
     "vscode-languageserver-textdocument": "^1.0.12"
