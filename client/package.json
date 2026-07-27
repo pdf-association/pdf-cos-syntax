@@ -13,17 +13,20 @@
 		"vscode": "*"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.120.0"
+		"@types/vscode": "^1.125.0"
 	},
 	"dependencies": {
-		"@types/node": "^25.9.0",
+		"@types/node": "^25.9.5",
 		"ascii85": "^1.0.2",
-		"brace-expansion": "^5.0.6",
+		"brace-expansion": "^5.0.8",
 		"deasync": "^0.1.29",
 		"glob": "^13.0.6",
-		"minimatch": "^10.2.4",
-		"sharp": "^0.34.5",
+		"minimatch": "^10.2.6",
+		"sharp": "^0.35.3",
 		"vscode-jsonrpc": "^9.0.0-next.10",
 		"vscode-languageclient": "^10.0.0-next.20"
+	},
+	"allowScripts": {
+		"deasync@0.1.31": true
 	}
 }
