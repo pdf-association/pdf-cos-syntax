@@ -1,4 +1,6 @@
 .vscode/
+.cspell/
+.github/
 .vscodeignore
 .eslintignore
 *.vsix

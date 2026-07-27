@@ -17,7 +17,7 @@
  */
 'use strict';
 
-import type { Range, TextDocument } from "vscode-languageserver-textdocument";
+import { Range, TextDocument } from "vscode-languageserver-textdocument";
 import type { DocumentUri, Location } from "vscode-languageserver";
 import { Position } from "vscode-languageserver";
 import { XrefInfoMatrix } from '../parser/XrefInfoMatrix';
@@ -323,38 +323,14 @@ export function buildXrefMatrix(_docURI: DocumentUri, content: string): XrefInfo
   console.log(`buildXrefMatrix(...)`);
   // Create a new instance of the XrefInfoMatrix
   const xrefMatrix = new XrefInfoMatrix();
-  const lines = content.split("\n");
-
-  const mockPDFDocument: TextDocument = {
-    getText: () => content,
-    uri: "mockURI",
-    languageId: "pdf",
-    version: 1, // mock version
-    positionAt: (offset: number) => {
-      let charCount = 0;
-      for (let i = 0; i < lines.length; i++) {
-        if (charCount + lines[i].length >= offset) {
-          return { line: i, character: offset - charCount };
-        }
-        charCount += lines[i].length + 1;
-      }
-      return {
-        line: lines.length - 1,
-        character: lines[lines.length - 1].length,
-      };
-    },
-    offsetAt: (position: Position) => {
-      let offset = 0;
-      for (let i = 0; i < position.line; i++) {
-        offset += lines[i].length + 1;
-      }
-      return offset + position.character;
-    },
-    lineCount: content.split("\n").length,
-  };
-
+  const mockPDFDocument: TextDocument = TextDocument.create(  
+    "mockURI", // uri:
+    "pdf", // languageId: 
+    1, // mock version
+    content
+  );
   // Merge all conventional cross reference sections into the matrix
   xrefMatrix.mergeAllXrefSections(mockPDFDocument);
-  // xrefMatrix.saveToCSV(docURI);
+  xrefMatrix.saveToCSV(_docURI);
   return xrefMatrix;
 }
