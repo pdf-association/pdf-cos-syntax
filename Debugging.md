@@ -32,7 +32,7 @@ It also includes an End-to-End test.
 
 ## Running
 
-Currently building with NPM v11.10.1 and TypeScript 5.5.4.
+Currently building with latest NPM v12.0.2 (`npm -v`), TypeScript 7.0.2 (`tsc -v`), and Node v24.19.0 (`node -v`).
 
 - Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
 - Open VS Code on this folder.

@@ -92,7 +92,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
         startDictLines.push(i);
         continue;
       } else if (line.startsWith('>>') && (startDictLines.length > 0)) {
-        const r = new FoldingRange(startDictLines.pop(), i);
+        const r = new FoldingRange(startDictLines.pop()!, i);
         ranges.push(r);
         continue;
       }
@@ -102,7 +102,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
         startQLines.push(i);
         continue;
       } else if (line.startsWith('Q') && (startQLines.length > 0)) {
-        const r = new FoldingRange(startQLines.pop(), i);
+        const r = new FoldingRange(startQLines.pop()!, i);
         ranges.push(r);
         continue;
       }
@@ -112,7 +112,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
         startBTLines.push(i);
         continue;
       } else if (line.startsWith('ET') && startBTLines.length > 0) {
-        const r = new FoldingRange(startBTLines.pop(), i);
+        const r = new FoldingRange(startBTLines.pop()!, i);
         ranges.push(r);
         continue;
       }
@@ -122,7 +122,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
         startBXLines.push(i);
         continue;
       } else if (line.startsWith('EX') && startBXLines.length > 0) {
-        const r = new FoldingRange(startBXLines.pop(), i);
+        const r = new FoldingRange(startBXLines.pop()!, i);
         ranges.push(r);
         continue;
       }
@@ -134,7 +134,7 @@ export class PDFFoldingRangeProvider implements FoldingRangeProvider {
         startMarkedContentLines.push(i);
         continue;
       } else if (line.startsWith('EMC') && (startMarkedContentLines.length > 0)) {
-        const r = new FoldingRange(startMarkedContentLines.pop(), i);
+        const r = new FoldingRange(startMarkedContentLines.pop()!, i);
         ranges.push(r);
         continue;
       }
