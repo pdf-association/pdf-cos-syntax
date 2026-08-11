@@ -11,9 +11,14 @@ Testing.md
 testing-resources/
 scripts/
 media/
+node_modules/ascii85/test/
+**/cspell.json
+**/tsdoc.json
 **/tsconfig.json
 **/webpack.config.js
 **/*.ts
+**/*.tsbuildinfo
+**/*.mts
 **/*.map
 **/*.h
 **/*.hh
