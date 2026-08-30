@@ -5,8 +5,6 @@
 ![License](https://img.shields.io/github/license/pdf-association/pdf-cos-syntax)
 &nbsp;&nbsp;&nbsp;
 ![LinkedIn](https://img.shields.io/static/v1?style=social&label=LinkedIn&logo=linkedin&message=PDF-Association)
-&nbsp;&nbsp;&nbsp;
-![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCJL_M0VH2lm65gvGVarUTKQ?style=social)
 
 ## TL;DR
 
