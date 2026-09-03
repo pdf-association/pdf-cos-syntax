@@ -334,7 +334,7 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
     uri: "mockURI",
     languageId: "pdf",
     version: 1, // mock version
-    positionAt: (offset: number) => {
+    positionAt: (offset: number): Position => {
       let charCount = 0;
       for (let i = 0; i < lines.length; i++) {
         if (charCount + lines[i].length >= offset) {
@@ -347,14 +347,35 @@ export function buildXrefMatrix(content: string): XrefInfoMatrix {
         character: lines[lines.length - 1].length,
       };
     },
-    offsetAt: (position: Position) => {
+    offsetAt: (position: Position): number => {
       let offset = 0;
       for (let i = 0; i < position.line; i++) {
         offset += lines[i].length + 1;
       }
       return offset + position.character;
     },
-    lineCount: content.split("\n").length,
+    getLineRange: (line: number): Range => {
+    /** Gets the range of the entire line, without any newline characters.
+      *
+      * @param line the line number.
+      * @return A Range covering the entire line. The range will be valid even
+      * 		if the line number is out of bounds. The range will contain a start
+      * 		and end position that are equal if the line is empty or the line
+      * 		number is negative. If the line number is greater than the number
+      * 		of lines in the document, the range will cover the remaining text
+      * 		after the last line.
+      */
+      return { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }; // FAKE! TODO
+    },
+    getEOLCharacters: (line: number): string => {
+      /**
+       * Gets the end of line character(s) for a line.
+       * @param line the line number.
+       * @return The end of line character(s) for the line as a string. The result will be an empty string if the line number is out of bounds.
+       */
+      return '\n'; // FAKE! TODO
+    },
+    lineCount: lines.length
   };
 
   // Merge all xref tables found in the document into the matrix
