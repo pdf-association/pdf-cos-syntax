@@ -501,18 +501,18 @@
     "generate": "npx ohm generateBundles --withTypes --esm ./server/src/grammar/*.ohm"
   },
   "devDependencies": {
-    "globals": "^17.11.0",
+    "globals": "^17.12.0",
     "@eslint/js": "^10.0.1",
     "@ohm-js/cli": "^2.0.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^26.4.0",
-    "@types/vscode": "^1.134.0",
+    "@types/vscode": "^1.137.0",
     "copyfiles": "^2.4.1",
-    "eslint": "^10.9.1",
+    "eslint": "^10.10.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-jsdoc": "^64.3.2",
+    "eslint-plugin-jsdoc": "^64.3.8",
     "eslint-plugin-tsdoc": "^0.5.2",
-    "typescript-eslint": "^8.68.0"
+    "typescript-eslint": "^8.70.0"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
