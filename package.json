@@ -501,25 +501,25 @@
     "generate": "npx ohm generateBundles --withTypes --esm ./server/src/grammar/*.ohm"
   },
   "devDependencies": {
-    "globals": "^17.12.0",
+    "globals": "^17.13.0",
     "@eslint/js": "^10.0.1",
     "@ohm-js/cli": "^2.0.1",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@types/vscode": "^1.138.0",
     "copyfiles": "^2.4.1",
     "eslint": "^10.11.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-jsdoc": "^64.5.4",
-    "eslint-plugin-tsdoc": "^0.5.3",
-    "typescript-eslint": "^8.70.1"
+    "eslint-plugin-jsdoc": "^65.0.1",
+    "eslint-plugin-tsdoc": "^0.5.4",
+    "typescript-eslint": "^8.71.0"
   },
   "dependencies": {
     "ascii85": "^1.0.2",
     "ohm-js": "^17.5.0",
-    "sharp": "^0.35.4",
-    "vscode-languageclient": "^10.1.1",
-    "vscode-languageserver": "^10.1.1",
+    "sharp": "^0.35.5",
+    "vscode-languageclient": "^10.1.2",
+    "vscode-languageserver": "^10.1.2",
     "vscode-languageserver-textdocument": "^1.0.15"
   },
   "allowScripts": {
